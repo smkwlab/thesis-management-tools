@@ -333,14 +333,11 @@ for student_id in "$@"; do
     config=($(get_repo_config "$student_id"))
     thesis_type="${config[0]}"
     repo_suffix="${config[1]}"
-    
-    # 統合テンプレートを使用
     template_repo="smkwlab/sotsuron-template"
     
     repo_name="${ORGANIZATION}/${student_id}-${repo_suffix}"
     
     echo "論文種別: $thesis_type"
-    echo "テンプレート: $template_repo"
     
     # リポジトリ存在チェック
     if gh repo view "$repo_name" >/dev/null 2>&1; then
