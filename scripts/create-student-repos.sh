@@ -40,18 +40,15 @@ get_repo_config() {
     
     if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
         # 卒業論文
-        echo "smkwlab/sotsuron-template"
         echo "卒業論文"
         echo "sotsuron"
         return 0
     elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
         # 修士論文
-        echo "smkwlab/master-template"
         echo "修士論文"
         echo "master"
         return 0
     else
-        echo "INVALID"
         echo "INVALID"
         echo "INVALID"
         return 1
@@ -272,6 +269,51 @@ EOF
     return 0
 }
 
+# 論文タイプ別不要ファイル削除関数
+cleanup_template_files() {
+    local student_id="$1"
+    local repo_suffix="$2"
+    local repo_dir="${student_id}-${repo_suffix}"
+    
+    # ローカルリポジトリディレクトリが存在するかチェック
+    if [ ! -d "$repo_dir" ]; then
+        echo "エラー: ローカルリポジトリディレクトリが見つかりません: $repo_dir"
+        return 1
+    fi
+    
+    # リポジトリディレクトリに移動
+    cd "$repo_dir" || return 1
+    
+    # mainブランチに切り替え（念のため）
+    git checkout main >/dev/null 2>&1
+    
+    if [ "$repo_suffix" = "sotsuron" ]; then
+        # 卒業論文: 修士論文用ファイルを削除
+        echo "卒業論文用に設定中: 修士論文ファイルを削除..."
+        rm -f thesis.tex abstract.tex
+        echo "✓ thesis.tex, abstract.tex を削除"
+    elif [ "$repo_suffix" = "master" ]; then
+        # 修士論文: 卒業論文用ファイルを削除  
+        echo "修士論文用に設定中: 卒業論文ファイルを削除..."
+        rm -f sotsuron.tex gaiyou.tex example.tex example-gaiyou.tex
+        echo "✓ sotsuron.tex, gaiyou.tex, example.tex, example-gaiyou.tex を削除"
+    fi
+    
+    # 変更をcommit
+    if [ -n "$(git status --porcelain)" ]; then
+        git add -A
+        git commit -m "Setup ${repo_suffix} thesis template"
+        git push origin main
+        echo "✓ 不要ファイル削除をcommit & push完了"
+    else
+        echo "削除対象ファイルが見つかりませんでした"
+    fi
+    
+    # 元のディレクトリに戻る
+    cd ..
+    return 0
+}
+
 # 各学生のリポジトリ作成
 success_count=0
 error_count=0
@@ -289,9 +331,11 @@ for student_id in "$@"; do
     
     # 設定取得
     config=($(get_repo_config "$student_id"))
-    template_repo="${config[0]}"
-    thesis_type="${config[1]}"
-    repo_suffix="${config[2]}"
+    thesis_type="${config[0]}"
+    repo_suffix="${config[1]}"
+    
+    # 統合テンプレートを使用
+    template_repo="smkwlab/sotsuron-template"
     
     repo_name="${ORGANIZATION}/${student_id}-${repo_suffix}"
     
@@ -315,6 +359,14 @@ for student_id in "$@"; do
         --description "${student_id}の${thesis_type}"; then
         
         echo "✓ 作成成功: https://github.com/$repo_name"
+        
+        # 不要なテンプレートファイルを削除
+        echo "論文タイプ別ファイル調整中..."
+        if cleanup_template_files "$student_id" "$repo_suffix"; then
+            echo "✓ 不要ファイル削除完了"
+        else
+            echo "⚠ ファイル削除に失敗（手動削除が必要）"
+        fi
         
         # LaTeX devcontainer の追加
         echo "LaTeX devcontainer を追加中..."
