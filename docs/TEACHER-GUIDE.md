@@ -153,11 +153,13 @@ initial-empty (空の初期状態) ← レビュー用PRのベース
 
 ```
 1. 教員: PRをレビュー、Suggestionでコメント
-2. 教員: mergeせずに待機
-3. 学生: Apply suggestion → Re-request review 🔄
-4. 教員: 確認後にPRをmerge
-5. GitHub Actions: 自動的にreview-branchを更新 ✅
+2. 学生: Apply suggestion → Re-request review 🔄
+3. 教員: 確認・承認コメント
+4. 学生: 対応完了後、自分でPRをクローズ ✅
+5. 学生: 次稿執筆開始（並行作業可能）
 ```
+
+**重要**: 教員はPRをマージしません。学生が自分でクローズします。
 
 #### Re-request review受信後の対応
 
@@ -172,14 +174,15 @@ initial-empty (空の初期状態) ← レビュー用PRのベース
    gh pr view {pr-number}
    ```
 
-3. **問題なければPRをmerge**
+3. **問題なければ承認コメント**
    ```bash
-   gh pr merge {pr-number} --merge
+   # Web UIまたはコマンドでコメント
+   gh pr comment {pr-number} --body "修正内容を確認しました。対応完了後、PRをクローズしてください。"
    ```
 
-4. **レビューブランチの自動更新**
+4. **学生のPRクローズを待つ**
    
-   ✅ **GitHub Actions が自動実行**: mergeと同時にreview-branchが最新化されます
+   ✅ **学生が自分でクローズ**: 対応完了後、学生が自分でPRをクローズします
 
 ### 3. 並行作業時のサポート
 
@@ -189,22 +192,22 @@ initial-empty (空の初期状態) ← レビュー用PRのベース
 
 ```
 学生への標準的な指示：
-「1st-draft PR提出後、2nd-draftブランチを作成して次稿執筆を開始してください。
-私のmerge完了後、GitHub Desktop で以下の操作をしてください：
-1. Current Branch → main に切り替え
-2. Fetch origin で最新版取得
-3. Current Branch → 2nd-draft に戻る
-4. Branch → Update from main をクリック」
+「1st-draft PR提出後、すぐに次稿執筆を開始できます。
+2nd-draftブランチは自動作成されているので、以下の手順で進めてください：
+1. GitHub Desktop で Fetch origin をクリック
+2. Current Branch → origin/2nd-draft を選択してブランチ作成
+3. 次稿執筆開始
+4. 前稿の添削対応完了後、自分でPRをクローズしてください」
 ```
 
-#### 競合発生時のサポート
+#### 注意事項
 
-```bash
-# 学生のローカルリポジトリで競合が発生した場合
-# リモートで確認
-git log --oneline --graph {student-branch}
-
-# 必要に応じて学生と画面共有で解決支援
+```
+PRをマージしない運用のメリット：
+- 競合解決不要：PRをマージしないため競合は発生しません
+- 並行作業自由：いつでも次稿執筆開始可能
+- シンプル操作：学生の複雑なGit操作は不要
+- 完全履歴：全PRが保持され、完全な変遷記録となります
 ```
 
 ## スクリプト活用

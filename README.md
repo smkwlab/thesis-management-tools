@@ -13,10 +13,6 @@ GitHub を使った効率的な論文指導をサポートします。
 
 ### `docs/` - ガイドドキュメント
 
-- **[STUDENT-GUIDE.md](docs/STUDENT-GUIDE.md)**: 学生向け論文執筆手順
-  - GitHub Desktop を使った基本操作
-  - 自動ブランチ作成ワークフロー
-  - 概要執筆の手順
 
 - **[TEACHER-GUIDE.md](docs/TEACHER-GUIDE.md)**: 教員向け添削・管理ガイド
   - レビューワークフローの詳細
@@ -66,7 +62,11 @@ gh auth status
    - 個別PR: 差分レビュー
    - レビュー用PR: 全体レビュー
 
-3. **完全自動化**: 手動スクリプト実行不要
+3. **学生がPRをクローズ**:
+   - 添削対応完了後、自分でPRをクローズ
+   - 並行して次稿執筆継続可能
+
+4. **PRはマージしません**: 添削専用として活用、学生が自分でクローズ
 
 ## 📚 対応テンプレート
 
@@ -110,8 +110,9 @@ gh auth status
 
 ### 学生向け
 
-**基本的な論文執筆ワークフロー**
-→ [STUDENT-GUIDE.md](docs/STUDENT-GUIDE.md)
+**論文執筆ガイドは各テンプレートリポジトリにあります**:
+- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 卒業論文用
+- [master-template](https://github.com/smkwlab/master-template) - 修士論文用
 
 ## 🛠️ システム要件
 
