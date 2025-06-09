@@ -67,17 +67,31 @@ cd "$ORIGINAL_DIR"
 # Docker実行前にブラウザを開く準備
 echo ""
 echo "🌐 GitHub認証ページを開いています..."
-if [[ "$OSTYPE" == "darwin"* ]] || command -v open &> /dev/null; then
-    # macOS
-    open "https://github.com/login/device" && echo "✅ ブラウザを開きました" || echo "❌ ブラウザ起動に失敗"
+
+# デバッグ情報
+echo "デバッグ: OSTYPE=$OSTYPE, PATH=$PATH"
+echo "デバッグ: which open=$(which open 2>/dev/null || echo 'not found')"
+echo "デバッグ: /usr/bin/open exists=$([[ -x /usr/bin/open ]] && echo 'yes' || echo 'no')"
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS - 絶対パスで実行
+    echo "macOSでブラウザを開いています..."
+    if /usr/bin/open "https://github.com/login/device" 2>/dev/null; then
+        echo "✅ ブラウザを開きました"
+    else
+        echo "❌ ブラウザ起動に失敗しました。手動で https://github.com/login/device を開いてください"
+    fi
 elif command -v cmd.exe &> /dev/null; then
     # WSL
+    echo "WSLでブラウザを開いています..."
     cmd.exe /c start "https://github.com/login/device" && echo "✅ ブラウザを開きました" || echo "❌ ブラウザ起動に失敗"
 elif command -v wslview &> /dev/null; then
     # WSL2 with wslu
+    echo "WSL2でブラウザを開いています..."
     wslview "https://github.com/login/device" && echo "✅ ブラウザを開きました" || echo "❌ ブラウザ起動に失敗"
 elif command -v xdg-open &> /dev/null; then
     # Linux
+    echo "Linuxでブラウザを開いています..."
     xdg-open "https://github.com/login/device" && echo "✅ ブラウザを開きました" || echo "❌ ブラウザ起動に失敗"
 else
     echo "⚠️ ブラウザを自動で開けませんでした。手動で https://github.com/login/device を開いてください"
