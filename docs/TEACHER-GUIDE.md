@@ -531,23 +531,122 @@ git tag v1.0-{student-id}-submit
 git push origin v1.0-{student-id}-submit
 ```
 
-## 最終提出時の処理
+## 提出プロセス管理
 
-### 1. 提出版の確認
+論文提出は **2段階のプロセス** で管理します：
+
+### 第1段階: 論文提出許可
+
+#### 1. 論文本体の完成度判定
 
 ```bash
-# submitタグの確認
+# 学生の論文内容を確認
+# レビュー用PRで全体チェック
+# 各版PRで変更内容チェック
+```
+
+#### 2. 提出許可の指示
+
+論文本体が提出レベルに達したと判断した場合：
+
+```
+学生への指示例：
+「論文本体の内容が提出レベルに達しました。
+現在のドラフトに submit タグを作成し、概要の執筆を開始してください。」
+```
+
+#### 3. submit タグの確認
+
+```bash
+# 学生が作成したsubmitタグを確認
 git tag -l "*submit*"
 git show submit
 
-# 最終PDF生成確認
-# GitHub Actions の実行状況確認
+# この段階ではmainブランチにマージされません
 ```
 
-### 2. リポジトリのアーカイブ
+### 第2段階: 概要執筆・添削
+
+#### 1. 概要執筆の指導
 
 ```bash
-# 提出完了後のアーカイブ（任意）
+# 概要用ブランチの確認
+git branch -r | grep abstract
+
+# 概要PRのレビュー
+gh pr list --label abstract
+```
+
+#### 2. 概要完成の判定
+
+概要の内容が適切になったタイミングで、口頭で最終段階に進むことを伝えます。
+
+### 第3段階: 最終版完成・自動マージ（口頭指示）
+
+#### 1. 最終版判定後の指示
+
+概要完成後、論文の最終改善を経て最終版と判定した場合：
+
+```
+学生への指示例（口頭）：
+「最終版として問題ありません。
+review-branch → main のPRを作成し、承認後にfinal-2ndタグを作成してください。」
+```
+
+#### 2. 最終提出PRの処理
+
+```bash
+# 学生が作成するPR
+Base: main
+Head: review-branch
+Title: "Final Submission Request"
+
+# PR内容の確認・承認（まだマージはしない）
+gh pr review {pr-number} --approve --body "最終版として承認します。final tagを作成してください。"
+```
+
+#### 3. final tag による自動マージ
+
+学生が `final-*` タグを作成すると、以下が自動実行されます：
+
+```yaml
+自動実行内容:
+1. 承認済みPRの検出
+2. 自動マージ実行（main ブランチへ）
+3. GitHub Release 自動作成
+4. 提出完了通知
+```
+
+#### 4. 提出完了の確認
+
+```bash
+# final tagの確認
+git tag -l "final-*"
+git show final-2nd
+
+# GitHub Release の確認
+gh release list
+
+# main ブランチにマージされたことを確認
+gh pr list --state merged --base main
+```
+
+### 段階別タグの意味
+
+- **submit タグ**: 論文本体の提出許可版（mainにマージされない）
+- **final タグ**: 最終完成版（mainに自動マージ、GitHub Release作成）
+
+### トラブル時の対応
+
+```bash
+# ワークフロー実行状況の確認
+gh run list --workflow="Auto Final Merge"
+
+# ワークフロー失敗時の手動マージ
+gh pr merge {pr-number} --merge
+gh release create final-2nd --title "Final Submission: final-2nd"
+
+# リポジトリアーカイブ（任意）
 gh repo archive smkwlab/{student-repo}
 ```
 
