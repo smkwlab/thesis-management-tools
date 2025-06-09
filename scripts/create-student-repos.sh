@@ -581,6 +581,19 @@ for student_id in "${STUDENT_IDS[@]}"; do
             echo "⚠ devcontainer 追加に失敗（手動設定が必要）"
         fi
         
+        # 学生をコラボレーターとして追加
+        echo "学生をコラボレーターとして追加中..."
+        if [ "$DRY_RUN" = true ]; then
+            echo "[ドライラン] 学生 $student_id を $repo_name にコラボレーター追加"
+            echo "✓ [ドライラン] コラボレーター追加完了"
+        elif gh api repos/"$repo_name"/collaborators/"$student_id" --method PUT --field permission=write; then
+            echo "✓ 学生をコラボレーターとして追加完了"
+        else
+            echo "⚠ コラボレーター追加に失敗（手動設定が必要）"
+            echo "  手動で以下のコマンドを実行してください:"
+            echo "  gh api repos/$repo_name/collaborators/$student_id --method PUT --field permission=write"
+        fi
+        
         # レビュー用PRの初期設定
         echo "レビュー用PRを設定中..."
         if [ "$DRY_RUN" = true ]; then

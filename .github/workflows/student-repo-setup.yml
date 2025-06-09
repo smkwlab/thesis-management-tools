@@ -1,0 +1,80 @@
+name: 📚 学生論文リポジトリ作成
+
+on:
+  workflow_dispatch:
+    inputs:
+      student_id:
+        description: '🎓 あなたの学籍番号を入力してください (例: k21rs001)'
+        required: true
+        type: string
+
+jobs:
+  create-thesis-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📝 入力情報の確認
+        run: |
+          echo "学籍番号: ${{ github.event.inputs.student_id }}"
+          echo "実行者: ${{ github.actor }}"
+          echo "組織: ${{ github.repository_owner }}"
+
+      - name: 🎓 論文リポジトリ作成
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 学籍番号のフォーマット確認
+          if [[ "${{ github.event.inputs.student_id }}" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})$ ]]; then
+            echo "✅ 学籍番号フォーマット確認完了"
+          else
+            echo "❌ 学籍番号のフォーマットが正しくありません"
+            exit 1
+          fi
+          
+          # Docker でセットアップスクリプト実行
+          docker run --rm \
+            -e GITHUB_TOKEN="$GITHUB_TOKEN" \
+            -e GITHUB_REPOSITORY="$GITHUB_REPOSITORY" \
+            -e GITHUB_ACTOR="${{ github.actor }}" \
+            smkwlab/thesis-setup:latest \
+            "${{ github.event.inputs.student_id }}"
+
+      - name: 📧 学生をコラボレーターとして追加
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          STUDENT_ID="${{ github.event.inputs.student_id }}"
+          if [[ "$STUDENT_ID" =~ k[0-9]{2}rs[0-9]{3} ]]; then
+            REPO_NAME="${STUDENT_ID}-sotsuron"
+          else
+            REPO_NAME="${STUDENT_ID}-thesis"
+          fi
+          
+          # 学生をコラボレーターとして追加
+          gh api repos/${{ github.repository_owner }}/${REPO_NAME}/collaborators/${{ github.actor }} \
+            --method PUT \
+            --field permission=write
+          
+          echo "✅ ${{ github.actor }} をコラボレーターとして追加しました"
+
+      - name: 🎉 完了通知
+        run: |
+          STUDENT_ID="${{ github.event.inputs.student_id }}"
+          if [[ "$STUDENT_ID" =~ k[0-9]{2}rs[0-9]{3} ]]; then
+            REPO_NAME="${STUDENT_ID}-sotsuron"
+          else
+            REPO_NAME="${STUDENT_ID}-thesis"
+          fi
+          
+          echo "🎉 論文リポジトリのセットアップが完了しました！"
+          echo ""
+          echo "📁 作成されたリポジトリ:"
+          echo "   https://github.com/${{ github.repository_owner }}/${REPO_NAME}"
+          echo ""
+          echo "📋 次の手順:"
+          echo "1. リポジトリをクローン:"
+          echo "   git clone https://github.com/${{ github.repository_owner }}/${REPO_NAME}.git"
+          echo "2. VS Code で開く: code ${REPO_NAME}"
+          echo "3. 'Reopen in Container' を選択"
+          echo ""
+          echo "📖 詳しい使い方:"
+          echo "   https://github.com/${{ github.repository_owner }}/thesis-management-tools/blob/main/docs/WRITING-GUIDE.md"

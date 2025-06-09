@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  setup:
+    image: smkwlab/thesis-setup:latest
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      - ${HOME}/.config/gh:/root/.config/gh:ro  # GitHub CLI設定を共有（読み取り専用）
+    stdin_open: true
+    tty: true

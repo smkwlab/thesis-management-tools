@@ -5,9 +5,22 @@ GitHub を使った効率的な論文指導をサポートします。
 
 ## 対象ユーザー
 
+- **学生**: 論文執筆・提出
 - **教員**: 論文添削・指導
 - **管理者**: 学生リポジトリの一括作成・管理
 - **TA・先輩**: 副指導・レビュー支援
+
+## 🎓 学生の方へ
+
+**ブラウザだけで論文リポジトリを作成できます！**
+
+👉 **[学生向けガイド](docs/STUDENT-WORKFLOW-GUIDE.md)**
+
+### クイックスタート
+1. [ここをクリック](https://github.com/smkwlab/thesis-management-tools/actions/workflows/student-repo-setup.yml)
+2. 「Run workflow」をクリック
+3. 学籍番号を入力して実行
+4. 完了後、作成されたリポジトリで論文執筆開始！
 
 ## 📁 構成
 

@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>PR-REVIEW-GUIDE.html</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+
+</head>
+
+<body>
+
+<h1>GitHub PR での論文添削ガイド（教員向け）</h1>
+<h2>はじめに</h2>
+<p>このガイドは、GitHub のプルリクエスト（PR）を使った論文添削が初めての教員向けの操作手順です。
+従来の Word や PDF での添削とは異なり、GitHub では<strong>段階的な変更履歴</strong>と<strong>複数教員での協力添削</strong>が可能です。</p>
+<h2>基本概念の理解</h2>
+<h3>プルリクエスト（PR）とは</h3>
+<p><strong>簡単に言うと</strong>: 学生が「この変更を論文に取り込んでください」と提案する仕組み</p>
+<pre><code>学生の作業:
+目次案作成 → 0th-draft PR作成 → 教員に添削依頼
+
+教員の作業:
+PR確認 → コメント・修正提案 → 承認・マージ
+</code></pre>
+<h3>2種類のPRで効率的な添削</h3>
+<h4>1. <strong>個別PR</strong>（例：1st-draft PR）</h4>
+<ul>
+<li><strong>目的</strong>: 直前版からの変更点を確認</li>
+<li><strong>特徴</strong>: 差分が明確、新規追加部分に集中できる</li>
+<li><strong>使い分け</strong>: 増分レビューに最適</li>
+</ul>
+<h4>2. <strong>レビュー用PR</strong>（自動作成・更新）</h4>
+<ul>
+<li><strong>目的</strong>: 論文全体の通読・添削</li>
+<li><strong>特徴</strong>: これまでの全ての内容を含む</li>
+<li><strong>使い分け</strong>: 全体構成、章をまたぐ整合性確認</li>
+</ul>
+<h2>基本的な添削手順</h2>
+<h3>Step 1: PR通知の確認</h3>
+<p><strong>メール通知例</strong>:</p>
+<pre><code>[GitHub] k21rs001 opened PR #3: 1st-draft
+</code></pre>
+<p><strong>WebブラウザでPRにアクセス</strong>:</p>
+<ol>
+<li>通知メール内のリンクをクリック</li>
+<li>GitHubにログイン（初回のみ）</li>
+<li>PR画面が表示される</li>
+</ol>
+<h3>Step 2: 変更内容の確認</h3>
+<h4>差分の見方</h4>
+<pre><code>GitHub PR画面で：
+1. [Files changed] タブをクリック
+2. 緑色（+）：追加された行
+3. 赤色（-）：削除された行
+4. 行番号で具体的な位置を確認
+</code></pre>
+<h4>PDF確認（必要に応じて）</h4>
+<pre><code>PR画面で：
+1. 下部の「Checks」セクション確認
+2. 「View PDF」リンクから最新PDF確認
+</code></pre>
+<h3>Step 3: コメント・添削の実施</h3>
+<h4>A. 行単位でのコメント</h4>
+<p><strong>手順</strong>:</p>
+<ol>
+<li>添削したい行の行番号をクリック</li>
+<li>💬アイコンが表示される</li>
+<li>コメント入力ボックスが開く</li>
+<li>添削内容を記述</li>
+<li>[Add single comment] をクリック</li>
+</ol>
+<p><strong>コメント例</strong>:</p>
+<pre><code>「背景」→「研究背景」の方が適切です。
+この段落は第2章に移動した方が論理的です。
+実験条件の記述が不十分です。詳細を追記してください。
+</code></pre>
+<h4>B. Suggestion（修正提案）</h4>
+<p><strong>使用場面</strong>: 具体的な修正案がある場合</p>
+<p><strong>手順</strong>:</p>
+<ol>
+<li>修正したい行をクリック</li>
+<li>コメント入力ボックスで [📝] ボタン（Insert a suggestion）をクリック</li>
+<li>修正後の文章を記述</li>
+<li>[Add single comment] をクリック</li>
+</ol>
+<p><strong>例</strong>:</p>
+<pre><code>元の文:
+本研究では、機械学習を用いて分析を行った。
+
+Suggestion:
+本研究では、機械学習アルゴリズムのうち Random Forest を用いて分類分析を行った。
+</code></pre>
+<h4>C. 複数行のまとめてコメント</h4>
+<p><strong>手順</strong>:</p>
+<ol>
+<li>開始行の行番号をクリック</li>
+<li>Shiftキーを押しながら終了行をクリック</li>
+<li>範囲選択された状態でコメント</li>
+<li>[Start a review] または [Add to review] をクリック</li>
+</ol>
+<h3>Step 4: レビューの完了</h3>
+<h4>レビュー送信</h4>
+<pre><code>全てのコメントを記述後：
+1. 画面右上 [Review changes] ボタンをクリック
+2. 全体コメントを記述（任意）
+3. 以下から選択：
+   - Comment: コメントのみ
+   - Approve: 承認（問題なし）
+   - Request changes: 修正要求
+4. [Submit review] をクリック
+</code></pre>
+<h4>学生への通知</h4>
+<ul>
+<li>レビュー送信と同時に学生に自動通知</li>
+<li>学生は GitHub でコメントを確認し対応</li>
+</ul>
+<h2>複数教員での添削</h2>
+<h3>役割分担例</h3>
+<pre><code>主指導教員:
+- 研究内容の妥当性
+- 論理構成
+- 実験手法の適切性
+
+副指導教員:
+- 文章表現・日本語
+- 図表の品質
+- 参考文献の形式
+
+外部教員:
+- 客観的視点
+- 他分野からの理解しやすさ
+</code></pre>
+<h3>効率的な連携方法</h3>
+<h4>1. <strong>順次レビュー</strong></h4>
+<pre><code>主指導教員のレビュー完了
+↓
+副指導教員がレビュー開始
+↓
+必要に応じて外部教員がレビュー
+</code></pre>
+<h4>2. <strong>並行レビュー</strong></h4>
+<pre><code>全教員が同時にレビュー開始
+観点を事前に分担して重複を避ける
+</code></pre>
+<h4>3. <strong>段階的レビュー</strong></h4>
+<pre><code>Phase 1: 構成・内容確認
+Phase 2: 詳細・表現確認
+Phase 3: 最終チェック
+</code></pre>
+<h2>Suggestion対応フロー</h2>
+<h3>教員側の注意点</h3>
+<p><strong>Suggestionを出す場合</strong>:</p>
+<ol>
+<li>修正提案後、すぐにマージしない</li>
+<li>学生のSuggestion適用を待つ</li>
+<li>学生から「Re-request review」があったら確認</li>
+<li>問題なければPRをマージ</li>
+</ol>
+<p><strong>学生とのやり取り例</strong>:</p>
+<pre><code>教員: Suggestion付きレビュー実施
+学生: Apply suggestion → Re-request review 🔄
+教員: 適用内容確認 → 承認・マージ
+</code></pre>
+<h2>レビュー用PRの活用</h2>
+<h3>自動更新の仕組み</h3>
+<p><strong>重要</strong>: レビュー用PRは<strong>自動更新</strong>されます</p>
+<pre><code>学生がPR作成 → GitHub Actions自動実行
+↓
+1. review-branchが最新内容に更新
+2. レビュー用PRに自動反映
+3. 教員に通知
+
+教員の作業: 自動更新されたレビュー用PRで全体確認
+</code></pre>
+<h3>使い分けパターン</h3>
+<pre><code>目次案段階（0th-draft）:
+→ 0th-draft PR: 構成の相談
+→ レビュー用PR: 全体方針確認
+
+執筆段階（1st-draft以降）:
+→ 各版PR: 変更点確認（効率重視）
+→ レビュー用PR: 全体整合性確認
+
+最終段階:
+→ レビュー用PR: 最終確認・品質チェック
+</code></pre>
+<h2>よくある質問</h2>
+<h3>Q: GitHubアカウントが必要ですか？</h3>
+<p>A: はい。無料アカウントで十分です。</p>
+<pre><code>アカウント作成: https://github.com
+学生リポジトリへのアクセス権限は個別に付与されます
+</code></pre>
+<h3>Q: 間違ってコメントした場合は？</h3>
+<p>A: 編集・削除が可能です。</p>
+<pre><code>1. 自分のコメントの [...] メニューをクリック
+2. [Edit] で編集、[Delete] で削除
+</code></pre>
+<h3>Q: PDFでの確認はできますか？</h3>
+<p>A: はい。GitHub Actions で自動生成されます。</p>
+<pre><code>PR画面下部の「Checks」セクションでPDF確認可能
+印刷しての確認も併用してください
+</code></pre>
+<h3>Q: 学生が修正しない場合は？</h3>
+<p>A: 段階的にアプローチしてください。</p>
+<pre><code>1. コメントでの指摘
+2. Suggestion での具体的修正案
+3. 直接指導・相談
+</code></pre>
+<h3>Q: 複数教員で矛盾する指摘をした場合は？</h3>
+<p>A: PR上で教員間協議ができます。</p>
+<pre><code>1. 他教員のコメントに返信
+2. 統一見解を決定
+3. 学生に統一見解を提示
+</code></pre>
+<h3>Q: 大幅な構成変更が必要な場合は？</h3>
+<p>A: Suggestionよりもコメントが適切です。</p>
+<pre><code>Suggestion: 軽微な修正（誤字、表現改善）
+コメント: 大幅変更、概念的修正
+</code></pre>
+<h3>Q: PRをマージすべきですか？</h3>
+<p>A: <strong>いいえ、PRはマージしません</strong>。</p>
+<pre><code>PRはマージしません:
+- 学生PRは添削専用（マージしない）
+- レビュー用PRも添削専用（マージしない）
+- 学生が対応完了後に自分でPRをクローズ
+- 全PRが履歴として保持される
+</code></pre>
+<h2>トラブルシューティング</h2>
+<h3>よくあるエラーと対処法</h3>
+<h4>1. PR画面でエラーが表示される</h4>
+<pre><code>対処法:
+1. ブラウザを再読み込み（F5）
+2. GitHubからログアウト→再ログイン
+3. 異なるブラウザで試行
+</code></pre>
+<h4>2. コメントが送信できない</h4>
+<pre><code>確認事項:
+1. インターネット接続確認
+2. GitHub の権限確認
+3. リポジトリへのアクセス権限確認
+</code></pre>
+<h4>3. PDF が表示されない</h4>
+<pre><code>対処法:
+1. GitHub Actions の実行完了を待つ
+2. PR画面をリロード
+3. ローカルでのLaTeXコンパイル確認
+</code></pre>
+<h2>効率的な添削のコツ</h2>
+<h3>1. <strong>段階的レビュー</strong></h3>
+<pre><code>1回目: 全体構成・論理性
+2回目: 内容の詳細
+3回目: 文章表現・体裁
+</code></pre>
+<h3>2. <strong>優先順位付け</strong></h3>
+<pre><code>Critical: 研究の根幹に関わる問題
+Major: 論文の質に大きく影響
+Minor: 細かな改善点
+</code></pre>
+<h3>3. <strong>建設的フィードバック</strong></h3>
+<pre><code>問題指摘 + 改善方向の提示
+具体例の提示
+参考文献の紹介
+</code></pre>
+<h3>4. <strong>学生のモチベーション維持</strong></h3>
+<pre><code>良い点も積極的に評価
+段階的な成長を認める
+最終目標を常に意識させる
+</code></pre>
+<h2>まとめ</h2>
+<p>GitHub PRでの添削は、従来の方法と比べて以下のメリットがあります：</p>
+<ul>
+<li>✅ <strong>変更履歴の完全な追跡</strong></li>
+<li>✅ <strong>複数教員での効率的な協力</strong></li>
+<li>✅ <strong>学生の並行作業支援</strong></li>
+<li>✅ <strong>自動化による作業効率向上</strong></li>
+</ul>
+<p>最初は操作に慣れが必要ですが、慣れると非常に効率的な添削が可能になります。
+不明な点があれば、遠慮なく smkwlabML で質問してください。</p>
+<hr />
+<h2>参考資料</h2>
+<ul>
+<li><a href="TEACHER-GUIDE.md">TEACHER-GUIDE.md</a>: 技術的詳細・上級操作</li>
+<li><a href="STUDENT-GUIDE.md">STUDENT-GUIDE.md</a>: 学生向け操作手順</li>
+<li>GitHub PR操作: https://docs.github.com/ja/pull-requests</li>
+</ul>
+<h2>サポート</h2>
+<p>質問・トラブル時の連絡先: smkwlabML</p>
+
+</body>
+</html>
