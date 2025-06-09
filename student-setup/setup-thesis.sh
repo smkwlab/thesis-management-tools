@@ -17,9 +17,9 @@ if ! gh auth status &>/dev/null; then
     echo ""
     echo "=== ブラウザ認証手順 ==="
     echo "1. ブラウザで https://github.com/login/device が開いているはずです"
-    echo "2. ${GREEN}Continue${NC}ボタンをクリック"
-    echo "3. 以下の '! First copy your one-time code: XXXX-XXXX' の ${YELLOW}XXXX-XXXX${NC} をブラウザに入力"
-    echo "4. ${GREEN}Authorize github${NC} ボタンをクリックする"
+    echo -e "2. ${GREEN}Continue${NC} ボタンをクリック"
+    echo -e "3. 以下の '! First copy your one-time code: XXXX-XXXX' の ${YELLOW}XXXX-XXXX${NC} をブラウザに入力"
+    echo -e "4. ${GREEN}Authorize github${NC} ボタンをクリックする"
     echo ""
 
     if echo -e "Y\n" | gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key; then
