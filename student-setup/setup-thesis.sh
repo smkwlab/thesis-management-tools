@@ -23,20 +23,24 @@ else
 fi
 echo ""
 
-# GitHub認証トークンの確認
-if [ -z "$GITHUB_TOKEN" ]; then
-    echo -e "${RED}エラー: GITHUB_TOKEN が設定されていません${NC}"
+# GitHub認証
+echo "GitHub認証を確認中..."
+if ! gh auth status &>/dev/null; then
+    echo -e "${YELLOW}GitHub認証が必要です${NC}"
     echo ""
-    echo "以下の手順でトークンを作成してください:"
-    echo "1. https://github.com/settings/tokens/new を開く"
-    echo "2. 'repo' スコープを選択"
-    echo "3. 'Generate token' をクリック"
-    echo "4. トークンをコピー"
+    echo "ブラウザが開きますので、GitHubアカウントでログインしてください"
+    echo "認証を許可すると、自動的にセットアップが続行されます"
     echo ""
-    echo "その後、以下のコマンドで再実行:"
-    echo "  Windows: docker run -e GITHUB_TOKEN=YOUR_TOKEN ..."
-    echo "  macOS:   docker run -e GITHUB_TOKEN=YOUR_TOKEN ..."
-    exit 1
+    
+    # 対話的認証を実行
+    if gh auth login --hostname github.com --protocol https --web; then
+        echo -e "${GREEN}✓ GitHub認証完了${NC}"
+    else
+        echo -e "${RED}エラー: GitHub認証に失敗しました${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✓ GitHub認証済み${NC}"
 fi
 
 # 組織/ユーザーの設定

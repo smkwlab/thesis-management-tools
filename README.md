@@ -12,15 +12,28 @@ GitHub を使った効率的な論文指導をサポートします。
 
 ## 🎓 学生の方へ
 
-**ブラウザだけで論文リポジトリを作成できます！**
+**論文執筆用リポジトリの作成方法**
 
-👉 **[学生向けガイド](docs/STUDENT-WORKFLOW-GUIDE.md)**
+### 📋 セットアップスクリプト使用（推奨）
+Docker環境で簡単にリポジトリを作成できます：
 
-### クイックスタート
-1. [ここをクリック](https://github.com/smkwlab/thesis-management-tools/actions/workflows/student-repo-setup.yml)
-2. 「Run workflow」をクリック
-3. 学籍番号を入力して実行
-4. 完了後、作成されたリポジトリで論文執筆開始！
+```bash
+docker run --rm -it \
+  ghcr.io/cli/cli:latest \
+  bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-thesis.sh)"
+```
+
+**実行手順:**
+1. 上記コマンドを実行
+2. GitHub認証画面が開くので、あなたのアカウントでログイン
+3. 学籍番号を入力
+4. 自動でリポジトリ作成・セットアップ完了
+
+### 📚 手動テンプレート使用
+1. [sotsuron-template](https://github.com/smkwlab/sotsuron-template) にアクセス
+2. 「Use this template」をクリック
+3. リポジトリ名を `学籍番号-sotsuron` 形式で入力
+4. 手動でLaTeX環境をセットアップ
 
 ## 📁 構成
 

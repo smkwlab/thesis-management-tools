@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>README.html</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+
+</head>
+
+<body>
+
+<h1>Thesis Management Tools</h1>
+<p>論文執筆ワークフローの管理ツールとガイドドキュメント集です。
+GitHub を使った効率的な論文指導をサポートします。</p>
+<h2>対象ユーザー</h2>
+<ul>
+<li><strong>学生</strong>: 論文執筆・提出</li>
+<li><strong>教員</strong>: 論文添削・指導</li>
+<li><strong>管理者</strong>: 学生リポジトリの一括作成・管理</li>
+<li><strong>TA・先輩</strong>: 副指導・レビュー支援</li>
+</ul>
+<h2>🎓 学生の方へ</h2>
+<p><strong>ブラウザだけで論文リポジトリを作成できます！</strong></p>
+<p>👉 <strong><a href="docs/STUDENT-WORKFLOW-GUIDE.md">学生向けガイド</a></strong></p>
+<h3>クイックスタート</h3>
+<ol>
+<li><a href="https://github.com/smkwlab/thesis-management-tools/actions/workflows/student-repo-setup.yml">ここをクリック</a></li>
+<li>「Run workflow」をクリック</li>
+<li>学籍番号を入力して実行</li>
+<li>完了後、作成されたリポジトリで論文執筆開始！</li>
+</ol>
+<h2>📁 構成</h2>
+<h3><code>docs/</code> - ガイドドキュメント</h3>
+<ul>
+<li>
+<p><strong><a href="docs/TEACHER-GUIDE.md">TEACHER-GUIDE.md</a></strong>: 教員向け添削・管理ガイド</p>
+<ul>
+<li>レビューワークフローの詳細</li>
+<li>複数教員での協力添削</li>
+<li>GitHub Actions 自動化の活用</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="docs/PR-REVIEW-GUIDE.md">PR-REVIEW-GUIDE.md</a></strong>: GitHub PR 初心者向け添削ガイド</p>
+<ul>
+<li>PR の基本概念</li>
+<li>コメント・Suggestion の使い方</li>
+<li>複数教員での効率的な連携</li>
+</ul>
+</li>
+</ul>
+<h3><code>scripts/</code> - 運用ツール</h3>
+<ul>
+<li>
+<p><strong><a href="scripts/create-student-repos.sh">create-student-repos.sh</a></strong>: 学生リポジトリ一括作成</p>
+<ul>
+<li>テンプレートからの自動生成</li>
+<li>初期ブランチ設定</li>
+<li>LaTeX devcontainer 自動追加</li>
+</ul>
+</li>
+<li>
+<p><strong><a href="scripts/update-review-branch.sh">update-review-branch.sh</a></strong>: レビューブランチ手動更新（非推奨）</p>
+<ul>
+<li>GitHub Actions 障害時の緊急用</li>
+<li>トラブルシューティング用</li>
+</ul>
+</li>
+</ul>
+<h2>🚀 クイックスタート</h2>
+<h3>1. 教員・管理者の初期設定</h3>
+<pre><code class="language-bash"># このリポジトリをクローン
+git clone https://github.com/smkwlab/thesis-management-tools.git
+cd thesis-management-tools
+
+# GitHub CLI の認証確認
+gh auth status
+
+# 学生リポジトリを一括作成
+./scripts/create-student-repos.sh k21rs001 k21rs002 k21gjk01
+</code></pre>
+<h3>2. 添削ワークフローの開始</h3>
+<ol>
+<li>
+<p><strong>学生がPR作成</strong> → 自動的に以下が実行:</p>
+<ul>
+<li>次稿ブランチ自動作成</li>
+<li>レビューブランチ自動更新</li>
+<li>レビュー用PR自動更新</li>
+</ul>
+</li>
+<li>
+<p><strong>教員が添削実施</strong>:</p>
+<ul>
+<li>個別PR: 差分レビュー</li>
+<li>レビュー用PR: 全体レビュー</li>
+</ul>
+</li>
+<li>
+<p><strong>学生がPRをクローズ</strong>:</p>
+<ul>
+<li>添削対応完了後、自分でPRをクローズ</li>
+<li>並行して次稿執筆継続可能</li>
+</ul>
+</li>
+<li>
+<p><strong>PRはマージしません</strong>: 添削専用として活用、学生が自分でクローズ</p>
+</li>
+</ol>
+<h2>📚 対応テンプレート</h2>
+<p>このツールセットは以下のテンプレートで使用できます:</p>
+<ul>
+<li><strong><a href="https://github.com/smkwlab/sotsuron-template">sotsuron-template</a></strong>: 卒業論文用</li>
+<li><strong><a href="https://github.com/smkwlab/master-template">master-template</a></strong>: 修士論文用</li>
+</ul>
+<h2>🔧 主要機能</h2>
+<h3>完全自動化ワークフロー</h3>
+<ul>
+<li>✅ <strong>次稿ブランチ自動作成</strong>: 1st-draft → 2nd-draft → ... → 20th-draft</li>
+<li>✅ <strong>概要ブランチ自動作成</strong>: abstract-1st → abstract-2nd → ...</li>
+<li>✅ <strong>レビューブランチ自動更新</strong>: PR作成時に自動同期</li>
+<li>✅ <strong>並行執筆サポート</strong>: 添削完了を待たずに次稿執筆開始</li>
+</ul>
+<h3>効率的な添削システム</h3>
+<ul>
+<li>✅ <strong>差分レビュー</strong>: 変更点のみを効率的に確認</li>
+<li>✅ <strong>全体レビュー</strong>: 論文全体の構成・整合性確認</li>
+<li>✅ <strong>複数教員対応</strong>: 役割分担・並行レビュー</li>
+<li>✅ <strong>Suggestion機能</strong>: 具体的な修正提案</li>
+</ul>
+<h3>学生体験の向上</h3>
+<ul>
+<li>✅ <strong>GitHub Desktop</strong>: Git知識不要の簡単操作</li>
+<li>✅ <strong>自動化</strong>: ブランチ作成・管理の自動化</li>
+<li>✅ <strong>明確な手順</strong>: ステップバイステップガイド</li>
+<li>✅ <strong>エラー回避</strong>: 自動化によるヒューマンエラー削減</li>
+</ul>
+<h2>📖 詳細ガイド</h2>
+<h3>教員向け</h3>
+<ol>
+<li>
+<p><strong>初めてGitHub PRを使う場合</strong>
+→ <a href="docs/PR-REVIEW-GUIDE.md">PR-REVIEW-GUIDE.md</a></p>
+</li>
+<li>
+<p><strong>技術的な詳細・上級操作</strong>
+→ <a href="docs/TEACHER-GUIDE.md">TEACHER-GUIDE.md</a></p>
+</li>
+</ol>
+<h3>学生向け</h3>
+<p><strong>論文執筆ガイドは各テンプレートリポジトリにあります</strong>:</p>
+<ul>
+<li><a href="https://github.com/smkwlab/sotsuron-template">sotsuron-template</a> - 卒業論文用</li>
+<li><a href="https://github.com/smkwlab/master-template">master-template</a> - 修士論文用</li>
+</ul>
+<h2>🛠️ システム要件</h2>
+<h3>教員・管理者</h3>
+<ul>
+<li><strong>GitHub CLI</strong>: リポジトリ作成・管理用</li>
+<li><strong>Git</strong>: バージョン管理</li>
+<li><strong>Bash</strong>: スクリプト実行環境</li>
+</ul>
+<h3>学生</h3>
+<ul>
+<li><strong>GitHub Desktop</strong>: ブランチ操作・コミット</li>
+<li><strong>VS Code + LaTeX Workshop</strong>: 論文執筆環境</li>
+<li><strong>Docker</strong>: devcontainer環境（自動設定）</li>
+</ul>
+<h2>🔍 トラブルシューティング</h2>
+<h3>よくある問題</h3>
+<h4>GitHub Actions が動作しない</h4>
+<pre><code class="language-bash"># ワークフロー実行状況確認
+gh run list --repo smkwlab/{student-repo}
+
+# 緊急時の手動更新
+./scripts/update-review-branch.sh {repo-name} {branch-name}
+</code></pre>
+<h4>ブランチ作成が失敗する</h4>
+<pre><code class="language-bash"># リポジトリ権限確認
+gh repo view smkwlab/{student-repo}
+
+# 手動ブランチ作成
+git checkout -b {next-branch} {base-branch}
+git push -u origin {next-branch}
+</code></pre>
+<h4>複数教員での競合</h4>
+<ul>
+<li><a href="docs/TEACHER-GUIDE.md">TEACHER-GUIDE.md</a> の「複数人レビューの運用方法」を参照</li>
+</ul>
+<h2>🤝 コントリビューション</h2>
+<p>改善提案・バグ報告は Issues または Pull Request でお知らせください。</p>
+<h3>開発・テスト環境</h3>
+<pre><code class="language-bash"># テスト用リポジトリ作成
+./scripts/create-student-repos.sh test-student
+
+# 動作確認
+cd test-student-sotsuron
+# 通常の学生ワークフローをテスト
+</code></pre>
+<h2>📊 使用状況・統計</h2>
+<pre><code class="language-bash"># 作成済みリポジトリ一覧
+gh repo list smkwlab --topic thesis
+
+# アクティブなPR確認
+gh search prs --owner smkwlab --state open
+</code></pre>
+<h2>📞 サポート</h2>
+<p>質問・問題がある場合:</p>
+<ol>
+<li><strong>ドキュメント確認</strong>: 該当するガイドを参照</li>
+<li><strong>Issues作成</strong>: このリポジトリでIssue作成</li>
+<li><strong>ML連絡</strong>: smkwlabML で質問共有</li>
+</ol>
+<h2>📝 更新履歴</h2>
+<ul>
+<li><strong>v2.0.0</strong> (2024/06): GitHub Actions完全自動化</li>
+<li><strong>v1.5.0</strong> (2024/05): 概要ワークフロー追加</li>
+<li><strong>v1.0.0</strong> (2024/04): 基本システム完成</li>
+</ul>
+<h2>📄 ライセンス</h2>
+<p>MIT License - 教育・研究目的での自由な利用を推奨</p>
+<hr />
+<p><strong>関連リポジトリ</strong>:</p>
+<ul>
+<li><a href="https://github.com/smkwlab/sotsuron-template">sotsuron-template</a> - 卒業論文テンプレート</li>
+<li><a href="https://github.com/smkwlab/master-template">master-template</a> - 修士論文テンプレート</li>
+<li><a href="https://github.com/smkwlab/latex-environment">latex-environment</a> - LaTeX開発環境</li>
+</ul>
+
+</body>
+</html>
