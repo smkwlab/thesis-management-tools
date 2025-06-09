@@ -4,8 +4,30 @@
 
 set -e
 
+# デバッグモード（環境変数 DEBUG=1 で有効化）
+if [ "${DEBUG:-0}" = "1" ]; then
+    set -x
+    echo "🔍 デバッグモード有効"
+fi
+
 # 引数または環境変数から学籍番号を取得
 STUDENT_ID="${1:-$STUDENT_ID}"
+
+# 一時ディレクトリ変数（グローバルスコープ）
+TEMP_DIR=""
+
+# クリーンアップ関数
+cleanup() {
+    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+        echo "🧹 クリーンアップ中..."
+        rm -rf "$TEMP_DIR"
+    fi
+    # Dockerイメージも削除
+    docker rmi thesis-setup-temp 2>/dev/null || true
+}
+
+# 終了時・エラー時・割り込み時にクリーンアップ
+trap cleanup EXIT ERR INT TERM
 
 echo "🎓 論文リポジトリ セットアップ"
 echo "=============================================="
@@ -52,11 +74,17 @@ fi
 cd create-repo
 
 echo "🔨 Dockerイメージをビルド中..."
-if ! docker build -t thesis-setup-temp . 2>/dev/null; then
-    echo "❌ Dockerイメージのビルドに失敗しました"
-    echo "詳細:"
+if [ "${DEBUG:-0}" = "1" ]; then
+    # デバッグモードでは出力を表示
     docker build -t thesis-setup-temp .
-    exit 1
+else
+    # 通常モードではエラー時のみ詳細表示
+    if ! docker build -t thesis-setup-temp . 2>/dev/null; then
+        echo "❌ Dockerイメージのビルドに失敗しました"
+        echo "詳細エラー情報:"
+        docker build -t thesis-setup-temp .
+        exit 1
+    fi
 fi
 
 echo "🚀 セットアップ実行中..."
@@ -103,9 +131,5 @@ else
     docker run --rm -it thesis-setup-temp
 fi
 
-# クリーンアップ
-echo "🧹 クリーンアップ中..."
-rm -rf "$TEMP_DIR"
-docker rmi thesis-setup-temp 2>/dev/null || true
-
+# 成功メッセージ（クリーンアップは trap で自動実行）
 echo "🎉 セットアップ完了！"

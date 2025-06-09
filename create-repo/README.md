@@ -31,6 +31,12 @@ A: 組織の管理者に招待を依頼するか、個人アカウントに作�
 TARGET_ORG=あなたのユーザー名 /bin/bash -c "$(curl -fsSL ...)"
 ```
 
+### Q: エラーの詳細を確認したい
+A: デバッグモードで実行すると詳細な情報が表示されます：
+```bash
+DEBUG=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+```
+
 ## セットアップ後の作業
 
 リポジトリ作成後の詳しい手順は、作成されたリポジトリ内の README を参照してください。
