@@ -34,9 +34,9 @@ if ! gh auth status &>/dev/null; then
     echo "https://github.com/login/device"
     echo "2. Continue ボタンをクリックする"
     echo "3. 以下の XXXX-XXXX の文字をブラウザに入力する"
-    echo "4. Authorized ボタンをクリックする"
+    echo "4. Authorize github ボタンをクリックする"
 
-    if gh auth login --hostname github.com --git-protocol https --web; then
+    if echo -e "Y\n" | gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key; then
         echo -e "${GREEN}✓ GitHub認証完了${NC}"
     else
         echo -e "${RED}エラー: GitHub認証に失敗しました${NC}"
