@@ -30,14 +30,12 @@ if ! gh auth status &>/dev/null; then
     echo -e "${YELLOW}GitHub認証が必要です${NC}"
     echo ""
     echo "=== 手動ブラウザ認証 ==="
-    echo "1. 以下に表示されるワンタイムコードをメモ"
-    echo "2. https://github.com/login/device をブラウザで開く"
-    echo "3. コードを入力して認証完了"
-    echo "4. 認証後、Enterキーを押して続行"
-    echo ""
-    echo "準備ができたらEnterキーを押してください..."
-    read
-    
+    echo "1. 以下のページをブラウザで開く"
+    echo "https://github.com/login/device"
+    echo "2. Continue ボタンをクリックする"
+    echo "3. 以下の XXXX-XXXX の文字をブラウザに入力する"
+    echo "4. Authorized ボタンをクリックする"
+
     if gh auth login --hostname github.com --git-protocol https --web; then
         echo -e "${GREEN}✓ GitHub認証完了${NC}"
     else
