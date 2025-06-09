@@ -65,7 +65,7 @@ fi
 cd "$TEMP_DIR"
 
 # ブランチ指定がある場合は切り替え
-BRANCH="${THESIS_BRANCH:-feature/docker-oneliner-setup}"
+BRANCH="${THESIS_BRANCH:-main}"
 if ! git checkout "$BRANCH" 2>/dev/null; then
     echo "⚠️ ブランチ $BRANCH が見つかりません。mainブランチを使用します。"
     git checkout main 2>/dev/null || true
