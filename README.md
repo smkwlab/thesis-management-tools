@@ -21,19 +21,7 @@ GitHub を使った効率的な論文指導をサポートします。
 - macOS: Docker Desktop
 - GitHub CLI は不要（Docker内で自動インストール）
 
-#### 超簡単ワンライナー実行
-
-```bash
-docker run --rm -it $(docker build -q https://github.com/smkwlab/thesis-management-tools.git#main:student-setup)
-```
-
-学籍番号を直接指定：
-
-```bash
-docker run --rm -it $(docker build -q https://github.com/smkwlab/thesis-management-tools.git#main:student-setup) k21rs001
-```
-
-#### さらに簡単なワンライナー（推奨）
+#### 超簡単ワンライナー実行（推奨）
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh | bash
