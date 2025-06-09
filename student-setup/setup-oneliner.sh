@@ -66,16 +66,24 @@ cd "$ORIGINAL_DIR"
 if [ -n "$STUDENT_ID" ]; then
     if command -v winpty &> /dev/null; then
         # Windows/GitBash環境
-        winpty docker run --rm -it thesis-setup-temp "$STUDENT_ID"
-    else
+        winpty docker run --rm -i thesis-setup-temp "$STUDENT_ID" < /dev/tty
+    elif [ -t 0 ]; then
+        # TTY環境
         docker run --rm -it thesis-setup-temp "$STUDENT_ID"
+    else
+        # パイプ環境（TTYなし）
+        docker run --rm -i thesis-setup-temp "$STUDENT_ID" < /dev/tty
     fi
 else
     if command -v winpty &> /dev/null; then
         # Windows/GitBash環境
-        winpty docker run --rm -it thesis-setup-temp
-    else
+        winpty docker run --rm -i thesis-setup-temp < /dev/tty
+    elif [ -t 0 ]; then
+        # TTY環境
         docker run --rm -it thesis-setup-temp
+    else
+        # パイプ環境（TTYなし）
+        docker run --rm -i thesis-setup-temp < /dev/tty
     fi
 fi
 
