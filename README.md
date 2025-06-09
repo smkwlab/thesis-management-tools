@@ -5,9 +5,36 @@ GitHub を使った効率的な論文指導をサポートします。
 
 ## 対象ユーザー
 
+- **学生**: 論文執筆・提出
 - **教員**: 論文添削・指導
-- **管理者**: 学生リポジトリの一括作成・管理
+- **管理者**: レビューワークフロー管理
 - **TA・先輩**: 副指導・レビュー支援
+
+## 🎓 学生の方へ
+
+**論文執筆用リポジトリの作成方法**
+
+### 📋 セットアップスクリプトを使用
+
+**前提条件:**
+- Windows: WSL + Docker Desktop
+- macOS: Docker Desktop
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+```
+
+**実行手順:**
+1. 上記コマンドを実行
+2. GitHub認証：ワンタイムコードをブラウザで入力
+3. 学籍番号を入力
+4. 自動でリポジトリ作成・セットアップ完了
+
+### 📚 手動テンプレート使用
+1. [sotsuron-template](https://github.com/smkwlab/sotsuron-template) にアクセス
+2. 「Use this template」をクリック
+3. リポジトリ名を `学籍番号-sotsuron` 形式で入力
+4. 手動でLaTeX環境をセットアップ
 
 ## 📁 構成
 
@@ -26,29 +53,31 @@ GitHub を使った効率的な論文指導をサポートします。
 
 ### `scripts/` - 運用ツール
 
-- **[create-student-repos.sh](scripts/create-student-repos.sh)**: 学生リポジトリ一括作成
-  - テンプレートからの自動生成
-  - 初期ブランチ設定
-  - LaTeX devcontainer 自動追加
-
-- **[update-review-branch.sh](scripts/update-review-branch.sh)**: レビューブランチ手動更新（非推奨）
+- **[update-review-branch.sh](scripts/update-review-branch.sh)**: レビューブランチ手動更新（緊急用）
   - GitHub Actions 障害時の緊急用
   - トラブルシューティング用
 
+### `create-repo/` - リポジトリ作成ツール
+
+- **[setup.sh](create-repo/setup.sh)**: リポジトリ作成スクリプト
+  - Docker-based zero-dependency setup
+  - クロスプラットフォーム対応
+  - ブラウザ認証統合
+
+- **[main.sh](create-repo/main.sh)**: Docker内実行メインスクリプト
+  - GitHub認証・リポジトリ作成
+  - LaTeX環境自動セットアップ
+  - ブランチ構造初期化
+
 ## 🚀 クイックスタート
 
-### 1. 教員・管理者の初期設定
+### 1. 学生のリポジトリ作成
+
+学生自身がスクリプトを使って論文リポジトリを作成：
 
 ```bash
-# このリポジトリをクローン
-git clone https://github.com/smkwlab/thesis-management-tools.git
-cd thesis-management-tools
-
-# GitHub CLI の認証確認
-gh auth status
-
-# 学生リポジトリを一括作成
-./scripts/create-student-repos.sh k21rs001 k21rs002 k21gjk01
+# リポジトリ作成スクリプト実行
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
 ### 2. 添削ワークフローの開始
@@ -72,8 +101,7 @@ gh auth status
 
 このツールセットは以下のテンプレートで使用できます:
 
-- **[sotsuron-template](https://github.com/smkwlab/sotsuron-template)**: 卒業論文用
-- **[master-template](https://github.com/smkwlab/master-template)**: 修士論文用
+- **[sotsuron-template](https://github.com/smkwlab/sotsuron-template)**: 卒業論文・修士論文用
 
 ## 🔧 主要機能
 
@@ -111,8 +139,7 @@ gh auth status
 ### 学生向け
 
 **論文執筆ガイドは各テンプレートリポジトリにあります**:
-- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 卒業論文用
-- [master-template](https://github.com/smkwlab/master-template) - 修士論文用
+- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 卒業論文・修士論文用
 
 ## 🛠️ システム要件
 
@@ -200,6 +227,5 @@ MIT License - 教育・研究目的での自由な利用を推奨
 ---
 
 **関連リポジトリ**:
-- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 卒業論文テンプレート
-- [master-template](https://github.com/smkwlab/master-template) - 修士論文テンプレート
+- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 論文テンプレート
 - [latex-environment](https://github.com/smkwlab/latex-environment) - LaTeX開発環境
