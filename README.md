@@ -24,13 +24,13 @@ GitHub を使った効率的な論文指導をサポートします。
 #### 超簡単ワンライナー実行（推奨）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh | bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh)"
 ```
 
 学籍番号指定：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh | bash -s k21rs001
+STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh)"
 ```
 
 **実行手順:**

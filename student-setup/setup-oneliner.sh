@@ -4,7 +4,8 @@
 
 set -e
 
-STUDENT_ID="$1"
+# 引数または環境変数から学籍番号を取得
+STUDENT_ID="${1:-$STUDENT_ID}"
 
 echo "🎓 論文リポジトリ ワンライナーセットアップ"
 echo "=============================================="
@@ -63,28 +64,11 @@ echo "🚀 セットアップ実行中..."
 # 元のディレクトリに戻って実行
 cd "$ORIGINAL_DIR"
 
+# Docker実行（TTY対応）
 if [ -n "$STUDENT_ID" ]; then
-    if command -v winpty &> /dev/null; then
-        # Windows/GitBash環境
-        winpty docker run --rm -i thesis-setup-temp "$STUDENT_ID" < /dev/tty
-    elif [ -t 0 ]; then
-        # TTY環境
-        docker run --rm -it thesis-setup-temp "$STUDENT_ID"
-    else
-        # パイプ環境（TTYなし）
-        docker run --rm -i thesis-setup-temp "$STUDENT_ID" < /dev/tty
-    fi
+    docker run --rm -it thesis-setup-temp "$STUDENT_ID"
 else
-    if command -v winpty &> /dev/null; then
-        # Windows/GitBash環境
-        winpty docker run --rm -i thesis-setup-temp < /dev/tty
-    elif [ -t 0 ]; then
-        # TTY環境
-        docker run --rm -it thesis-setup-temp
-    else
-        # パイプ環境（TTYなし）
-        docker run --rm -i thesis-setup-temp < /dev/tty
-    fi
+    docker run --rm -it thesis-setup-temp
 fi
 
 # クリーンアップ
