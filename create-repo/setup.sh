@@ -1,6 +1,6 @@
 #!/bin/bash
-# 論文リポジトリ作成ワンライナー
-# 使用例: curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh | bash -s k21rs001
+# 論文リポジトリ作成スクリプト
+# 使用例: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 
 set -e
 
@@ -49,7 +49,7 @@ if ! git checkout "$BRANCH" 2>/dev/null; then
     git checkout main 2>/dev/null || true
 fi
 
-cd student-setup
+cd create-repo
 
 echo "🔨 Dockerイメージをビルド中..."
 if ! docker build -t thesis-setup-temp . 2>/dev/null; then

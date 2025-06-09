@@ -18,7 +18,7 @@ RUN type -p curl >/dev/null || (apt update && apt install curl -y) \
     && apt install gh -y
 
 # セットアップスクリプトをコピー
-COPY setup-thesis.sh /usr/local/bin/setup-thesis
+COPY main.sh /usr/local/bin/setup-thesis
 RUN chmod +x /usr/local/bin/setup-thesis
 
 # 作業ディレクトリ

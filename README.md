@@ -14,29 +14,20 @@ GitHub を使った効率的な論文指導をサポートします。
 
 **論文執筆用リポジトリの作成方法**
 
-### 📋 セットアップスクリプト使用（推奨）
+### 📋 セットアップスクリプトを使用
 
 **前提条件:**
 - Windows: WSL + Docker Desktop
 - macOS: Docker Desktop
-- GitHub CLI は不要（Docker内で自動インストール）
-
-#### 超簡単ワンライナー実行（推奨）
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh)"
-```
-
-学籍番号指定：
-
-```bash
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
 **実行手順:**
 1. 上記コマンドを実行
 2. GitHub認証：ワンタイムコードをブラウザで入力
-3. 学籍番号を入力（未指定の場合）
+3. 学籍番号を入力
 4. 自動でリポジトリ作成・セットアップ完了
 
 ### 📚 手動テンプレート使用
@@ -66,14 +57,14 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
   - GitHub Actions 障害時の緊急用
   - トラブルシューティング用
 
-### `student-setup/` - 学生用セットアップ
+### `create-repo/` - リポジトリ作成ツール
 
-- **[setup-oneliner.sh](student-setup/setup-oneliner.sh)**: ワンライナー実行エントリーポイント
+- **[setup.sh](create-repo/setup.sh)**: リポジトリ作成スクリプト
   - Docker-based zero-dependency setup
   - クロスプラットフォーム対応
   - ブラウザ認証統合
 
-- **[setup-thesis.sh](student-setup/setup-thesis.sh)**: Docker内実行メインスクリプト
+- **[main.sh](create-repo/main.sh)**: Docker内実行メインスクリプト
   - GitHub認証・リポジトリ作成
   - LaTeX環境自動セットアップ
   - ブランチ構造初期化
@@ -82,11 +73,11 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 
 ### 1. 学生のリポジトリ作成
 
-学生自身がDocker-basedセットアップで論文リポジトリを作成：
+学生自身がスクリプトを使って論文リポジトリを作成：
 
 ```bash
-# ワンライナー実行
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh)"
+# リポジトリ作成スクリプト実行
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
 ### 2. 添削ワークフローの開始
@@ -110,8 +101,7 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 
 このツールセットは以下のテンプレートで使用できます:
 
-- **[sotsuron-template](https://github.com/smkwlab/sotsuron-template)**: 卒業論文用
-- **[master-template](https://github.com/smkwlab/master-template)**: 修士論文用
+- **[sotsuron-template](https://github.com/smkwlab/sotsuron-template)**: 卒業論文・修士論文用
 
 ## 🔧 主要機能
 
@@ -149,8 +139,7 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 ### 学生向け
 
 **論文執筆ガイドは各テンプレートリポジトリにあります**:
-- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 卒業論文用
-- [master-template](https://github.com/smkwlab/master-template) - 修士論文用
+- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 卒業論文・修士論文用
 
 ## 🛠️ システム要件
 
@@ -238,6 +227,5 @@ MIT License - 教育・研究目的での自由な利用を推奨
 ---
 
 **関連リポジトリ**:
-- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 卒業論文テンプレート
-- [master-template](https://github.com/smkwlab/master-template) - 修士論文テンプレート
+- [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 論文テンプレート
 - [latex-environment](https://github.com/smkwlab/latex-environment) - LaTeX開発環境
