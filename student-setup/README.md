@@ -1,49 +1,42 @@
-# 論文リポジトリ 簡単セットアップ
+# 論文リポジトリ セットアップ
 
-## セットアップ方法
+学生が自分のGitHub認証で論文リポジトリを作成するためのDockerベースのツールです。
 
-### 方法1: 対話形式で実行（最も簡単）
+## 使用方法
 
-**Windows (PowerShell) / macOS (Terminal)**:
+### 1. Dockerイメージをビルド
+
 ```bash
-docker run -it --rm smkwlab/thesis-setup:latest
+git clone https://github.com/smkwlab/thesis-management-tools.git
+cd thesis-management-tools/student-setup
+docker build -t thesis-setup .
 ```
 
-実行後、学籍番号の入力を求められます。
-
-### 方法2: 学籍番号を直接指定
+### 2. リポジトリ作成
 
 ```bash
-docker run -it --rm smkwlab/thesis-setup:latest k21rs001
-```
-※ `k21rs001` を自分の学籍番号に変更してください
+# 対話形式で実行
+docker run --rm -it thesis-setup
 
-初回実行時は GitHub にログインする必要があります。
-
-### 方法3: 高度な設定
-
-#### 組織を指定してリポジトリ作成
-```bash
-docker run -it --rm -e TARGET_ORG=my-university smkwlab/thesis-setup:latest
+# 学籍番号を直接指定
+docker run --rm -it thesis-setup k21rs001
 ```
 
-#### テンプレートリポジトリを指定
-```bash
-docker run -it --rm -e TEMPLATE_REPO=my-org/my-template smkwlab/thesis-setup:latest
-```
+### 3. GitHub認証
 
-#### GitHub Token を使用（2回目以降）
-```bash
-docker run -it --rm -e GITHUB_TOKEN=YOUR_TOKEN smkwlab/thesis-setup:latest k21rs001
-```
+初回実行時はGitHub認証が必要です：
+1. ワンタイムコードをメモ
+2. https://github.com/login/device をブラウザで開く
+3. コードを入力して認証完了
 
-#### 複数の環境変数を組み合わせ
+### 高度な設定
+
 ```bash
-docker run -it --rm \
-  -e TARGET_ORG=my-university \
-  -e TEMPLATE_REPO=my-university/thesis-template \
-  -e GITHUB_TOKEN=YOUR_TOKEN \
-  smkwlab/thesis-setup:latest k21rs001
+# 組織を指定
+docker run --rm -it -e TARGET_ORG=my-org thesis-setup k21rs001
+
+# テンプレートリポジトリを指定
+docker run --rm -it -e TEMPLATE_REPO=my-org/my-template thesis-setup k21rs001
 ```
 
 ## よくある質問

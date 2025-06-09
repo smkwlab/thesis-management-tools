@@ -1,5 +1,6 @@
 #!/bin/bash
-# Docker内で実行される論文セットアップスクリプト
+# 論文リポジトリセットアップスクリプト
+# ローカル環境またはDocker内で実行
 
 set -e
 
@@ -28,12 +29,16 @@ echo "GitHub認証を確認中..."
 if ! gh auth status &>/dev/null; then
     echo -e "${YELLOW}GitHub認証が必要です${NC}"
     echo ""
-    echo "ブラウザが開きますので、GitHubアカウントでログインしてください"
-    echo "認証を許可すると、自動的にセットアップが続行されます"
+    echo "=== 手動ブラウザ認証 ==="
+    echo "1. 以下に表示されるワンタイムコードをメモ"
+    echo "2. https://github.com/login/device をブラウザで開く"
+    echo "3. コードを入力して認証完了"
+    echo "4. 認証後、Enterキーを押して続行"
     echo ""
+    echo "準備ができたらEnterキーを押してください..."
+    read
     
-    # 対話的認証を実行
-    if gh auth login --hostname github.com --protocol https --web; then
+    if gh auth login --hostname github.com --git-protocol https --web; then
         echo -e "${GREEN}✓ GitHub認証完了${NC}"
     else
         echo -e "${RED}エラー: GitHub認証に失敗しました${NC}"
@@ -127,6 +132,22 @@ else
 fi
 
 cd "$REPO_NAME"
+
+# Git設定
+echo "Git設定を確認中..."
+GITHUB_EMAIL=$(gh api user --jq .email)
+GITHUB_NAME=$(gh api user --jq .name)
+
+if [ "$GITHUB_EMAIL" = "null" ] || [ -z "$GITHUB_EMAIL" ]; then
+    GITHUB_EMAIL="${GITHUB_USER}@users.noreply.github.com"
+fi
+if [ "$GITHUB_NAME" = "null" ] || [ -z "$GITHUB_NAME" ]; then
+    GITHUB_NAME="$GITHUB_USER"
+fi
+
+git config user.email "$GITHUB_EMAIL"
+git config user.name "$GITHUB_NAME"
+echo -e "${GREEN}✓ Git設定完了: $GITHUB_NAME <$GITHUB_EMAIL>${NC}"
 
 # 不要なファイルを削除
 echo "テンプレートファイルを整理中..."

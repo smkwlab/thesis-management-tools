@@ -15,18 +15,40 @@ GitHub を使った効率的な論文指導をサポートします。
 **論文執筆用リポジトリの作成方法**
 
 ### 📋 セットアップスクリプト使用（推奨）
-Docker環境で簡単にリポジトリを作成できます：
+
+**前提条件:**
+- Windows: WSL + Docker Desktop
+- macOS: Docker Desktop
+- GitHub CLI は不要（Docker内で自動インストール）
+
+#### 超簡単ワンライナー実行
 
 ```bash
-docker run --rm -it \
-  ghcr.io/cli/cli:latest \
-  bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-thesis.sh)"
+docker run --rm -it $(docker build -q https://github.com/smkwlab/thesis-management-tools.git#main:student-setup)
+```
+
+学籍番号を直接指定：
+
+```bash
+docker run --rm -it $(docker build -q https://github.com/smkwlab/thesis-management-tools.git#main:student-setup) k21rs001
+```
+
+#### さらに簡単なワンライナー（推奨）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh | bash
+```
+
+学籍番号指定：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/student-setup/setup-oneliner.sh | bash -s k21rs001
 ```
 
 **実行手順:**
 1. 上記コマンドを実行
-2. GitHub認証画面が開くので、あなたのアカウントでログイン
-3. 学籍番号を入力
+2. GitHub認証：ワンタイムコードをブラウザで入力
+3. 学籍番号を入力（未指定の場合）
 4. 自動でリポジトリ作成・セットアップ完了
 
 ### 📚 手動テンプレート使用
