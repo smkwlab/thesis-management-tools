@@ -167,6 +167,11 @@ fi
 
 # 初期ブランチ構成
 echo "ブランチを設定中..."
+
+# GitHub認証情報を確認してgit credentialに設定
+echo "Git認証を設定中..."
+gh auth setup-git
+
 git checkout -b initial-empty
 git rm -rf . &>/dev/null || true
 git commit --allow-empty -m "初期状態（空のブランチ）"

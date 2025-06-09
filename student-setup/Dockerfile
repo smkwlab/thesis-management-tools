@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     bash \
     ca-certificates \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # GitHub CLI をインストール
