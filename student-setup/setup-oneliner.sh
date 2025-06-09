@@ -7,7 +7,7 @@ set -e
 # 引数または環境変数から学籍番号を取得
 STUDENT_ID="${1:-$STUDENT_ID}"
 
-echo "🎓 論文リポジトリ ワンライナーセットアップ"
+echo "🎓 論文リポジトリ セットアップ"
 echo "=============================================="
 
 # Docker の確認
@@ -96,11 +96,6 @@ elif command -v xdg-open &> /dev/null; then
 else
     echo "⚠️ ブラウザを自動で開けませんでした。手動で https://github.com/login/device を開いてください"
 fi
-
-echo ""
-echo "📋 Docker内で認証処理を開始します..."
-echo "ワンタイムコードが表示されたら、開いたブラウザページに入力してください"
-echo ""
 
 # Docker実行（TTY対応）
 if [ -n "$STUDENT_ID" ]; then

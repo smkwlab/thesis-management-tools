@@ -10,20 +10,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo "🎓 論文リポジトリセットアップツール (Docker版)"
-echo "=============================================="
-
-# 実行環境の表示
-if [ -n "$GITHUB_ACTIONS" ]; then
-    echo -e "${GREEN}🔧 実行環境: GitHub Actions${NC}"
-    echo -e "${GREEN}📁 ワークフロー: $GITHUB_WORKFLOW${NC}"
-elif [ -n "$RUNNER_OS" ]; then
-    echo -e "${GREEN}🔧 実行環境: GitHub Runner${NC}"
-else
-    echo -e "${GREEN}🔧 実行環境: ローカル Docker${NC}"
-fi
-echo ""
-
 # GitHub認証
 echo "GitHub認証を確認中..."
 if ! gh auth status &>/dev/null; then
@@ -31,9 +17,9 @@ if ! gh auth status &>/dev/null; then
     echo ""
     echo "=== ブラウザ認証手順 ==="
     echo "1. ブラウザで https://github.com/login/device が開いているはずです"
-    echo "2. Continue ボタンをクリックする"
-    echo "3. 以下の '! First copy your one-time code: XXXX-XXXX' の XXXX-XXXX をブラウザに入力する"
-    echo "4. Authorize github ボタンをクリックする"
+    echo "2. ${GREEN}Continue${NC}ボタンをクリック"
+    echo "3. 以下の '! First copy your one-time code: XXXX-XXXX' の ${YELLOW}XXXX-XXXX${NC} をブラウザに入力"
+    echo "4. ${GREEN}Authorize github${NC} ボタンをクリックする"
     echo ""
 
     if echo -e "Y\n" | gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key; then
