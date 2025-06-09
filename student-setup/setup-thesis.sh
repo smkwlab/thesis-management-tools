@@ -29,32 +29,12 @@ echo "GitHub認証を確認中..."
 if ! gh auth status &>/dev/null; then
     echo -e "${YELLOW}GitHub認証が必要です${NC}"
     echo ""
-    echo "=== 自動ブラウザ認証 ==="
-    echo "1. ブラウザが自動で開きます（開かない場合は手動で https://github.com/login/device を開く）"
+    echo "=== ブラウザ認証手順 ==="
+    echo "1. ブラウザで https://github.com/login/device が開いているはずです"
     echo "2. Continue ボタンをクリックする"
     echo "3. 以下の '! First copy your one-time code: XXXX-XXXX' の XXXX-XXXX をブラウザに入力する"
     echo "4. Authorize github ボタンをクリックする"
-    
-    # ブラウザを自動で開く
     echo ""
-    echo "🌐 ブラウザを開いています..."
-    if command -v open &> /dev/null; then
-        # macOS
-        open "https://github.com/login/device"
-    elif command -v cmd.exe &> /dev/null; then
-        # WSL
-        cmd.exe /c start "https://github.com/login/device"
-    elif command -v wslview &> /dev/null; then
-        # WSL2 with wslu
-        wslview "https://github.com/login/device"
-    elif command -v xdg-open &> /dev/null; then
-        # Linux
-        xdg-open "https://github.com/login/device"
-    else
-        echo "⚠️ ブラウザを自動で開けませんでした。手動で https://github.com/login/device を開いてください"
-    fi
-    
-    sleep 2
 
     if echo -e "Y\n" | gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key; then
         echo -e "${GREEN}✓ GitHub認証完了${NC}"

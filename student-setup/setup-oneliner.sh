@@ -64,6 +64,30 @@ echo "🚀 セットアップ実行中..."
 # 元のディレクトリに戻って実行
 cd "$ORIGINAL_DIR"
 
+# Docker実行前にブラウザを開く準備
+echo ""
+echo "🌐 GitHub認証ページを開いています..."
+if [[ "$OSTYPE" == "darwin"* ]] || command -v open &> /dev/null; then
+    # macOS
+    open "https://github.com/login/device" && echo "✅ ブラウザを開きました" || echo "❌ ブラウザ起動に失敗"
+elif command -v cmd.exe &> /dev/null; then
+    # WSL
+    cmd.exe /c start "https://github.com/login/device" && echo "✅ ブラウザを開きました" || echo "❌ ブラウザ起動に失敗"
+elif command -v wslview &> /dev/null; then
+    # WSL2 with wslu
+    wslview "https://github.com/login/device" && echo "✅ ブラウザを開きました" || echo "❌ ブラウザ起動に失敗"
+elif command -v xdg-open &> /dev/null; then
+    # Linux
+    xdg-open "https://github.com/login/device" && echo "✅ ブラウザを開きました" || echo "❌ ブラウザ起動に失敗"
+else
+    echo "⚠️ ブラウザを自動で開けませんでした。手動で https://github.com/login/device を開いてください"
+fi
+
+echo ""
+echo "📋 Docker内で認証処理を開始します..."
+echo "ワンタイムコードが表示されたら、開いたブラウザページに入力してください"
+echo ""
+
 # Docker実行（TTY対応）
 if [ -n "$STUDENT_ID" ]; then
     docker run --rm -it thesis-setup-temp "$STUDENT_ID"
