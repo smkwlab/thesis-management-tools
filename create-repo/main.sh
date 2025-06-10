@@ -24,7 +24,7 @@ if ! gh auth status &>/dev/null; then
     echo -e "4. ${GREEN}Authorize github${NC} ボタンをクリックする"
     echo ""
 
-    if echo -e "Y\n" | gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key; then
+    if echo -e "Y\n" | gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key --scopes "repo,workflow,read:org,gist"; then
         echo -e "${GREEN}✓ GitHub認証完了${NC}"
     else
         echo -e "${RED}エラー: GitHub認証に失敗しました${NC}"
@@ -149,6 +149,12 @@ fi
 echo "LaTeX環境をセットアップ中..."
 if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
     echo -e "${GREEN}✓ LaTeX環境のセットアップ完了${NC}"
+    
+    # aldc一時ファイルの削除
+    echo "一時ファイルを削除中..."
+    find . -name "*-aldc" -type f -delete
+    git add -A && git commit -m "Remove aldc temporary files" || true
+    echo -e "${GREEN}✓ 一時ファイル削除完了${NC}"
 else
     echo -e "${YELLOW}⚠ LaTeX環境のセットアップに失敗しました${NC}"
 fi
