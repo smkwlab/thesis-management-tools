@@ -166,6 +166,16 @@ else
     echo -e "${YELLOW}⚠ LaTeX環境のセットアップに失敗しました${NC}"
 fi
 
+# GitHub CLIの認証情報をgitに設定
+# これによりgit pushコマンドが認証プロンプトなしで実行可能になる
+echo "Git認証を設定中..."
+if ! gh auth setup-git; then
+    echo -e "${RED}✗ Git認証設定に失敗しました${NC}"
+    echo -e "${RED}GitHub CLIの認証が正しく設定されているか確認してください${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Git認証設定完了${NC}"
+
 # 初期ブランチ構成
 echo "ブランチを設定中..."
 
