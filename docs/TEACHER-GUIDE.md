@@ -38,35 +38,43 @@ initial-empty (空の初期状態) ← レビュー用PRのベース
 
 ## 初期設定
 
-### リポジトリ作成（自動化済み）
+### リポジトリ作成（学生自身で実行）
+
+学生は以下のDockerベースのワンライナーでリポジトリを作成します：
 
 ```bash
-# 複数学生のリポジトリを一括作成
-./create-student-repos.sh k21rs001 k21rs002 k21gjk01
-
-# 自動的に以下が実行される：
-# 1. リポジトリ作成（テンプレートから）
-# 2. LaTeX devcontainer追加 (aldc)
-# 3. initial-empty ブランチ作成（空の初期状態）
-# 4. 0th-draft ブランチ作成（initial-emptyベース）
-# 5. review-branch ブランチ作成（initial-emptyベース）
-# 6. レビュー用PR作成（initial-empty → review-branch, do-not-mergeラベル付き）
+# 学生が実行するコマンド（Homebrewスタイル）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
-### 手動設定が必要な項目
+**自動実行される内容**：
+1. GitHub認証（ブラウザ経由）
+2. リポジトリ作成（テンプレートから）
+3. LaTeX devcontainer追加 (aldc)
+4. initial-empty ブランチ作成（リポジトリ作成直後の状態）
+5. 0th-draft ブランチ作成（initial-emptyベース）
+6. review-branch ブランチ作成（initial-emptyベース）
+7. レビュー用PR作成（initial-empty → review-branch, do-not-mergeラベル付き）
 
-作成後、必要に応じて以下を設定：
+### 教員側の設定作業
 
-1. **Collaboratorの追加**
+学生のリポジトリ作成後、必要に応じて以下を設定：
+
+1. **mainブランチ保護設定**（推奨）
+   ```bash
+   # 教員用ブランチ保護ツール
+   ./scripts/setup-branch-protection.sh k21rs001-sotsuron k21rs002-sotsuron
+   
+   # 個別設定
+   ./scripts/setup-branch-protection.sh k21rs001-sotsuron
+   ```
+
+2. **Collaboratorの追加**（必要時）
    ```bash
    gh api repos/smkwlab/{repo-name}/collaborators/{username} \
      --method PUT \
      --field permission=write
    ```
-
-2. **Branch protection rules**（推奨）
-   - main ブランチの保護
-   - PR required for merging
 
 ## 日常的な添削作業
 
@@ -212,17 +220,19 @@ PRをマージしない運用のメリット：
 
 ## スクリプト活用
 
-### create-student-repos.sh
+### setup-branch-protection.sh（教員用）
 
 ```bash
-# 卒業論文リポジトリ作成
-./create-student-repos.sh k21rs001 k21rs002 k21rs003
+# 複数リポジトリのブランチ保護設定
+./scripts/setup-branch-protection.sh k21rs001-sotsuron k21rs002-sotsuron k21gjk01-thesis
 
-# 修士論文リポジトリ作成
-./create-student-repos.sh k21gjk01 k21gjk02
+# 個別リポジトリの設定
+./scripts/setup-branch-protection.sh k21rs001-sotsuron
 
-# 混在も可能
-./create-student-repos.sh k21rs001 k21gjk01 k21rs002
+# 機能:
+# - mainブランチ保護（PR必須、1承認必要）
+# - GitHub Actions自動マージ許可
+# - final-*タグ時の自動マージ対応
 ```
 
 ### update-review-branch.sh（非推奨）

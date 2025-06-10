@@ -175,17 +175,8 @@ git push -u origin review-branch
 git checkout 0th-draft
 
 
-# mainブランチ保護設定（GitHub Actionsからのマージは許可）
-echo "mainブランチ保護設定中..."
-if gh api repos/"$FULL_REPO_NAME"/branches/main/protection \
-    --method PUT \
-    --field required_pull_request_reviews='{"required_approving_review_count":1}' \
-    --field enforce_admins=false \
-    --field restrictions='{"users":[],"teams":[],"apps":[]}' &>/dev/null; then
-    echo -e "${GREEN}✓ mainブランチ保護完了（final tag時の自動マージ対応）${NC}"
-else
-    echo -e "${YELLOW}⚠ mainブランチ保護設定に失敗しました${NC}"
-fi
+# Note: mainブランチ保護は教員が後から設定する必要があります
+# ブランチ保護ツール: thesis-management-tools/scripts/setup-branch-protection.sh
 
 # 完了メッセージ
 echo ""

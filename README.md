@@ -53,6 +53,11 @@ GitHub を使った効率的な論文指導をサポートします。
 
 ### `scripts/` - 運用ツール
 
+- **[setup-branch-protection.sh](scripts/setup-branch-protection.sh)**: mainブランチ保護設定（教員用）
+  - main ブランチの誤操作防止
+  - GitHub Actions自動マージ許可
+  - final-*タグ時の自動マージ対応
+
 - **[update-review-branch.sh](scripts/update-review-branch.sh)**: レビューブランチ手動更新（緊急用）
   - GitHub Actions 障害時の緊急用
   - トラブルシューティング用
