@@ -154,8 +154,11 @@ if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/mai
     
     # aldc一時ファイルの削除
     echo "一時ファイルを削除中..."
-    find . -name "*-aldc" -type f -delete
-    echo -e "${GREEN}✓ 一時ファイル削除完了${NC}"
+    if find . -name "*-aldc" -type f -delete; then
+        echo -e "${GREEN}✓ 一時ファイル削除完了${NC}"
+    else
+        echo -e "${YELLOW}⚠ 一時ファイル削除で警告が発生しましたが、処理を続行します${NC}"
+    fi
     
     # LaTeX環境セットアップ完了をコミット
     git add -A && git commit -m "Add LaTeX development environment with devcontainer"
