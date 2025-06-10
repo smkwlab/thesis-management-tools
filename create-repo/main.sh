@@ -7,6 +7,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BRIGHT_WHITE='\033[1;37m'
 NC='\033[0m'
 
 echo "🎓 論文リポジトリセットアップツール"
@@ -20,7 +21,8 @@ if ! gh auth status &>/dev/null; then
     echo "=== ブラウザ認証手順 ==="
     echo "1. ブラウザで https://github.com/login/device が開いているはずです"
     echo -e "2. ${GREEN}Continue${NC} ボタンをクリック"
-    echo -e "3. 以下の '! First copy your one-time code: XXXX-XXXX' の ${YELLOW}XXXX-XXXX${NC} をブラウザに入力"
+    echo -e "3. 下から2行目の以下のような行の ${YELLOW}XXXX-XXXX${NC} をコピーしてブラウザに入力:"
+    echo -e "   ${YELLOW}!${NC} First copy your one-time code: ${BRIGHT_WHITE}XXXX-XXXX${NC}"
     echo -e "4. ${GREEN}Authorize github${NC} ボタンをクリックする"
     echo ""
 
@@ -153,8 +155,10 @@ if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/mai
     # aldc一時ファイルの削除
     echo "一時ファイルを削除中..."
     find . -name "*-aldc" -type f -delete
-    git add -A && git commit -m "Remove aldc temporary files" || true
     echo -e "${GREEN}✓ 一時ファイル削除完了${NC}"
+    
+    # LaTeX環境セットアップ完了をコミット
+    git add -A && git commit -m "Add LaTeX development environment with devcontainer"
 else
     echo -e "${YELLOW}⚠ LaTeX環境のセットアップに失敗しました${NC}"
 fi
@@ -162,24 +166,15 @@ fi
 # 初期ブランチ構成
 echo "ブランチを設定中..."
 
-# GitHub認証情報を確認してgit credentialに設定
-echo "Git認証を設定中..."
-gh auth setup-git
-
 git checkout -b initial
 git commit --allow-empty -m "初期状態（リポジトリ作成直後）"
 git push -u origin initial
 
-git checkout main
-git push origin main
-git checkout -b 0th-draft
-git push -u origin 0th-draft
-
 git checkout -b review-branch
 git push -u origin review-branch
 
-git checkout 0th-draft
-
+git checkout -b 0th-draft
+git push -u origin 0th-draft
 
 # Note: mainブランチ保護は教員が後から設定する必要があります
 # ブランチ保護ツール: thesis-management-tools/scripts/setup-branch-protection.sh
@@ -188,14 +183,8 @@ git checkout 0th-draft
 echo ""
 echo -e "${GREEN}✅ セットアップ完了！${NC}"
 echo ""
-echo "リポジトリURL: https://github.com/${FULL_REPO_NAME}"
+echo "リポジトリURL:"
+echo "  https://github.com/${FULL_REPO_NAME}"
 echo ""
-echo "次の手順:"
-echo "1. リポジトリをクローン:"
-echo "   git clone https://github.com/${FULL_REPO_NAME}.git"
-echo "2. VS Code で開く:"
-echo "   cd ${REPO_NAME}"
-echo "   code ."
-echo "3. 'Reopen in Container' を選択"
-echo ""
-echo "詳細: https://github.com/${ORGANIZATION}/thesis-management-tools/blob/main/docs/WRITING-GUIDE.md"
+echo "論文執筆の開始方法:"
+echo "  https://github.com/${FULL_REPO_NAME}/blob/main/WRITING-GUIDE.md"
