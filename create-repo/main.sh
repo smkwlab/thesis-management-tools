@@ -171,6 +171,7 @@ git commit --allow-empty -m "初期状態（リポジトリ作成直後）"
 git push -u origin initial
 
 git checkout main
+git push origin main
 git checkout -b 0th-draft
 git push -u origin 0th-draft
 
