@@ -166,6 +166,11 @@ else
     echo -e "${YELLOW}⚠ LaTeX環境のセットアップに失敗しました${NC}"
 fi
 
+# GitHub CLIの認証情報をgitに設定
+echo "Git認証を設定中..."
+gh auth setup-git
+echo -e "${GREEN}✓ Git認証設定完了${NC}"
+
 # 初期ブランチ構成
 echo "ブランチを設定中..."
 
