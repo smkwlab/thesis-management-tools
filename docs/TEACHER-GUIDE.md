@@ -10,7 +10,7 @@
 ### ブランチ構成
 
 ```
-initial-empty (空の初期状態) ← レビュー用PRのベース
+initial (初期状態) ← レビュー用PRのベース
  ├─ 0th-draft (目次案)
  ├─ 1st-draft (0th-draftベース) ← 差分明確
  ├─ 2nd-draft (1st-draftベース) ← 差分明確
@@ -20,7 +20,7 @@ initial-empty (空の初期状態) ← レビュー用PRのベース
 
 ### レビュー用PRの特徴
 
-- **ベース**: `initial-empty` (空の初期状態)
+- **ベース**: `initial` (初期状態)
 - **ヘッド**: `review-branch` (GitHub Actionsで自動更新)
 - **目的**: 論文全体への添削（merge済み箇所含む）
 - **運用**: 絶対にマージしない、最終提出まで維持
@@ -51,10 +51,10 @@ initial-empty (空の初期状態) ← レビュー用PRのベース
 1. GitHub認証（ブラウザ経由）
 2. リポジトリ作成（テンプレートから）
 3. LaTeX devcontainer追加 (aldc)
-4. initial-empty ブランチ作成（リポジトリ作成直後の状態）
-5. 0th-draft ブランチ作成（initial-emptyベース）
-6. review-branch ブランチ作成（initial-emptyベース）
-7. レビュー用PR作成（initial-empty → review-branch, do-not-mergeラベル付き）
+4. initial ブランチ作成（リポジトリ作成直後の状態）
+5. 0th-draft ブランチ作成（initialベース）
+6. review-branch ブランチ作成（initialベース）
+7. レビュー用PR作成（initial → review-branch, do-not-mergeラベル付き）
 
 ### 教員側の設定作業
 

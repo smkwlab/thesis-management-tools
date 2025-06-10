@@ -263,7 +263,7 @@ if git merge "origin/$SOURCE_BRANCH" --no-edit; then
         if [ -n "$LATEST_ABSTRACT" ]; then
             echo "  概要: $LATEST_ABSTRACT からマージ済み"
         fi
-        echo "  レビュー用PR（initial-empty → review-branch）で論文全体への添削が可能です"
+        echo "  レビュー用PR（initial → review-branch）で論文全体への添削が可能です"
         echo "  merge済み箇所を含む全体にコメントできます"
     else
         echo "✗ プッシュに失敗しました"
@@ -295,7 +295,7 @@ echo "⚠️  注意: このスクリプトは非推奨です"
 echo "今後は GitHub Actions による自動更新をご利用ください"
 echo ""
 echo "次のステップ:"
-echo "1. レビュー用PR（initial-empty → review-branch）で全体的な添削を実施"
+echo "1. レビュー用PR（initial → review-branch）で全体的な添削を実施"
 echo "   → merge済み箇所を含む論文全体にコメント可能"
 echo "2. $SOURCE_BRANCH PRで差分レビューを実施"
 echo "   → 直前版からの変更点を確認"

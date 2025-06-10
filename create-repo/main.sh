@@ -160,10 +160,9 @@ echo "ブランチを設定中..."
 echo "Git認証を設定中..."
 gh auth setup-git
 
-git checkout -b initial-empty
-git rm -rf . &>/dev/null || true
-git commit --allow-empty -m "初期状態（空のブランチ）"
-git push -u origin initial-empty
+git checkout -b initial
+git commit --allow-empty -m "初期状態（リポジトリ作成直後）"
+git push -u origin initial
 
 git checkout main
 git checkout -b 0th-draft
