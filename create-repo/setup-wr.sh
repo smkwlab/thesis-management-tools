@@ -126,9 +126,9 @@ fi
 
 # Docker実行（TTY対応）- 週報用のスクリプトを実行
 if [ -n "$STUDENT_ID" ]; then
-    docker run --rm -it wr-setup-temp bash main-wr.sh "$STUDENT_ID"
+    docker run --rm -it wr-setup-temp ./main-wr.sh "$STUDENT_ID"
 else
-    docker run --rm -it wr-setup-temp bash main-wr.sh
+    docker run --rm -it wr-setup-temp ./main-wr.sh
 fi
 
 # 成功メッセージ（クリーンアップは trap で自動実行）
