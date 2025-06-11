@@ -72,9 +72,11 @@ else
 fi
 
 # 学籍番号の形式チェック（週報は学年・専攻問わず）
-if [[ ! "$STUDENT_ID" =~ k[0-9]{2}[a-z]{2,3}[0-9]{2,3} ]]; then
+if [[ ! "$STUDENT_ID" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})$ ]]; then
     echo -e "${RED}エラー: 学籍番号の形式が正しくありません${NC}"
-    echo "正しい形式: k21rs001, k21gjk01 など"
+    echo "正しい形式:"
+    echo "  学部生: k21rs001, k22rs123 など"
+    echo "  大学院生: k21gjk01, k22gjk12 など"
     exit 1
 fi
 

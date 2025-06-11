@@ -126,9 +126,16 @@ fi
 
 # Docker実行（TTY対応）- 週報用のスクリプトを実行
 if [ -n "$STUDENT_ID" ]; then
-    docker run --rm -it wr-setup-temp bash main-wr.sh "$STUDENT_ID"
+    if ! docker run --rm -it wr-setup-temp ./main-wr.sh "$STUDENT_ID"; then
+        echo "❌ セットアップスクリプトの実行に失敗しました"
+        echo "学籍番号: $STUDENT_ID"
+        exit 1
+    fi
 else
-    docker run --rm -it wr-setup-temp bash main-wr.sh
+    if ! docker run --rm -it wr-setup-temp ./main-wr.sh; then
+        echo "❌ セットアップスクリプトの実行に失敗しました"
+        exit 1
+    fi
 fi
 
 # 成功メッセージ（クリーンアップは trap で自動実行）
