@@ -76,13 +76,13 @@ cd create-repo
 echo "🔨 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
     # デバッグモードでは出力を表示
-    docker build -t wr-setup-temp .
+    docker build -t wr-setup-temp -f Dockerfile-wr .
 else
     # 通常モードではエラー時のみ詳細表示
-    if ! docker build -t wr-setup-temp . 2>/dev/null; then
+    if ! docker build -t wr-setup-temp -f Dockerfile-wr . 2>/dev/null; then
         echo "❌ Dockerイメージのビルドに失敗しました"
         echo "詳細エラー情報:"
-        docker build -t wr-setup-temp .
+        docker build -t wr-setup-temp -f Dockerfile-wr .
         exit 1
     fi
 fi
@@ -126,13 +126,13 @@ fi
 
 # Docker実行（TTY対応）- 週報用のスクリプトを実行
 if [ -n "$STUDENT_ID" ]; then
-    if ! docker run --rm -it wr-setup-temp ./main-wr.sh "$STUDENT_ID"; then
+    if ! docker run --rm -it wr-setup-temp "$STUDENT_ID"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         echo "学籍番号: $STUDENT_ID"
         exit 1
     fi
 else
-    if ! docker run --rm -it wr-setup-temp ./main-wr.sh; then
+    if ! docker run --rm -it wr-setup-temp; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         exit 1
     fi

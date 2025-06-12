@@ -18,8 +18,8 @@ RUN type -p curl >/dev/null || (apt update && apt install curl -y) \
     && apt install gh -y
 
 # セットアップスクリプトをコピー
-COPY main.sh ./
-RUN chmod +x main.sh
+COPY main-wr.sh ./
+RUN chmod +x main-wr.sh
 
 # 作業ディレクトリ
 WORKDIR /workspace
@@ -28,4 +28,4 @@ WORKDIR /workspace
 ENV DOCKER_ENV=true
 
 # エントリーポイント
-ENTRYPOINT ["./main.sh"]
+ENTRYPOINT ["./main-wr.sh"]
