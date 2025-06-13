@@ -1,135 +1,316 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with the thesis-management-tools repository.
 
 ## Repository Overview
 
-This is an administrative tools repository for managing LaTeX-based thesis supervision workflows at Kyushu Sangyo University's Faculty of Science and Engineering, Information Science Department. It provides batch creation and management tools for student thesis repositories with automated GitHub-based review workflows.
+This repository contains **administrative tools and workflows for thesis supervision** at Kyushu Sangyo University. It provides Docker-based student repository creation, faculty review workflows, and management documentation for the thesis-environment ecosystem. The tools enable zero-dependency, self-service thesis repository creation and sophisticated GitHub-based review systems.
 
 ## Key Commands
 
-### Student Repository Creation 
-
-#### Individual Creation (Docker Script)
-Students can create repositories using Docker environment with zero local dependencies:
-
-**Prerequisites**: WSL + Docker Desktop (Windows) or Docker Desktop (macOS)
-
-**One-liner execution**:
+### Student Repository Creation
 ```bash
-# Interactive mode (Homebrew-style)
+# Self-service repository creation (zero dependencies required)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 
-# With student ID
+# With student ID for automatic thesis type detection
 STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+
+# For weekly reports
+STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-wr.sh)"
+
+# Debug mode for troubleshooting
+DEBUG=1 STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
-Key features:
-- Zero local dependencies (GitHub CLI installed in Docker)
-- Interactive GitHub authentication within Docker container
-- Student's own credentials used for repository creation
-- Automatic template selection based on student ID pattern
-- Complete LaTeX environment setup via aldc integration
-- Cross-platform compatibility (Windows WSL, macOS, Linux)
-
-#### Emergency Manual Review Branch Update
+### Development and Testing
 ```bash
-# Manual review branch update (emergency use only - GitHub Actions preferred)
+# Build and test Docker containers
+docker build -f create-repo/Dockerfile -t thesis-creator .
+docker build -f create-repo/Dockerfile-wr -t wr-creator .
+
+# Test repository creation locally
+cd create-repo && docker run --rm -e STUDENT_ID=k21rs001 thesis-creator
+
+# Test scripts directly (requires GitHub CLI)
+cd create-repo && ./main.sh k21rs001
+cd create-repo && ./main-wr.sh k21rs001
+```
+
+### Manual Repository Management (Emergency Use)
+```bash
+# Update review branch manually (emergency only)
 ./scripts/update-review-branch.sh {repo-name} {branch-name}
-```
 
-### Documentation Generation
-```bash
-# Generate HTML from markdown documentation
-# (Currently manual process - PR-REVIEW-GUIDE.html exists but untracked)
+# Validate repository structure
+gh repo view {org}/{repo-name} --json defaultBranch,visibility
 ```
 
 ## Architecture
 
-### Automated Thesis Management System
-The repository implements a sophisticated GitHub Actions-based workflow for thesis supervision:
+### Docker-Based Repository Creation
+The system uses containerized scripts to eliminate local dependencies:
 
-1. **Student ID-Based Template Selection**: 
-   - `k??rs???` pattern → Undergraduate thesis (sotsuron template)
-   - `k??gjk??` pattern → Graduate thesis (master template)
+**Prerequisites for students:**
+- WSL + Docker Desktop (Windows) or Docker Desktop (macOS)
+- No local Git, GitHub CLI, or other tools required
 
-2. **Intelligent File Cleanup**: Automatically removes unused template files based on thesis type to prevent student confusion
+**Creation Process:**
+1. **Authentication**: GitHub CLI authentication via browser in container
+2. **Repository creation**: From appropriate template (sotsuron-template or wr-template)
+3. **File cleanup**: Automatic removal of unused files based on student ID pattern
+4. **Environment setup**: LaTeX devcontainer integration via aldc script
+5. **Workflow initialization**: Review system setup with initial branches
 
-3. **Hybrid Review Workflow**:
-   ```
-   initial (review base)
-    ├─ 0th-draft → 1st-draft → 2nd-draft → ... (sequential drafts)
-    └─ review-branch (auto-updated with latest content)
-   ```
+### Student ID Pattern Recognition
+```bash
+# Undergraduate thesis (卒業論文)
+k??rs??? (e.g., k21rs001) → sotsuron-template → keeps sotsuron.tex, gaiyou.tex, examples
 
-4. **Dual Review System**:
-   - **Individual Draft PRs**: Differential review (changes from previous version)
-   - **Persistent Review PR**: Holistic review (entire thesis content)
+# Graduate thesis (修士論文)  
+k??gjk?? (e.g., k21gjk01) → sotsuron-template → keeps thesis.tex, abstract.tex only
 
-### Repository Creation Process
-The Docker-based student setup (`main.sh`) performs:
-1. GitHub authentication via web browser workflow
-2. Private repository creation from `smkwlab/sotsuron-template` template
-3. Template file cleanup based on student ID pattern (undergraduate/graduate)
-4. DevContainer setup via aldc script integration
-5. Initial branch structure creation (`initial`, `0th-draft`, `review-branch`)
-6. Git configuration with student's GitHub credentials
+# Weekly reports
+Any pattern → wr-template → weekly report structure
+```
 
-### Branch Management Strategy
-- **Sequential Drafts**: Each draft branches from the previous (clear diff tracking)
-- **Automatic Branch Creation**: Next draft branch auto-created upon PR submission
-- **Parallel Writing Support**: Students can work on next draft while previous is under review
-- **Abstract Management**: Separate branch sequence for thesis abstracts
+### Review Workflow System
+Sophisticated GitHub Actions-based supervision:
 
-## Student ID Patterns and Template Selection
-- **Undergraduate**: `k??rs???` (e.g., k21rs001) → sotsuron-template files kept
-- **Graduate**: `k??gjk??` (e.g., k21gjk01) → master-template files kept (now unified in sotsuron-template)
+**Branch Strategy:**
+- `initial`: Base state for clean diff tracking
+- `0th-draft`, `1st-draft`, `2nd-draft`, etc.: Sequential development
+- `review-branch`: Persistent branch for holistic review (auto-updated)
 
-## Operational Notes
-
-### Non-Merging Workflow
-- PRs are used for review purposes only
-- Students close PRs after addressing feedback (PRs are never merged)
-- Review system maintains diff clarity through branch-from-branch strategy
-
-### Faculty Review Process
-- Multi-faculty coordination support
-- GitHub Suggestion feature integration for direct edits
-- Role-based review assignment capabilities
-- Both incremental and comprehensive review tracks
-
-### Emergency Procedures
-- Manual review branch update script available for GitHub Actions failures
-- Fallback mechanisms for automated workflow interruptions
-
-## Dependencies
-
-### Required Tools
-- **GitHub CLI**: Repository creation and management
-- **Git**: Version control operations
-- **Bash**: Script execution environment
-- **Docker**: DevContainer LaTeX environment (via aldc)
-
-### Template Repositories
-- `smkwlab/sotsuron-template`: Unified thesis template (primary)
-- `smkwlab/master-template`: [DEPRECATED] Graduate template (functionality merged)
+**Faculty Workflow:**
+- **Differential review**: Each draft PR shows changes from previous version
+- **Comprehensive review**: `review-branch` PR shows entire document content
+- **GitHub suggestions**: Direct edit capabilities for faculty
+- **Auto-management**: Students close PRs after addressing feedback
 
 ## File Structure Conventions
 
-### Administrative Scripts
-- `scripts/update-review-branch.sh`: Emergency manual override for GitHub Actions failures
+### Repository Structure
+```
+create-repo/
+├── Dockerfile                  # Main thesis repository creation
+├── Dockerfile-wr               # Weekly report repository creation
+├── main.sh                     # Thesis creation script
+├── main-wr.sh                  # Weekly report creation script
+├── setup.sh                    # Public entry point for thesis
+├── setup-wr.sh                 # Public entry point for weekly reports
+└── README.md                   # Usage instructions
 
-### Repository Creation Scripts
-- `create-repo/setup.sh`: Cross-platform entry point with browser integration
-- `create-repo/main.sh`: Docker-based repository creation and environment setup
-- `create-repo/Dockerfile`: Ubuntu-based container with GitHub CLI
+scripts/
+├── update-review-branch.sh     # Emergency manual review branch update
+└── (other management scripts)
+
+docs/
+├── PR-REVIEW-GUIDE.md          # Faculty review workflow guide
+├── TEACHER-GUIDE.md            # Complete faculty documentation
+└── (other documentation)
+```
+
+### Template Integration
+- **sotsuron-template**: Primary template for undergraduate/graduate theses
+- **wr-template**: Weekly report template
+- **latex-environment**: LaTeX development environment (via aldc)
+
+## Development Workflow
+
+### For Script Updates
+1. **Test locally** with sample student IDs
+2. **Verify Docker builds** work across platforms
+3. **Test authentication flow** in containerized environment
+4. **Validate file cleanup** for different student ID patterns
+5. **Test integration** with GitHub repository creation
+
+### For Workflow Enhancements
+1. **Test review system** with sample repositories
+2. **Verify branch management** automation
+3. **Validate faculty workflow** documentation
+4. **Test error handling** and edge cases
+
+### For Documentation Updates
+1. **Keep faculty guides current** with GitHub interface changes
+2. **Update student instructions** for clarity
+3. **Document troubleshooting** procedures
+4. **Maintain screenshot accuracy** in guides
+
+## Student Workflow (Automated)
+
+### Repository Creation Phase
+1. **Run one-liner command** (Docker handles everything)
+2. **Browser authentication** with GitHub (automatic)
+3. **Repository creation** from appropriate template
+4. **File cleanup** based on thesis type
+5. **LaTeX environment setup** via aldc integration
+6. **Initial branch setup** for review workflow
+
+### Development Phase
+```
+Phase 1: Thesis Writing
+0th-draft (outline) → 1st-draft → 2nd-draft → ... → submit tag
+
+Phase 2: Abstract Writing  
+abstract-1st → abstract-2nd → abstract completion
+
+Phase 3: Final Submission
+Further improvements → Final PR → Faculty approval → final-* tag → Auto-merge
+```
+
+## Faculty Workflow
+
+### Review Process
+1. **Monitor draft PRs** for incremental changes
+2. **Use review-branch PR** for holistic document review
+3. **Provide feedback** via GitHub comments and suggestions
+4. **Track progress** through branch sequence
+5. **Final approval** through GitHub workflow
+
+### Management Tools
+- **Progress tracking**: Via GitHub repository insights
+- **Deadline management**: Through milestone and project features
+- **Quality assurance**: Automated LaTeX compilation and textlint checks
+- **Communication**: Integrated with GitHub notification system
+
+## Testing Guidelines
+
+### Local Testing
+```bash
+# Test Docker builds
+docker build -f create-repo/Dockerfile -t test-creator .
+docker build -f create-repo/Dockerfile-wr -t test-wr .
+
+# Test scripts with sample IDs
+cd create-repo
+./main.sh k21rs999  # Test undergraduate
+./main.sh k21gjk99  # Test graduate  
+./main-wr.sh k21rs999  # Test weekly report
+
+# Test file cleanup logic
+echo "k21rs001" | grep -E "k[0-9]{2}rs[0-9]{3}"  # Should match
+echo "k21gjk01" | grep -E "k[0-9]{2}gjk[0-9]{2}"  # Should match
+```
+
+### Integration Testing
+- Test complete student onboarding flow
+- Verify repository creation with all template types
+- Test review workflow with sample content
+- Validate faculty tools and documentation accuracy
+
+### Error Handling Testing
+```bash
+# Test with invalid student IDs
+DEBUG=1 STUDENT_ID=invalid ./main.sh
+
+# Test without Docker
+STUDENT_ID=k21rs001 ./setup.sh  # Should handle gracefully
+
+# Test network issues
+# (Simulate offline conditions and verify error messages)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Docker authentication problems:**
+- Verify Docker Desktop is running
+- Check GitHub CLI authentication in container
+- Test with `DEBUG=1` for detailed output
+
+**Repository creation failures:**
+- Verify student ID format matches patterns
+- Check GitHub API rate limits
+- Validate template repository access
+
+**File cleanup issues:**
+- Test student ID pattern matching
+- Verify template file structure
+- Check file permissions and Git operations
+
+### Debug Commands
+```bash
+# Enable debug mode
+DEBUG=1 STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL ...)"
+
+# Test Docker container manually
+docker run -it --rm thesis-creator bash
+
+# Check GitHub CLI in container
+docker run --rm thesis-creator gh auth status
+
+# Verify student ID patterns
+echo "k21rs001" | grep -E "k[0-9]{2}rs[0-9]{3}" && echo "undergraduate" || echo "graduate"
+```
+
+## Security Considerations
+
+### Container Security
+- Minimal container images with only required tools
+- No persistent storage of credentials
+- GitHub authentication via secure browser flow
+- Regular base image updates
+
+### Access Control
+- Repository creation limited to authenticated GitHub users
+- Template access controlled via GitHub permissions
+- Faculty review permissions managed through GitHub teams
+- Audit trail through GitHub activity logs
+
+## Ecosystem Integration
+
+### Related Repositories
+- **sotsuron-template**: Primary thesis template
+- **wr-template**: Weekly report template  
+- **latex-environment**: Development environment
+- **aldc**: LaTeX environment deployment tool
+
+### Coordination Points
+- Template updates require coordination with creation scripts
+- LaTeX environment changes may affect repository setup
+- Faculty workflow changes require documentation updates
+- Student onboarding process spans multiple repositories
+
+## Emergency Procedures
+
+### Repository Creation Failures
+1. **Check system status** (GitHub, Docker Hub)
+2. **Verify template availability**
+3. **Test with debug mode** for detailed error information
+4. **Manual repository creation** as fallback
+5. **Document issues** for future prevention
+
+### Review System Problems
+1. **Use manual review branch update script**
+2. **Verify GitHub Actions functionality**
+3. **Check repository permissions and settings**
+4. **Communicate with affected faculty and students**
+5. **Document resolution steps**
+
+## Contributing Guidelines
+
+### Script Development
+- Test with multiple student ID patterns
+- Ensure cross-platform Docker compatibility
+- Maintain error handling and user feedback
+- Document all environment variables and options
 
 ### Documentation
-- `docs/TEACHER-GUIDE.md`: Complete faculty workflow documentation
-- `docs/PR-REVIEW-GUIDE.md`: GitHub PR review guide for beginners
-- `docs/PR-REVIEW-GUIDE.html`: HTML version (untracked, generated manually)
+- Keep faculty guides synchronized with GitHub interface
+- Update screenshots and examples regularly
+- Maintain troubleshooting procedures
+- Include step-by-step instructions
 
-### Security and Access
-- All student repositories created as private
-- Minimal collaborator permissions applied
-- Branch protection available for critical branches
+### Testing Requirements
+- All scripts must pass integration tests
+- Docker containers must build successfully
+- Error handling must be comprehensive
+- Documentation must be accurate and current
+
+### Review Process
+- Test changes with sample student repositories
+- Verify faculty workflow compatibility
+- Check ecosystem integration points
+- Validate security and access control measures
