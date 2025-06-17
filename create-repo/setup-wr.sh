@@ -75,14 +75,12 @@ cd create-repo
 
 echo "🔨 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
-    # デバッグモードでは出力を表示
-    docker build -t wr-setup-temp -f Dockerfile-wr .
+    # デバッグモードでは詳細出力を表示
+    docker build --progress=plain -t wr-setup-temp -f Dockerfile-wr .
 else
-    # 通常モードではエラー時のみ詳細表示
-    if ! docker build -t wr-setup-temp -f Dockerfile-wr . 2>/dev/null; then
+    # 通常モードでも進行状況を表示
+    if ! docker build --progress=auto -t wr-setup-temp -f Dockerfile-wr .; then
         echo "❌ Dockerイメージのビルドに失敗しました"
-        echo "詳細エラー情報:"
-        docker build -t wr-setup-temp -f Dockerfile-wr .
         exit 1
     fi
 fi
