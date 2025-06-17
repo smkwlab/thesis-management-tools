@@ -75,14 +75,12 @@ cd create-repo
 
 echo "🔨 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
-    # デバッグモードでは出力を表示
-    docker build -t thesis-setup-temp .
+    # デバッグモードでは詳細出力を表示
+    docker build --progress=plain -t thesis-setup-temp .
 else
-    # 通常モードではエラー時のみ詳細表示
-    if ! docker build -t thesis-setup-temp . 2>/dev/null; then
+    # 通常モードでも進行状況を表示
+    if ! docker build --progress=auto -t thesis-setup-temp .; then
         echo "❌ Dockerイメージのビルドに失敗しました"
-        echo "詳細エラー情報:"
-        docker build -t thesis-setup-temp .
         exit 1
     fi
 fi

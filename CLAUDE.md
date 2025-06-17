@@ -313,7 +313,6 @@ gh pr create --body "Updated `file.txt` to version `1.2.3`"
 # Correct - escaped backticks
 gh pr create --body "Updated \`file.txt\` to version \`1.2.3\`"
 ```
-
 ## Contributing Guidelines
 
 ### Script Development
