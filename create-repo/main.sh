@@ -298,6 +298,7 @@ diagnose_issue_failure() {
             echo "   対処: 教員に以下の権限設定を依頼してください："
             echo "         - thesis-management-tools リポジトリへの Issue 作成権限"
             echo "         - smkwlab 組織のメンバーシップ確認"
+            echo "         - ラベル管理権限（branch-protection ラベル追加用）"
             ;;
         1)   
             echo -e "${YELLOW}   原因: ネットワークエラーまたは認証エラーです${NC}"
@@ -351,7 +352,8 @@ create_protection_request_issue() {
     echo "📋 ブランチ保護設定依頼Issueを作成中..."
     
     # GitHub Issue作成（学生でも権限があれば可能）
-    if gh issue create \
+    local issue_number=""
+    if issue_number=$(gh issue create \
         --repo smkwlab/thesis-management-tools \
         --title "🔒 ブランチ保護設定依頼: smkwlab/${repo_name}" \
         --assignee toshi0806 \
@@ -392,10 +394,31 @@ echo "${student_id} # Created: ${created_date} Repository: ${repo_name}" >> ../s
 *この Issue は学生の setup.sh 実行時に自動生成されました*
 *学生ID: ${student_id} | リポジトリ: ${repo_name} | 作成: ${created_date} ${created_jst_time} JST*
 EOF
-)"; then
-        local issue_url=$(gh issue list --repo smkwlab/thesis-management-tools --label "branch-protection" --state open --limit 1 --json url --jq '.[0].url')
+)" 2>/dev/null); then
+        # Issue作成成功時のラベル確認と修正
         echo -e "${GREEN}✅ ブランチ保護設定依頼Issue作成完了${NC}"
-        echo "   Issue URL: ${issue_url:-https://github.com/smkwlab/thesis-management-tools/issues}"
+        # Issue番号からURLを正しく抽出
+        local clean_issue_number=$(echo "$issue_number" | grep -o '[0-9]\+' | head -1)
+        echo "   Issue #${clean_issue_number}: https://github.com/smkwlab/thesis-management-tools/issues/${clean_issue_number}"
+        
+        # ラベル設定の確認と修正（権限問題等でラベルが設定されていない場合の対策）
+        echo "🔍 ラベル設定を確認中..."
+        sleep 2  # GitHub APIの反映待ち
+        
+        local current_labels
+        current_labels=$(gh issue view "${clean_issue_number}" --repo smkwlab/thesis-management-tools --json labels --jq '.labels[].name' 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+        
+        if [[ "$current_labels" != *"branch-protection"* ]]; then
+            echo -e "${YELLOW}⚠️  ラベル設定に問題があります。修正中...${NC}"
+            if gh issue edit "${clean_issue_number}" --repo smkwlab/thesis-management-tools --add-label "branch-protection" 2>/dev/null; then
+                echo -e "${GREEN}✅ ラベル設定を修正しました${NC}"
+            else
+                echo -e "${YELLOW}⚠️  ラベル設定の修正に失敗しました${NC}"
+                echo "   手動でIssue #${clean_issue_number} に 'branch-protection' ラベルを追加してください"
+            fi
+        else
+            echo -e "${GREEN}✅ ラベル設定OK${NC}"
+        fi
         
         # 学生リストファイルへの追加（Dockerコンテナ内では実行環境に依存）
         # Note: Dockerコンテナ内では相対パスが異なるため、Issueでの管理を優先
