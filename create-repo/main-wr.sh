@@ -15,7 +15,20 @@ echo "=============================================="
 
 # GitHub認証
 echo "GitHub認証を確認中..."
-if ! gh auth status &>/dev/null; then
+
+# 環境変数でトークンが渡されている場合はそれを使用
+if [ -n "$GH_TOKEN" ]; then
+    echo -e "${GREEN}✓ ホストから認証トークンを取得しました${NC}"
+    export GH_TOKEN
+    
+    # トークンの有効性を確認
+    if gh auth status &>/dev/null; then
+        echo -e "${GREEN}✓ GitHub認証済み（トークン認証）${NC}"
+    else
+        echo -e "${RED}エラー: 提供されたトークンが無効です${NC}"
+        exit 1
+    fi
+elif ! gh auth status &>/dev/null; then
     echo -e "${YELLOW}GitHub認証が必要です${NC}"
     echo ""
     echo "=== ブラウザ認証手順 ==="

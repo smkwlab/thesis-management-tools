@@ -15,7 +15,20 @@ echo "=============================================="
 
 # GitHub認証
 echo "GitHub認証を確認中..."
-if ! gh auth status &>/dev/null; then
+
+# 環境変数でトークンが渡されている場合はそれを使用
+if [ -n "$GH_TOKEN" ]; then
+    echo -e "${GREEN}✓ ホストから認証トークンを取得しました${NC}"
+    export GH_TOKEN
+    
+    # トークンの有効性を確認
+    if gh auth status &>/dev/null; then
+        echo -e "${GREEN}✓ GitHub認証済み（トークン認証）${NC}"
+    else
+        echo -e "${RED}エラー: 提供されたトークンが無効です${NC}"
+        exit 1
+    fi
+elif ! gh auth status &>/dev/null; then
     echo -e "${YELLOW}GitHub認証が必要です${NC}"
     echo ""
     echo "=== ブラウザ認証手順 ==="
@@ -357,7 +370,6 @@ create_protection_request_issue() {
         --repo smkwlab/thesis-management-tools \
         --title "🔒 ブランチ保護設定依頼: smkwlab/${repo_name}" \
         --assignee toshi0806 \
-        --label "branch-protection,auto-generated" \
         --body "$(cat <<EOF
 ## ブランチ保護設定依頼
 
@@ -401,24 +413,9 @@ EOF
         local clean_issue_number=$(echo "$issue_number" | grep -o '[0-9]\+' | head -1)
         echo "   Issue #${clean_issue_number}: https://github.com/smkwlab/thesis-management-tools/issues/${clean_issue_number}"
         
-        # ラベル設定の確認と修正（権限問題等でラベルが設定されていない場合の対策）
-        echo "🔍 ラベル設定を確認中..."
-        sleep 2  # GitHub APIの反映待ち
-        
-        local current_labels
-        current_labels=$(gh issue view "${clean_issue_number}" --repo smkwlab/thesis-management-tools --json labels --jq '.labels[].name' 2>/dev/null | tr '\n' ',' | sed 's/,$//')
-        
-        if [[ "$current_labels" != *"branch-protection"* ]]; then
-            echo -e "${YELLOW}⚠️  ラベル設定に問題があります。修正中...${NC}"
-            if gh issue edit "${clean_issue_number}" --repo smkwlab/thesis-management-tools --add-label "branch-protection" 2>/dev/null; then
-                echo -e "${GREEN}✅ ラベル設定を修正しました${NC}"
-            else
-                echo -e "${YELLOW}⚠️  ラベル設定の修正に失敗しました${NC}"
-                echo "   手動でIssue #${clean_issue_number} に 'branch-protection' ラベルを追加してください"
-            fi
-        else
-            echo -e "${GREEN}✅ ラベル設定OK${NC}"
-        fi
+        # ラベル設定について
+        echo -e "${YELLOW}ℹ️  ラベルは教員が後で設定します${NC}"
+        echo "   (学生アカウントには管理リポジトリの編集権限がないため)"
         
         # 学生リストファイルへの追加（Dockerコンテナ内では実行環境に依存）
         # Note: Dockerコンテナ内では相対パスが異なるため、Issueでの管理を優先
