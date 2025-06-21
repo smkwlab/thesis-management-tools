@@ -70,6 +70,10 @@ setup_protection() {
     
     # ブランチ保護設定
     local protection_config='{
+        "required_status_checks": {
+            "strict": false,
+            "contexts": []
+        },
         "required_pull_request_reviews": {
             "required_approving_review_count": 1,
             "dismiss_stale_reviews": true,
