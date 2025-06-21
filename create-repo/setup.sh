@@ -68,12 +68,16 @@ echo "✅ GitHub CLI 確認完了"
 echo "🔑 GitHub 認証状態を確認中..."
 if ! gh auth status &> /dev/null; then
     echo "❌ GitHub 認証が必要です"
+    echo "自動的にGitHub認証を開始します..."
     echo ""
-    echo "以下のコマンドを実行してGitHubにログインしてください："
-    echo "  gh auth login"
-    echo ""
-    echo "認証完了後、再度このスクリプトを実行してください。"
-    exit 1
+    
+    if gh auth login --hostname github.com --git-protocol https --web --scopes "repo,workflow,read:org"; then
+        echo "✅ GitHub認証が完了しました"
+    else
+        echo "❌ GitHub認証に失敗しました"
+        echo "手動で 'gh auth login' を実行してから再度お試しください"
+        exit 1
+    fi
 fi
 
 # 複数アカウントの確認と適切なアカウント選択
