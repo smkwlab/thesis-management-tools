@@ -56,6 +56,68 @@ check_github_cli() {
     return 0
 }
 
+# GitHub API レート制限チェック（大量処理前の確認）
+check_rate_limit() {
+    local required_calls="${1:-100}"  # デフォルト100リクエスト
+    
+    log "GitHub API レート制限を確認中..."
+    
+    # GitHub APIのレート制限情報を取得
+    local rate_info
+    rate_info=$(gh api rate_limit 2>/dev/null) || {
+        warn "レート制限情報の取得に失敗しました"
+        return 0  # 情報取得失敗時は処理を続行
+    }
+    
+    local remaining used reset_time
+    remaining=$(echo "$rate_info" | jq -r '.rate.remaining // 0')
+    used=$(echo "$rate_info" | jq -r '.rate.used // 0')
+    reset_time=$(echo "$rate_info" | jq -r '.rate.reset // 0')
+    
+    if [ "$remaining" -lt "$required_calls" ]; then
+        local reset_date
+        if command -v gdate >/dev/null 2>&1; then
+            # macOS with GNU coreutils
+            reset_date=$(gdate -d "@$reset_time" +'%Y-%m-%d %H:%M:%S')
+        else
+            # Linux or fallback
+            reset_date=$(date -d "@$reset_time" +'%Y-%m-%d %H:%M:%S' 2>/dev/null || date +'%Y-%m-%d %H:%M:%S')
+        fi
+        
+        warn "GitHub API レート制限に近づいています"
+        warn "  残り: $remaining/$((remaining + used)) リクエスト"
+        warn "  必要: $required_calls リクエスト"
+        warn "  リセット: $reset_date"
+        warn ""
+        warn "大量処理を実行する場合は、リセット後に再実行することを推奨します"
+        
+        # 対話的確認（非対話環境では警告のみ）
+        if [ -t 0 ]; then
+            echo -n "処理を続行しますか？ (y/N): "
+            read -r response
+            case "$response" in
+                [yY]|[yY][eE][sS])
+                    warn "処理を続行します（レート制限に注意してください）"
+                    ;;
+                *)
+                    error "処理を中止しました"
+                    return 1
+                    ;;
+            esac
+        fi
+    else
+        success "✅ GitHub API レート制限OK（残り: $remaining リクエスト）"
+    fi
+    
+    return 0
+}
+
+# API呼び出し間のスリープ（レート制限対策）
+api_sleep() {
+    local sleep_time="${1:-0.1}"  # デフォルト100ms
+    sleep "$sleep_time"
+}
+
 # 学生ID検証
 validate_student_id() {
     local student_id="$1"
@@ -132,6 +194,22 @@ show_status() {
         return 1
     fi
     
+    # 学生数に基づいてレート制限チェック
+    local students
+    students=$(get_all_students)
+    local student_count=0
+    if [ -n "$students" ]; then
+        student_count=$(echo "$students" | wc -l | tr -d ' ')
+    fi
+    
+    # 学生1人あたり約3-4 API呼び出し（リポジトリ確認、情報取得、保護状態確認）
+    local required_calls=$((student_count * 4))
+    if [ "$required_calls" -gt 50 ]; then
+        if ! check_rate_limit "$required_calls"; then
+            return 1
+        fi
+    fi
+    
     echo
     echo "╔═══════════════════════════════════════════════════════════════════════════════╗"
     echo "║                         Student Thesis Repository Status                      ║"
@@ -160,7 +238,9 @@ show_status() {
             local repo_info=""
             if gh repo view "smkwlab/$repo_name" >/dev/null 2>&1; then
                 repo_exists=true
+                api_sleep 0.1  # レート制限対策
                 repo_info=$(gh api "repos/smkwlab/$repo_name" 2>/dev/null)
+                api_sleep 0.1  # レート制限対策
             fi
             
             if [ "$repo_exists" = true ] && [ -n "$repo_info" ]; then
@@ -171,6 +251,7 @@ show_status() {
                 [ "$last_update" = "null" ] || [ -z "$last_update" ] && last_update="N/A"
                 
                 local protection_status
+                api_sleep 0.1  # レート制限対策
                 protection_status=$(check_branch_protection "$repo_name")
                 
                 if [ "$protection_status" = "protected" ]; then
