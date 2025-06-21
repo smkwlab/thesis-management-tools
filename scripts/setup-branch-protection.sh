@@ -70,7 +70,7 @@ close_related_issue() {
             fi
         done
     else
-        warn "⚠️  関連Issueが見つかりませんでした（リポジトリ: $search_term）"
+        warn "⚠️  関連Issueが見つかりませんでした（リポジトリ: ${search_term}）"
         warn "   手動でIssueをクローズしてください"
     fi
 }
@@ -222,9 +222,9 @@ main() {
         exit 1
     fi
     
-    # GitHub CLI認証確認
-    if ! gh auth status >/dev/null 2>&1; then
-        error "GitHub CLI is not authenticated"
+    # GitHub CLI認証確認（実際のAPI呼び出しでテスト）
+    if ! gh api user >/dev/null 2>&1; then
+        error "GitHub CLI is not authenticated or current account is invalid"
         error "Please run 'gh auth login' first"
         exit 1
     fi
