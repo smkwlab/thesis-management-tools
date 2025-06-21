@@ -173,7 +173,7 @@ fi
 
 # devcontainer セットアップ
 echo "LaTeX環境をセットアップ中..."
-if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
+if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
     echo -e "${GREEN}✓ LaTeX環境のセットアップ完了${NC}"
     
     # aldc一時ファイルの削除
