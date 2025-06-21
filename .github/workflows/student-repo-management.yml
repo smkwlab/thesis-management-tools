@@ -1,0 +1,68 @@
+name: Student Repository Management
+on:
+  schedule:
+    # 2時間ごとに実行
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force update all registries'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  manage-repositories:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup GitHub CLI
+        run: |
+          type -p gh >/dev/null || (
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+            sudo apt update
+            sudo apt install gh
+          )
+          
+      - name: Extract student info from issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📊 未処理Issueから学生情報を抽出中..."
+          ./scripts/extract-student-info-from-issues.sh
+          
+      - name: Setup branch protection
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔒 ブランチ保護設定を実行中..."
+          ./scripts/bulk-setup-protection.sh
+          
+      - name: Update student registry
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📝 学生レジストリを更新中..."
+          ./scripts/update-student-registry.sh
+          
+      - name: Commit registry updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "📊 変更なし: レジストリは最新状態です"
+          else
+            git commit -m "Auto-update student registry and protection status
+
+- Extracted student info from issues
+- Updated branch protection status  
+- Maintained yearly student classification"
+            git push
+            echo "📊 学生レジストリを更新しました"
+          fi

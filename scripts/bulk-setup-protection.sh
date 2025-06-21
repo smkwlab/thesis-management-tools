@@ -9,8 +9,10 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PENDING_FILE="${1:-$SCRIPT_DIR/../student-repos/pending-protection.txt}"
-COMPLETED_FILE="$SCRIPT_DIR/../student-repos/completed-protection.txt"
+PENDING_FILE="${1:-$SCRIPT_DIR/../data/protection-status/pending-protection.txt}"
+COMPLETED_FILE="$SCRIPT_DIR/../data/protection-status/completed-protection.txt"
+FAILED_FILE="$SCRIPT_DIR/../data/protection-status/failed-protection.txt"
+ACTIVE_REPOS_FILE="$SCRIPT_DIR/../data/repositories/active.txt"
 
 # カラー定義
 RED='\033[0;31m'
@@ -35,37 +37,87 @@ warn() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-# ブランチ保護設定を実行
-setup_branch_protection() {
-    local student_id="$1"
+# ブランチ保護設定を実行（リポジトリ名指定版）
+setup_branch_protection_for_repo() {
+    local repo_name="$1"
+    local student_id="$2"
+    local org_name="smkwlab"
     
-    # 論文タイプの判定
-    if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
-        thesis_type="sotsuron"
-    elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
-        thesis_type="thesis"
-    else
-        error "Invalid student ID format: $student_id"
+    log "Setting up branch protection for $repo_name..."
+    
+    # リポジトリ存在確認
+    if ! gh repo view "$org_name/$repo_name" >/dev/null 2>&1; then
+        error "Repository not found: $org_name/$repo_name"
         return 1
     fi
     
-    local repo_name="${student_id}-${thesis_type}"
+    # mainブランチ保護設定
+    if gh api -X PUT "/repos/$org_name/$repo_name/branches/main/protection" \
+        --method PUT \
+        --field required_status_checks='{"strict":false,"contexts":[]}' \
+        --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
+        --field enforce_admins=false \
+        --field allow_force_pushes=false \
+        --field allow_deletions=false \
+        >/dev/null 2>&1; then
+        success "Main branch protection configured for $repo_name"
+    else
+        error "Failed to configure main branch protection for $repo_name"
+        return 1
+    fi
     
-    log "Setting up branch protection: smkwlab/$repo_name"
-    
-    # GitHub CLIでブランチ保護設定
-    if gh api "repos/smkwlab/$repo_name/branches/main/protection" \
+    # review-branchブランチ保護設定
+    if gh api -X PUT "/repos/$org_name/$repo_name/branches/review-branch/protection" \
         --method PUT \
         --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
         --field enforce_admins=false \
         --field allow_force_pushes=false \
         --field allow_deletions=false \
         >/dev/null 2>&1; then
-        success "Branch protection configured for $repo_name"
+        success "Review branch protection configured for $repo_name"
         return 0
     else
-        error "Failed to configure branch protection for $repo_name"
+        error "Failed to configure review branch protection for $repo_name"
         return 1
+    fi
+}
+
+# 関連Issueを自動クローズ
+close_related_issue() {
+    local repo_name="$1"
+    
+    log "Looking for related issue for $repo_name..."
+    
+    # ブランチ保護設定依頼Issueを検索
+    local issue_number=$(gh issue list \
+        --repo smkwlab/thesis-management-tools \
+        --state open \
+        --search "in:title ブランチ保護設定依頼 in:body $repo_name" \
+        --json number \
+        --jq '.[0].number' 2>/dev/null || echo "")
+    
+    if [ -n "$issue_number" ] && [ "$issue_number" != "null" ]; then
+        log "Found related issue #$issue_number, closing..."
+        if gh issue comment "$issue_number" \
+            --repo smkwlab/thesis-management-tools \
+            --body "✅ ブランチ保護設定が自動実行されました
+
+リポジトリ: smkwlab/$repo_name
+設定完了時刻: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+以下のブランチに保護設定を適用しました:
+- main ブランチ
+- review-branch ブランチ" >/dev/null 2>&1; then
+            success "Added completion comment to issue #$issue_number"
+        fi
+        
+        if gh issue close "$issue_number" --repo smkwlab/thesis-management-tools >/dev/null 2>&1; then
+            success "Closed issue #$issue_number"
+        else
+            warn "Failed to close issue #$issue_number"
+        fi
+    else
+        info "No related issue found for $repo_name"
     fi
 }
 
@@ -88,66 +140,65 @@ main() {
     local success_count=0
     local failed_students=""
     
-    # 処理対象の学生をカウント
-    while IFS=' ' read -r student_id _; do
-        if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
+    # 処理対象のリポジトリをカウント
+    while read -r repo_name; do
+        if [ -n "$repo_name" ] && [[ "$repo_name" =~ ^k[0-9]{2}[rg][sjk][0-9]+-[a-z]+$ ]]; then
             ((total_count++))
         fi
     done < "$PENDING_FILE"
     
     if [ "$total_count" -eq 0 ]; then
-        warn "No students found in pending file"
+        warn "No repositories found in pending file"
         exit 0
     fi
     
-    log "Processing $total_count students..."
+    log "Processing $total_count repositories..."
     echo
     
-    # 各学生のブランチ保護設定
-    while IFS=' ' read -r student_id _; do
-        if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
-            if setup_branch_protection "$student_id"; then
+    # 各リポジトリのブランチ保護設定
+    while read -r repo_name; do
+        if [ -n "$repo_name" ] && [[ "$repo_name" =~ ^k[0-9]{2}[rg][sjk][0-9]+-[a-z]+$ ]]; then
+            local student_id=$(echo "$repo_name" | cut -d'-' -f1)
+            if setup_branch_protection_for_repo "$repo_name" "$student_id"; then
                 ((success_count++))
                 # 完了リストに移動
-                local line
-                line=$(grep "^$student_id " "$PENDING_FILE" || echo "")
-                if [ -n "$line" ]; then
-                    echo "$line # Protected: $(date +%Y-%m-%d)" >> "$COMPLETED_FILE"
-                fi
+                echo "$repo_name # Protected: $(date +%Y-%m-%d)" >> "$COMPLETED_FILE"
+                # アクティブリポジトリリストに追加
+                echo "$repo_name" >> "$ACTIVE_REPOS_FILE"
+                # Issue自動クローズ
+                close_related_issue "$repo_name"
             else
-                failed_students+="$student_id "
+                failed_students+="$repo_name "
+                # 失敗リストに追加
+                echo "$repo_name # Failed: $(date +%Y-%m-%d)" >> "$FAILED_FILE"
             fi
         fi
     done < "$PENDING_FILE"
     
     # 成功分をpendingから削除
     if [ "$success_count" -gt 0 ]; then
-        # 成功した学生IDを一時ファイルに保存
-        local temp_success=$(mktemp)
-        while IFS=' ' read -r student_id _; do
-            if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
-                if grep -q "^$student_id.*Protected:" "$COMPLETED_FILE"; then
-                    echo "$student_id"
-                fi
-            fi
-        done < "$PENDING_FILE" > "$temp_success"
-        
-        # pendingファイルから成功分を除外
+        # 処理済みリポジトリをpendingから削除
         local temp_pending=$(mktemp)
-        while IFS=' ' read -r student_id rest; do
-            if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
-                if ! grep -q "^$student_id$" "$temp_success"; then
-                    echo "$student_id $rest"
+        while read -r repo_name; do
+            if [ -n "$repo_name" ]; then
+                # 完了済みまたは失敗済みでない場合のみ残す
+                if ! grep -q "^$repo_name" "$COMPLETED_FILE" 2>/dev/null && \
+                   ! grep -q "^$repo_name" "$FAILED_FILE" 2>/dev/null; then
+                    echo "$repo_name" >> "$temp_pending"
                 fi
-            else
-                # コメント行はそのまま保持
-                echo "$student_id $rest"
             fi
-        done < "$PENDING_FILE" > "$temp_pending"
-        
+        done < "$PENDING_FILE"
+        # pendingファイルを更新
         mv "$temp_pending" "$PENDING_FILE"
-        rm -f "$temp_success"
     fi
+    
+    # ファイルの重複除去とディレクトリ作成
+    mkdir -p "$(dirname "$COMPLETED_FILE")" "$(dirname "$FAILED_FILE")" "$(dirname "$ACTIVE_REPOS_FILE")"
+    
+    # 重複除去
+    [ -f "$COMPLETED_FILE" ] && sort -u "$COMPLETED_FILE" -o "$COMPLETED_FILE"
+    [ -f "$FAILED_FILE" ] && sort -u "$FAILED_FILE" -o "$FAILED_FILE"
+    [ -f "$ACTIVE_REPOS_FILE" ] && sort -u "$ACTIVE_REPOS_FILE" -o "$ACTIVE_REPOS_FILE"
     
     # 結果報告
     echo
