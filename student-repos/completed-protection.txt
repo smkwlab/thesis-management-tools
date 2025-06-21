@@ -1,3 +1,5 @@
 # ブランチ保護設定完了済み学生リスト  
 # Format: student_id # Created: YYYY-MM-DD Repository: repo_name Protected: YYYY-MM-DD
 # このファイルは bulk-setup-protection.sh によって自動更新されます
+k21rs001 # Created: 2024-04-01 Repository: k21rs001-sotsuron # Protected: 2025-06-21
+k19rs959 # Created: 2025-06-21 Repository: k19rs959-sotsuron # Protected: 2025-06-21

@@ -45,11 +45,10 @@ check_github_cli() {
         return 1
     fi
     
-    # 認証状態確認
-    local auth_output
-    auth_output=$(gh auth status 2>&1)
-    if ! echo "$auth_output" | grep -q "Active account: true"; then
-        error "GitHub CLI is not authenticated. Run 'gh auth login' first."
+    # 認証状態確認（実際のAPI呼び出しでテスト）
+    if ! gh api user >/dev/null 2>&1; then
+        error "GitHub CLI is not authenticated or current account is invalid"
+        error "Please run 'gh auth login' first"
         return 1
     fi
     
@@ -441,10 +440,253 @@ check_protection() {
         echo -e "$unprotected_repos"
         echo
         echo "To set up protection, run:"
-        echo "  cd scripts"
-        echo "  ./bulk-setup-protection.sh"
+        echo "  ./thesis-repo-manager.sh bulk"
     else
         success "All pending repositories are properly protected! ✅"
+    fi
+}
+
+# ブランチ保護設定を実行（bulk-setup機能から統合）
+setup_branch_protection() {
+    local student_id="$1"
+    
+    # 論文タイプの判定
+    if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
+        thesis_type="sotsuron"
+    elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
+        thesis_type="thesis"
+    else
+        error "Invalid student ID format: $student_id"
+        return 1
+    fi
+    
+    local repo_name="${student_id}-${thesis_type}"
+    
+    log "Setting up branch protection: smkwlab/$repo_name"
+    
+    # GitHub CLIでブランチ保護設定
+    local protection_config='{
+        "required_status_checks": {
+            "strict": false,
+            "contexts": []
+        },
+        "required_pull_request_reviews": {
+            "required_approving_review_count": 1,
+            "dismiss_stale_reviews": true,
+            "require_code_owner_reviews": false,
+            "dismissal_restrictions": {
+                "users": [],
+                "teams": []
+            }
+        },
+        "enforce_admins": false,
+        "restrictions": null,
+        "allow_force_pushes": false,
+        "allow_deletions": false
+    }'
+    
+    if echo "$protection_config" | gh api "repos/smkwlab/$repo_name/branches/main/protection" \
+        --method PUT \
+        --input - >/dev/null 2>&1; then
+        success "Branch protection configured for $repo_name"
+        return 0
+    else
+        error "Failed to configure branch protection for $repo_name"
+        return 1
+    fi
+}
+
+# 関連Issueを自動クローズ（bulk-setup機能から統合）
+close_related_issue() {
+    local repo_name="$1"
+    
+    log "関連Issueの検索とクローズ中..."
+    
+    # リポジトリ名に基づいてIssueを検索
+    local search_term="smkwlab/${repo_name}"
+    local issues
+    
+    # GitHub CLIでIssue検索（タイトルにリポジトリ名が含まれるものを検索）
+    issues=$(gh issue list --repo smkwlab/thesis-management-tools \
+        --state open \
+        --label "branch-protection" \
+        --json number,title \
+        --jq ".[] | select(.title | contains(\"$search_term\")) | .number" 2>/dev/null || echo "")
+    
+    if [ -n "$issues" ]; then
+        for issue_number in $issues; do
+            if gh issue close "$issue_number" --repo smkwlab/thesis-management-tools \
+                --comment "✅ ブランチ保護設定が完了しました。
+
+### 設定内容
+- 1つ以上の承認レビューが必要
+- 新しいコミット時に古いレビューを無効化  
+- フォースプッシュとブランチ削除を禁止
+
+### 確認
+リポジトリ設定: https://github.com/smkwlab/${repo_name}/settings/branches
+
+このIssueは自動的にクローズされました。" 2>/dev/null; then
+                success "✅ 関連Issue #${issue_number} を自動クローズしました"
+            else
+                warn "⚠️  Issue #${issue_number} のクローズに失敗しました"
+            fi
+        done
+    else
+        warn "⚠️  関連Issueが見つかりませんでした（リポジトリ: ${search_term}）"
+    fi
+}
+
+# 一括ブランチ保護設定
+bulk_setup_protection() {
+    local pending_file="${1:-$PENDING_FILE}"
+    
+    # ヘルプ表示
+    if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+        cat <<EOF
+Bulk Branch Protection Setup
+
+Usage: $0 bulk [student_list_file]
+
+Arguments:
+  student_list_file    Path to student list file (default: student-repos/pending-protection.txt)
+
+Description:
+  Reads student IDs from the specified file and sets up branch protection
+  for their repositories. Successfully processed students are moved from
+  pending-protection.txt to completed-protection.txt.
+
+Examples:
+  $0 bulk                                    # Use default pending file
+  $0 bulk student-repos/pending-protection.txt  # Specify file explicitly
+
+Protection Rules Applied:
+  - Requires 1 approving review before merge
+  - Dismisses stale reviews when new commits are pushed
+  - Prevents force pushes and branch deletion
+  - Does not enforce admin restrictions
+
+Requirements:
+  - GitHub CLI (gh) must be authenticated
+  - Admin access to target repositories
+  - Target repositories and main branches must exist
+EOF
+        return 0
+    fi
+    
+    log "Starting bulk branch protection setup..."
+    
+    if [ ! -f "$pending_file" ]; then
+        error "Pending file not found: $pending_file"
+        return 1
+    fi
+    
+    # GitHub CLI認証確認
+    if ! check_github_cli; then
+        return 1
+    fi
+    
+    local total_count=0
+    local success_count=0
+    local failed_students=""
+    
+    # 処理対象の学生をカウント
+    while IFS=' ' read -r student_id _; do
+        if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
+            ((total_count++))
+        fi
+    done < "$pending_file"
+    
+    if [ "$total_count" -eq 0 ]; then
+        warn "No students found in pending file"
+        return 0
+    fi
+    
+    log "Processing $total_count students..."
+    echo
+    
+    # 各学生のブランチ保護設定
+    while IFS=' ' read -r student_id _; do
+        if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
+            if setup_branch_protection "$student_id"; then
+                ((success_count++))
+                
+                # 論文タイプの判定（再度）
+                if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
+                    thesis_type="sotsuron"
+                elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
+                    thesis_type="thesis"
+                fi
+                local repo_name="${student_id}-${thesis_type}"
+                
+                # 完了リストに移動
+                local line
+                line=$(grep "^$student_id " "$pending_file" || echo "")
+                if [ -n "$line" ]; then
+                    echo "$line # Protected: $(date +%Y-%m-%d)" >> "$COMPLETED_FILE"
+                fi
+                
+                # 関連Issue自動クローズ
+                close_related_issue "$repo_name"
+                
+                api_sleep 0.2  # レート制限対策
+            else
+                failed_students+="$student_id "
+            fi
+        fi
+    done < "$pending_file"
+    
+    # 成功分をpendingから削除
+    if [ "$success_count" -gt 0 ]; then
+        # 成功した学生IDを一時ファイルに保存
+        local temp_success
+        temp_success=$(mktemp)
+        while IFS=' ' read -r student_id _; do
+            if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
+                if grep -q "^$student_id.*Protected:" "$COMPLETED_FILE"; then
+                    echo "$student_id"
+                fi
+            fi
+        done < "$pending_file" > "$temp_success"
+        
+        # pendingファイルから成功分を除外
+        local temp_pending
+        temp_pending=$(mktemp)
+        while IFS=' ' read -r student_id rest; do
+            if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
+                if ! grep -q "^$student_id$" "$temp_success"; then
+                    echo "$student_id $rest"
+                fi
+            else
+                # コメント行はそのまま保持
+                echo "$student_id $rest"
+            fi
+        done < "$pending_file" > "$temp_pending"
+        
+        mv "$temp_pending" "$pending_file"
+        rm -f "$temp_success"
+    fi
+    
+    # 結果報告
+    echo
+    log "Bulk setup completed"
+    echo "📊 Results:"
+    echo "   Total: $total_count"
+    echo "   Success: $success_count"
+    echo "   Failed: $((total_count - success_count))"
+    
+    if [ -n "$failed_students" ]; then
+        echo
+        warn "Failed students: $failed_students"
+        warn "Please check these repositories manually"
+    fi
+    
+    if [ "$success_count" -gt 0 ]; then
+        echo
+        success "Branch protection setup completed for $success_count repositories"
+        success "Updated files:"
+        success "  - $COMPLETED_FILE (added $success_count entries)"
+        success "  - $PENDING_FILE (removed $success_count entries)"
     fi
 }
 
@@ -457,6 +699,7 @@ Usage: $0 [command] [options]
 
 Commands:
   status      Show all student repository status (GitHub API)
+  bulk        Run bulk branch protection setup for all pending students
   pr-stats    Show PR and issue statistics  
   activity    Show recent commit activity (last 7 days)
   check       Check branch protection status for pending repositories
@@ -487,6 +730,9 @@ main() {
     case "${1:-help}" in
         status)
             show_status
+            ;;
+        bulk)
+            bulk_setup_protection "${2:-}"
             ;;
         pr-stats|stats)
             show_pr_stats

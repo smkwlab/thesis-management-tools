@@ -1,6 +1,5 @@
 # ブランチ保護設定待ち学生リスト
 # Format: student_id # Created: YYYY-MM-DD Repository: repo_name
 # このファイルは setup.sh 実行時の自動PR経由で更新されます
-
-k21rs001 # Created: 2024-04-01 Repository: k21rs001-sotsuron
+ 
 k21gjk01 # Created: 2024-04-01 Repository: k21gjk01-thesis
