@@ -206,6 +206,21 @@ create_protection_request_pr() {
     cd "$temp_dir"
     
     if gh repo clone smkwlab/thesis-management-tools . -- --depth=1 --single-branch; then
+        # Git設定（GitHub CLIから取得）
+        local github_user=$(gh api user --jq .login)
+        local github_email=$(gh api user --jq .email)
+        local github_name=$(gh api user --jq .name)
+        
+        if [ "$github_email" = "null" ] || [ -z "$github_email" ]; then
+            github_email="${github_user}@users.noreply.github.com"
+        fi
+        if [ "$github_name" = "null" ] || [ -z "$github_name" ]; then
+            github_name="$github_user"
+        fi
+        
+        git config user.email "$github_email"
+        git config user.name "$github_name"
+        
         # 新しいブランチ作成
         git checkout -b "$branch_name"
         
