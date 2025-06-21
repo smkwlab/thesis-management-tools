@@ -70,14 +70,46 @@ close_related_issue() {
             fi
         done
     else
-        warn "⚠️  関連Issueが見つかりませんでした（タイトル: $issue_title）"
+        warn "⚠️  関連Issueが見つかりませんでした（リポジトリ: $search_term）"
         warn "   手動でIssueをクローズしてください"
     fi
+}
+
+# 処理前バックアップ（重要ファイルの保護）
+create_backup() {
+    local operation="$1"
+    local timestamp=$(date +'%Y%m%d_%H%M%S')
+    local backup_dir="$SCRIPT_DIR/../backups/${operation}_${timestamp}"
+    
+    log "処理前バックアップを作成中..."
+    
+    mkdir -p "$backup_dir"
+    
+    # 重要ファイルのバックアップ
+    if [ -f "$SCRIPT_DIR/../student-repos/pending-protection.txt" ]; then
+        cp "$SCRIPT_DIR/../student-repos/pending-protection.txt" "$backup_dir/"
+    fi
+    if [ -f "$SCRIPT_DIR/../student-repos/completed-protection.txt" ]; then
+        cp "$SCRIPT_DIR/../student-repos/completed-protection.txt" "$backup_dir/"
+    fi
+    
+    # Git状態のバックアップ
+    cd "$SCRIPT_DIR/.." 2>/dev/null && {
+        git log --oneline -5 > "$backup_dir/git_log.txt" 2>/dev/null || true
+        git status --porcelain > "$backup_dir/git_status.txt" 2>/dev/null || true
+    }
+    
+    success "✅ バックアップ作成完了: $backup_dir"
+    echo "$backup_dir"
 }
 
 # ブランチ保護設定
 setup_protection() {
     local student_id="$1"
+    
+    # 処理前バックアップ
+    local backup_dir
+    backup_dir=$(create_backup "branch_protection_${student_id}")
     
     # 学生ID検証
     if ! [[ "$student_id" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})$ ]]; then

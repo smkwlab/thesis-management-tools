@@ -195,11 +195,62 @@ git push -u origin 0th-draft
 # 学生IDの処理ロック獲得（並行実行防止）
 acquire_student_lock() {
     local student_id="$1"
-    local lockfile="/tmp/thesis-protection-${student_id}.lock"
     
-    if ! (set -C; echo $$ > "$lockfile") 2>/dev/null; then
-        echo -e "${YELLOW}⚠️  学生ID ${student_id} の処理が実行中です${NC}"
-        echo "   しばらく待ってから再実行してください"
+    # 一時ディレクトリの作成（より安全）
+    local tmp_dir
+    if command -v mktemp >/dev/null 2>&1; then
+        tmp_dir=$(mktemp -d -t "thesis-protection.XXXXXX") 2>/dev/null
+    fi
+    
+    # フォールバック: /tmp 使用
+    if [ -z "$tmp_dir" ] || [ ! -d "$tmp_dir" ]; then
+        tmp_dir="/tmp"
+    fi
+    
+    local lockfile="${tmp_dir}/thesis-protection-${student_id}.lock"
+    
+    # ロック取得試行（タイムアウト付き）
+    local max_attempts=30  # 30秒間試行
+    local attempt=0
+    
+    while [ $attempt -lt $max_attempts ]; do
+        if (set -C; echo $$ > "$lockfile") 2>/dev/null; then
+            # ロック獲得成功
+            break
+        fi
+        
+        attempt=$((attempt + 1))
+        if [ $attempt -eq 1 ]; then
+            echo -e "${YELLOW}⚠️  学生ID ${student_id} の処理が実行中です${NC}"
+            echo -e "${YELLOW}   ロック取得を試行中... (最大30秒)${NC}"
+        fi
+        
+        # 既存のロックファイルが古い場合は削除（5分以上古い）
+        if [ -f "$lockfile" ]; then
+            local lock_age
+            if command -v stat >/dev/null 2>&1; then
+                # Linux/macOS対応
+                if stat -f%m "$lockfile" >/dev/null 2>&1; then
+                    # macOS (BSD stat)
+                    lock_age=$(( $(date +%s) - $(stat -f%m "$lockfile" 2>/dev/null || echo 0) ))
+                else
+                    # Linux (GNU stat)
+                    lock_age=$(( $(date +%s) - $(stat -c%Y "$lockfile" 2>/dev/null || echo 0) ))
+                fi
+                
+                if [ "$lock_age" -gt 300 ]; then  # 5分 = 300秒
+                    echo -e "${YELLOW}   古いロックファイルを削除中...${NC}"
+                    rm -f "$lockfile" 2>/dev/null || true
+                fi
+            fi
+        fi
+        
+        sleep 1
+    done
+    
+    if [ $attempt -ge $max_attempts ]; then
+        echo -e "${RED}❌ ロック取得タイムアウト${NC}"
+        echo "   他の処理が完了するまでお待ちください"
         return 1
     fi
     
