@@ -44,11 +44,11 @@ close_related_issue() {
     local issues
     
     # GitHub CLIでIssue検索（タイトルにリポジトリ名が含まれるものを検索）
+    # 学生が作成したIssueにはラベルが付いていない可能性があるため、タイトルベースでのみ検索
     issues=$(gh issue list --repo smkwlab/thesis-management-tools \
         --state open \
-        --label "branch-protection" \
         --json number,title \
-        --jq ".[] | select(.title | contains(\"$search_term\")) | .number" 2>/dev/null || echo "")
+        --jq ".[] | select((.title | contains(\"$search_term\")) and (.title | contains(\"ブランチ保護設定依頼\"))) | .number" 2>/dev/null || echo "")
     
     if [ -n "$issues" ]; then
         for issue_number in $issues; do
