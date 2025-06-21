@@ -424,9 +424,8 @@ EOF
         local clean_issue_number=$(echo "$issue_number" | grep -o '[0-9]\+' | head -1)
         echo "   Issue #${clean_issue_number}: https://github.com/smkwlab/thesis-management-tools/issues/${clean_issue_number}"
         
-        # ラベル設定について
-        echo -e "${YELLOW}ℹ️  ラベルは教員が後で設定します${NC}"
-        echo "   (学生アカウントには管理リポジトリの編集権限がないため)"
+        # Issue作成完了
+        echo -e "${GREEN}ℹ️  教員が上記Issueを確認してブランチ保護設定を実行します${NC}"
         
         # 学生リストファイルへの追加（Dockerコンテナ内では実行環境に依存）
         # Note: Dockerコンテナ内では相対パスが異なるため、Issueでの管理を優先
