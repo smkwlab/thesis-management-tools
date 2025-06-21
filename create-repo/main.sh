@@ -173,7 +173,7 @@ fi
 
 # devcontainer セットアップ
 echo "LaTeX環境をセットアップ中..."
-if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
+if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
     echo -e "${GREEN}✓ LaTeX環境のセットアップ完了${NC}"
     
     # aldc一時ファイルの削除
@@ -203,15 +203,15 @@ echo -e "${GREEN}✓ Git認証設定完了${NC}"
 # 初期ブランチ構成
 echo "ブランチを設定中..."
 
-git checkout -b initial
-git commit --allow-empty -m "初期状態（リポジトリ作成直後）"
-git push -u origin initial
+git checkout -b initial >/dev/null 2>&1
+git commit --allow-empty -m "初期状態（リポジトリ作成直後）" >/dev/null 2>&1
+git push -u origin initial >/dev/null 2>&1
 
-git checkout -b review-branch
-git push -u origin review-branch
+git checkout -b review-branch >/dev/null 2>&1
+git push -u origin review-branch >/dev/null 2>&1
 
-git checkout -b 0th-draft
-git push -u origin 0th-draft
+git checkout -b 0th-draft >/dev/null 2>&1
+git push -u origin 0th-draft >/dev/null 2>&1
 
 # Note: mainブランチ保護は教員が後から設定する必要があります
 # ブランチ保護ツール: thesis-management-tools/scripts/setup-branch-protection.sh
@@ -424,9 +424,8 @@ EOF
         local clean_issue_number=$(echo "$issue_number" | grep -o '[0-9]\+' | head -1)
         echo "   Issue #${clean_issue_number}: https://github.com/smkwlab/thesis-management-tools/issues/${clean_issue_number}"
         
-        # ラベル設定について
-        echo -e "${YELLOW}ℹ️  ラベルは教員が後で設定します${NC}"
-        echo "   (学生アカウントには管理リポジトリの編集権限がないため)"
+        # Issue作成完了
+        echo -e "${GREEN}ℹ️  教員が上記Issueを確認してブランチ保護設定を実行します${NC}"
         
         # 学生リストファイルへの追加（Dockerコンテナ内では実行環境に依存）
         # Note: Dockerコンテナ内では相対パスが異なるため、Issueでの管理を優先

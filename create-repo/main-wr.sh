@@ -159,7 +159,7 @@ echo -e "${GREEN}✓ Git設定完了: $GITHUB_NAME <$GITHUB_EMAIL>${NC}"
 
 # devcontainer セットアップ
 echo "LaTeX環境をセットアップ中..."
-if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
+if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
     echo -e "${GREEN}✓ LaTeX環境のセットアップ完了${NC}"
     
     # aldc一時ファイルの削除
@@ -187,7 +187,7 @@ echo -e "${GREEN}✓ Git認証設定完了${NC}"
 
 # 初期プッシュ（週報は単純な main ブランチ運用）
 echo "初期プッシュを実行中..."
-git push -u origin main
+git push -u origin main >/dev/null 2>&1
 
 # 完了メッセージ
 echo ""
