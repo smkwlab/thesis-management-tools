@@ -86,7 +86,7 @@ if ! gh api user --jq .login &> /dev/null; then
 fi
 
 # 複数アカウントの確認と適切なアカウント選択
-echo "👤 GitHub アカウント状況を確誋中..."
+echo "👤 GitHub アカウント状況を確認中..."
 
 # 現在のアクティブアカウントを取得（認証確認済みなので必ず成功）
 CURRENT_USER=$(gh api user --jq .login 2>/dev/null)
@@ -191,7 +191,7 @@ if [ -n "$STUDENT_ID" ]; then
     fi
 else
     if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-temp; then
-        echo "❌ セットアップスクリプトの実行に失斉しました"
+        echo "❌ セットアップスクリプトの実行に失敗しました"
         exit 1
     fi
 fi
