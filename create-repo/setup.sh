@@ -64,10 +64,10 @@ fi
 
 echo "✅ GitHub CLI 確認完了"
 
-# GitHub 認証状態の確認
+# GitHub 認証状態の確認（現在アクティブなアカウントの認証確認）
 echo "🔑 GitHub 認証状態を確認中..."
-if ! gh auth status &> /dev/null; then
-    echo "❌ GitHub 認証が必要です"
+if ! gh api user --jq .login &> /dev/null; then
+    echo "❌ 現在のアカウントの認証が必要です"
     echo "自動的にGitHub認証を開始します..."
     echo ""
     
@@ -83,10 +83,11 @@ fi
 # 複数アカウントの確認と適切なアカウント選択
 echo "👤 GitHub アカウント状況を確認中..."
 
-# 現在のアクティブアカウントを取得
+# 現在のアクティブアカウントを取得（認証確認済みなので必ず成功）
 CURRENT_USER=$(gh api user --jq .login 2>/dev/null)
 if [ -z "$CURRENT_USER" ]; then
     echo "❌ アクティブなGitHubアカウントの情報取得に失敗しました"
+    echo "認証に問題がある可能性があります。'gh auth refresh' を試してください"
     exit 1
 fi
 
