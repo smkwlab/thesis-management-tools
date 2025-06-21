@@ -56,9 +56,25 @@ check_github_cli() {
     return 0
 }
 
+# 学生ID検証
+validate_student_id() {
+    local student_id="$1"
+    if ! [[ "$student_id" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})$ ]]; then
+        warn "Invalid student ID format: $student_id"
+        return 1
+    fi
+    return 0
+}
+
 # 学生IDからリポジトリ名を決定
 determine_repo_name() {
     local student_id="$1"
+    
+    # 学生ID検証
+    if ! validate_student_id "$student_id"; then
+        echo ""
+        return 1
+    fi
     
     if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
         # 卒業論文
@@ -141,6 +157,7 @@ show_status() {
             
             # GitHub APIでリポジトリ情報取得
             local repo_exists=false
+            local repo_info=""
             if gh repo view "smkwlab/$repo_name" >/dev/null 2>&1; then
                 repo_exists=true
                 repo_info=$(gh api "repos/smkwlab/$repo_name" 2>/dev/null)
@@ -177,8 +194,9 @@ show_status() {
     
     # 統計情報
     local total_students
-    total_students=$(echo "$students" | wc -l | tr -d ' ')
-    if [ "$total_students" -eq 0 ]; then
+    if [ -n "$students" ]; then
+        total_students=$(echo "$students" | wc -l | tr -d ' ')
+    else
         total_students=0
     fi
     

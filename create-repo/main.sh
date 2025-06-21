@@ -192,6 +192,89 @@ git push -u origin 0th-draft
 # Note: mainブランチ保護は教員が後から設定する必要があります
 # ブランチ保護ツール: thesis-management-tools/scripts/setup-branch-protection.sh
 
+# 管理リポジトリへのIssue作成（ブランチ保護設定依頼）
+create_protection_request_issue() {
+    local student_id="$1"
+    local repo_name="$2"
+    local created_date=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+    local created_time=$(TZ=Asia/Tokyo date)
+    local created_jst_time=$(TZ=Asia/Tokyo date +'%H:%M')
+    
+    echo "📋 ブランチ保護設定依頼Issueを作成中..."
+    
+    # GitHub Issue作成（学生でも権限があれば可能）
+    if gh issue create \
+        --repo smkwlab/thesis-management-tools \
+        --title "🔒 ブランチ保護設定依頼: ${student_id}" \
+        --assignee toshi0806 \
+        --label "branch-protection,auto-generated" \
+        --body "$(cat <<EOF
+## ブランチ保護設定依頼
+
+### リポジトリ情報
+- **リポジトリ**: [smkwlab/${repo_name}](https://github.com/smkwlab/${repo_name})
+- **学生ID**: ${student_id}
+- **作成日時**: ${created_time}
+
+### 教員の対応手順
+- [ ] 以下のコマンドを実行
+\`\`\`bash
+cd thesis-management-tools/scripts
+./setup-branch-protection.sh ${student_id}
+\`\`\`
+- [ ] 設定完了を確認: [リポジトリ設定](https://github.com/smkwlab/${repo_name}/settings/branches)
+- [ ] このIssueをクローズ
+
+### 一括処理オプション
+複数の学生を一括処理する場合：
+\`\`\`bash
+cd thesis-management-tools/scripts
+# 学生リストファイルに追加
+echo "${student_id} # Created: ${created_date} Repository: ${repo_name}" >> ../student-repos/pending-protection.txt
+# 一括実行
+./bulk-setup-protection.sh ../student-repos/pending-protection.txt
+\`\`\`
+
+### 設定される保護ルール
+- 1つ以上の承認レビューが必要
+- 新しいコミット時に古いレビューを無効化
+- フォースプッシュとブランチ削除を禁止
+
+---
+*この Issue は学生の setup.sh 実行時に自動生成されました*
+*学生ID: ${student_id} | リポジトリ: ${repo_name} | 作成: ${created_date} ${created_jst_time} JST*
+EOF
+)"; then
+        local issue_url=$(gh issue list --repo smkwlab/thesis-management-tools --label "branch-protection" --state open --limit 1 --json url --jq '.[0].url')
+        echo -e "${GREEN}✅ ブランチ保護設定依頼Issue作成完了${NC}"
+        echo "   Issue URL: ${issue_url:-https://github.com/smkwlab/thesis-management-tools/issues}"
+        
+        # 学生リストファイルにも追加（教員用の一括処理対応）
+        local student_repos_dir="../student-repos"
+        if [ -d "$student_repos_dir" ] || mkdir -p "$student_repos_dir" 2>/dev/null; then
+            echo "${student_id} # Created: ${created_date} Repository: ${repo_name}" >> "${student_repos_dir}/pending-protection.txt"
+            echo -e "${GREEN}✅ 学生リストファイルにも追加完了${NC}"
+        fi
+        
+        return 0
+    else
+        echo -e "${YELLOW}⚠️  Issue作成に失敗しました（手動で教員に連絡してください）${NC}"
+        echo "   手動作成用情報:"
+        echo "   - 学生ID: ${student_id}"
+        echo "   - リポジトリ: https://github.com/smkwlab/${repo_name}"
+        echo "   - 実行コマンド: ./setup-branch-protection.sh ${student_id}"
+        return 1
+    fi
+}
+
+# 自動Issue作成の実行
+if [ -n "$STUDENT_ID" ]; then
+    create_protection_request_issue "$STUDENT_ID" "$REPO_NAME"
+else
+    echo -e "${YELLOW}⚠️  学籍番号が設定されていないため、自動Issue作成をスキップしました${NC}"
+    echo "   手動で教員にブランチ保護設定を依頼してください"
+fi
+
 # 完了メッセージ
 echo ""
 echo -e "${GREEN}✅ セットアップ完了！${NC}"
