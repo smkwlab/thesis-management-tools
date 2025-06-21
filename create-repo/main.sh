@@ -192,6 +192,84 @@ git push -u origin 0th-draft
 # Note: mainブランチ保護は教員が後から設定する必要があります
 # ブランチ保護ツール: thesis-management-tools/scripts/setup-branch-protection.sh
 
+# 学生IDの処理ロック獲得（並行実行防止）
+acquire_student_lock() {
+    local student_id="$1"
+    local lockfile="/tmp/thesis-protection-${student_id}.lock"
+    
+    if ! (set -C; echo $$ > "$lockfile") 2>/dev/null; then
+        echo -e "${YELLOW}⚠️  学生ID ${student_id} の処理が実行中です${NC}"
+        echo "   しばらく待ってから再実行してください"
+        return 1
+    fi
+    
+    # 終了時にロックファイルを削除
+    trap "rm -f '$lockfile'" EXIT
+    echo -e "${GREEN}✅ 処理ロック獲得完了${NC}"
+    return 0
+}
+
+# 既存学生ID登録状況チェック（重複回避）
+check_existing_student() {
+    local student_id="$1"
+    
+    echo "📋 既存学生ID登録状況をチェック中..."
+    
+    # pending-protection.txtの内容を取得して確認
+    if gh api "repos/smkwlab/thesis-management-tools/contents/student-repos/pending-protection.txt" \
+       --jq '.content' 2>/dev/null | base64 -d | grep -q "^${student_id} "; then
+        echo -e "${YELLOW}⚠️  学生ID ${student_id} は既に登録済みです${NC}"
+        echo "   既存のIssueを確認してください"
+        return 1
+    fi
+    
+    # completed-protection.txtも確認
+    if gh api "repos/smkwlab/thesis-management-tools/contents/student-repos/completed-protection.txt" \
+       --jq '.content' 2>/dev/null | base64 -d | grep -q "^${student_id} "; then
+        echo -e "${GREEN}ℹ️  学生ID ${student_id} のブランチ保護は既に設定済みです${NC}"
+        echo "   新しいIssue作成をスキップします"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ 学生ID重複チェック完了（新規登録）${NC}"
+    return 0
+}
+
+# Issue作成失敗時の詳細診断（エラー要因特定）
+diagnose_issue_failure() {
+    local exit_code="$1"
+    
+    echo "🔍 エラー診断中..."
+    
+    case $exit_code in
+        128) 
+            echo -e "${YELLOW}   原因: GitHub リポジトリへのアクセス権限がありません${NC}"
+            echo "   対処: 教員に以下の権限設定を依頼してください："
+            echo "         - thesis-management-tools リポジトリへの Issue 作成権限"
+            echo "         - smkwlab 組織のメンバーシップ確認"
+            ;;
+        1)   
+            echo -e "${YELLOW}   原因: ネットワークエラーまたは認証エラーです${NC}"
+            echo "   対処: 以下を確認してください："
+            echo "         1. 'gh auth status' で認証状態を確認"
+            echo "         2. インターネット接続を確認"
+            echo "         3. GitHub のサービス状況を確認"
+            ;;
+        2)
+            echo -e "${YELLOW}   原因: GitHub CLI の設定エラーです${NC}"
+            echo "   対処: GitHub CLI を再設定してください："
+            echo "         'gh auth login' を実行して再認証"
+            ;;
+        *)   
+            echo -e "${YELLOW}   原因: 予期しないエラーが発生しました (exit code: $exit_code)${NC}"
+            echo "   対処: 以下の情報を教員に連絡してください："
+            echo "         - 学生ID: ${STUDENT_ID:-unknown}"
+            echo "         - エラーコード: $exit_code"
+            echo "         - 実行時刻: $(date)"
+            ;;
+    esac
+}
+
 # 管理リポジトリへのIssue作成（ブランチ保護設定依頼）
 create_protection_request_issue() {
     local student_id="$1"
@@ -258,7 +336,10 @@ EOF
         
         return 0
     else
-        echo -e "${YELLOW}⚠️  Issue作成に失敗しました（手動で教員に連絡してください）${NC}"
+        local exit_code=$?
+        echo -e "${YELLOW}⚠️  Issue作成に失敗しました${NC}"
+        diagnose_issue_failure "$exit_code"
+        echo ""
         echo "   手動作成用情報:"
         echo "   - 学生ID: ${student_id}"
         echo "   - リポジトリ: https://github.com/smkwlab/${repo_name}"
@@ -269,7 +350,18 @@ EOF
 
 # 自動Issue作成の実行
 if [ -n "$STUDENT_ID" ]; then
-    create_protection_request_issue "$STUDENT_ID" "$REPO_NAME"
+    # 並行実行防止のためのロック獲得
+    if acquire_student_lock "$STUDENT_ID"; then
+        # 重複学生ID検出・回避
+        if check_existing_student "$STUDENT_ID"; then
+            create_protection_request_issue "$STUDENT_ID" "$REPO_NAME"
+        else
+            echo -e "${YELLOW}⚠️  Issue作成をスキップしました（既存学生ID）${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  処理をスキップしました（他の処理が実行中）${NC}"
+        exit 1
+    fi
 else
     echo -e "${YELLOW}⚠️  学籍番号が設定されていないため、自動Issue作成をスキップしました${NC}"
     echo "   手動で教員にブランチ保護設定を依頼してください"
