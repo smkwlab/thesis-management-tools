@@ -15,3 +15,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Test directories (student repository creation tests)
+create-repo/k*rs*-*/
+create-repo/k*gjk*-*/
+create-repo/*-wr/

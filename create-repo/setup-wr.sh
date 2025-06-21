@@ -13,14 +13,19 @@ fi
 # 引数または環境変数から学籍番号を取得
 STUDENT_ID="${1:-$STUDENT_ID}"
 
-# 一時ディレクトリ変数（グローバルスコープ）
+# 一時ディレクトリ・ファイル変数（グローバルスコープ）
 TEMP_DIR=""
+TOKEN_FILE=""
 
 # クリーンアップ関数
 cleanup() {
     if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
         echo "🧹 クリーンアップ中..."
         rm -rf "$TEMP_DIR"
+    fi
+    # セキュアなトークンファイルの削除
+    if [ -n "$TOKEN_FILE" ] && [ -f "$TOKEN_FILE" ]; then
+        rm -f "$TOKEN_FILE"
     fi
     # Dockerイメージも削除
     docker rmi wr-setup-temp 2>/dev/null || true
@@ -64,25 +69,30 @@ fi
 
 echo "✅ GitHub CLI 確認完了"
 
-# GitHub 認証状態の確認
+# GitHub 認証状態の確認（現在アクティブなアカウントの認証確認）
 echo "🔑 GitHub 認証状態を確認中..."
-if ! gh auth status &> /dev/null; then
-    echo "❌ GitHub 認証が必要です"
+if ! gh api user --jq .login &> /dev/null; then
+    echo "❌ 現在のアカウントの認証が必要です"
+    echo "自動的にGitHub認証を開始します..."
     echo ""
-    echo "以下のコマンドを実行してGitHubにログインしてください："
-    echo "  gh auth login"
-    echo ""
-    echo "認証完了後、再度このスクリプトを実行してください。"
-    exit 1
+    
+    if gh auth login --hostname github.com --git-protocol https --web --scopes "repo,workflow,read:org"; then
+        echo "✅ GitHub認証が完了しました"
+    else
+        echo "❌ GitHub認証に失敗しました"
+        echo "手動で 'gh auth login' を実行してから再度お試しください"
+        exit 1
+    fi
 fi
 
 # 複数アカウントの確認と適切なアカウント選択
 echo "👤 GitHub アカウント状況を確認中..."
 
-# 現在のアクティブアカウントを取得
+# 現在のアクティブアカウントを取得（認証確認済みなので必ず成功）
 CURRENT_USER=$(gh api user --jq .login 2>/dev/null)
 if [ -z "$CURRENT_USER" ]; then
     echo "❌ アクティブなGitHubアカウントの情報取得に失敗しました"
+    echo "認証に問題がある可能性があります。'gh auth refresh' を試してください"
     exit 1
 fi
 
@@ -117,11 +127,13 @@ if [ "$ACCOUNT_COUNT" -gt 1 ]; then
     echo "現在のアクティブアカウント ($CURRENT_USER) を使用します"
 fi
 
-# GitHub トークンの取得
-echo "🎫 GitHub 認証トークンを取得中..."
-GITHUB_TOKEN=""
-if GITHUB_TOKEN=$(gh auth token 2>/dev/null); then
-    echo "✅ GitHub 認証トークンを取得しました"
+# GitHub トークンをセキュアな一時ファイルに保存
+echo "🎫 GitHub 認証トークンを準備中..."
+TOKEN_FILE=$(mktemp)
+chmod 600 "$TOKEN_FILE"  # 所有者のみ読み書き可能
+
+if gh auth token > "$TOKEN_FILE" 2>/dev/null; then
+    echo "✅ GitHub 認証トークンを安全に準備しました"
 else
     echo "❌ トークン取得に失敗しました"
     echo "以下のコマンドでGitHub CLIを再認証してください："
@@ -170,15 +182,15 @@ echo "🚀 セットアップ実行中..."
 # 元のディレクトリに戻って実行
 cd "$ORIGINAL_DIR"
 
-# Docker実行（TTY対応、GitHub認証トークンを環境変数で渡す）- 週報用のスクリプトを実行
+# Docker実行（TTY対応、GitHub認証トークンをセキュアファイル経由で渡す）- 週報用のスクリプトを実行
 if [ -n "$STUDENT_ID" ]; then
-    if ! docker run --rm -it -e GH_TOKEN="$GITHUB_TOKEN" wr-setup-temp "$STUDENT_ID"; then
+    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-temp "$STUDENT_ID"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         echo "学籍番号: $STUDENT_ID"
         exit 1
     fi
 else
-    if ! docker run --rm -it -e GH_TOKEN="$GITHUB_TOKEN" wr-setup-temp; then
+    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-temp; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         exit 1
     fi
