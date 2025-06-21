@@ -327,12 +327,9 @@ EOF
         echo -e "${GREEN}✅ ブランチ保護設定依頼Issue作成完了${NC}"
         echo "   Issue URL: ${issue_url:-https://github.com/smkwlab/thesis-management-tools/issues}"
         
-        # 学生リストファイルにも追加（教員用の一括処理対応）
-        local student_repos_dir="../student-repos"
-        if [ -d "$student_repos_dir" ] || mkdir -p "$student_repos_dir" 2>/dev/null; then
-            echo "${student_id} # Created: ${created_date} Repository: ${repo_name}" >> "${student_repos_dir}/pending-protection.txt"
-            echo -e "${GREEN}✅ 学生リストファイルにも追加完了${NC}"
-        fi
+        # 学生リストファイルへの追加（Dockerコンテナ内では実行環境に依存）
+        # Note: Dockerコンテナ内では相対パスが異なるため、Issueでの管理を優先
+        echo -e "${GREEN}ℹ️  学生情報はIssue経由で管理されます${NC}"
         
         return 0
     else
