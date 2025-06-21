@@ -217,22 +217,22 @@ create_protection_request_issue() {
 
 ### 教員の対応手順
 - [ ] 以下のコマンドを実行
-\\\\\`\\\\\`\\\\\`bash
+\`\`\`bash
 cd thesis-management-tools/scripts
 ./setup-branch-protection.sh ${student_id}
-\\\\\`\\\\\`\\\\\`
+\`\`\`
 - [ ] 設定完了を確認: [リポジトリ設定](https://github.com/smkwlab/${repo_name}/settings/branches)
 - [ ] このIssueをクローズ
 
 ### 一括処理オプション
 複数の学生を一括処理する場合：
-\\\\\`\\\\\`\\\\\`bash
+\`\`\`bash
 cd thesis-management-tools/scripts
 # 学生リストファイルに追加
 echo "${student_id} # Created: ${created_date} Repository: ${repo_name}" >> ../student-repos/pending-protection.txt
 # 一括実行
 ./bulk-setup-protection.sh ../student-repos/pending-protection.txt
-\\\\\`\\\\\`\\\\\`
+\`\`\`
 
 ### 設定される保護ルール
 - 1つ以上の承認レビューが必要
