@@ -20,3 +20,7 @@ Thumbs.db
 create-repo/k*rs*-*/
 create-repo/k*gjk*-*/
 create-repo/*-wr/
+# Test repositories
+k[0-9][0-9]rs[0-9][0-9][0-9]-*
+k[0-9][0-9]gjk[0-9][0-9]-*
+test-*/
