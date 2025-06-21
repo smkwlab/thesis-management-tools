@@ -38,6 +38,12 @@ warn() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
+# API呼び出し間隔制御
+api_sleep() {
+    local sleep_time="${1:-0.1}"
+    sleep "$sleep_time"
+}
+
 # GitHub CLI 認証確認
 check_github_cli() {
     if ! command -v gh >/dev/null 2>&1; then
@@ -464,6 +470,20 @@ setup_branch_protection() {
     
     log "Setting up branch protection: smkwlab/$repo_name"
     
+    # APIレート制限チェック
+    local remaining=$(gh api rate_limit --jq '.resources.core.remaining' 2>/dev/null || echo "0")
+    if [ "$remaining" -lt 10 ]; then
+        warn "GitHub API レート制限に接近しています: 残り${remaining}リクエスト"
+        return 1
+    fi
+    
+    # 既存のブランチ保護設定を確認（冪等性保証）
+    if gh api "repos/smkwlab/$repo_name/branches/main/protection" >/dev/null 2>&1; then
+        log "ブランチ保護は既に設定済みです: $repo_name"
+        # 既に設定済みでも成功として扱う
+        return 0
+    fi
+    
     # GitHub CLIでブランチ保護設定
     local protection_config='{
         "required_status_checks": {
@@ -506,15 +526,34 @@ close_related_issue() {
     local search_term="smkwlab/${repo_name}"
     local issues
     
+    # デバッグ情報の出力
+    if [ "${DEBUG:-0}" = "1" ]; then
+        log "🔍 Issue検索詳細:"
+        log "   検索対象: $search_term"
+        log "   ラベル: branch-protection"
+        log "   状態: open"
+    fi
+    
     # GitHub CLIでIssue検索（タイトルにリポジトリ名が含まれるものを検索）
+    # まずラベル付きで検索
     issues=$(gh issue list --repo smkwlab/thesis-management-tools \
         --state open \
         --label "branch-protection" \
         --json number,title \
         --jq ".[] | select(.title | contains(\"$search_term\")) | .number" 2>/dev/null || echo "")
     
+    # ラベル付きで見つからない場合は、ラベルなしで検索
+    if [ -z "$issues" ]; then
+        issues=$(gh issue list --repo smkwlab/thesis-management-tools \
+            --state open \
+            --json number,title \
+            --jq ".[] | select((.title | contains(\"$search_term\")) and (.title | contains(\"ブランチ保護設定依頼\"))) | .number" 2>/dev/null || echo "")
+    fi
+    
     if [ -n "$issues" ]; then
         for issue_number in $issues; do
+            log "Issue #${issue_number} をクローズ中..."
+            
             if gh issue close "$issue_number" --repo smkwlab/thesis-management-tools \
                 --comment "✅ ブランチ保護設定が完了しました。
 
@@ -530,10 +569,21 @@ close_related_issue() {
                 success "✅ 関連Issue #${issue_number} を自動クローズしました"
             else
                 warn "⚠️  Issue #${issue_number} のクローズに失敗しました"
+                if [ "${DEBUG:-0}" = "1" ]; then
+                    warn "   権限不足またはAPI制限の可能性があります"
+                fi
             fi
         done
     else
-        warn "⚠️  関連Issueが見つかりませんでした（リポジトリ: ${search_term}）"
+        if [ "${DEBUG:-0}" = "1" ]; then
+            warn "⚠️  関連Issueが見つかりませんでした（検索: ${search_term}）"
+            warn "   以下を確認してください："
+            warn "   - Issueタイトルにリポジトリ名が含まれているか"
+            warn "   - branch-protectionラベルまたは'ブランチ保護設定依頼'文字が含まれているか"
+            warn "   - Issueがopen状態か"
+        else
+            warn "⚠️  関連Issueが見つかりませんでした（リポジトリ: ${search_term}）"
+        fi
     fi
 }
 
