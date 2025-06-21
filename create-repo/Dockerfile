@@ -17,12 +17,12 @@ RUN type -p curl >/dev/null || (apt update && apt install curl -y) \
     && apt update \
     && apt install gh -y
 
+# 作業ディレクトリを先に設定
+WORKDIR /workspace
+
 # セットアップスクリプトをコピー
 COPY main.sh ./
 RUN chmod +x main.sh
-
-# 作業ディレクトリ
-WORKDIR /workspace
 
 # Docker環境では手動ブラウザアクセスを前提
 ENV DOCKER_ENV=true
