@@ -241,7 +241,7 @@ echo "${student_id} # Created: ${created_date} Repository: ${repo_name}" >> ../s
 
 ---
 *この Issue は学生の setup.sh 実行時に自動生成されました*
-*学生ID: ${student_id} | リポジトリ: ${repo_name} | 作成: ${created_date}*
+*学生ID: ${student_id} | リポジトリ: ${repo_name} | 作成: ${created_date} $(TZ=Asia/Tokyo date +'%H:%M JST')*
 EOF
 )"; then
         local issue_url=$(gh issue list --repo smkwlab/thesis-management-tools --label "branch-protection" --state open --limit 1 --json url --jq '.[0].url')
