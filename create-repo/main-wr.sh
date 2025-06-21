@@ -16,9 +16,20 @@ echo "=============================================="
 # GitHub認証
 echo "GitHub認証を確認中..."
 
-# 環境変数でトークンが渡されている場合はそれを使用
-if [ -n "$GH_TOKEN" ]; then
-    echo -e "${GREEN}✓ ホストから認証トークンを取得しました${NC}"
+# セキュアファイルからトークンを読み取り（フォールバック：環境変数）
+if [ -f "/tmp/gh_token" ]; then
+    echo -e "${GREEN}✓ ホストからセキュアトークンを取得しました${NC}"
+    export GH_TOKEN=$(cat /tmp/gh_token)
+    
+    # トークンの有効性を確認
+    if gh auth status &>/dev/null; then
+        echo -e "${GREEN}✓ GitHub認証済み（セキュアファイル認証）${NC}"
+    else
+        echo -e "${RED}エラー: 提供されたトークンが無効です${NC}"
+        exit 1
+    fi
+elif [ -n "$GH_TOKEN" ]; then
+    echo -e "${GREEN}✓ ホストから認証トークンを取得しました（環境変数）${NC}"
     export GH_TOKEN
     
     # トークンの有効性を確認
