@@ -274,9 +274,16 @@ diagnose_issue_failure() {
 create_protection_request_issue() {
     local student_id="$1"
     local repo_name="$2"
-    local created_date=$(TZ=Asia/Tokyo date +%Y-%m-%d)
-    local created_time=$(TZ=Asia/Tokyo date)
-    local created_jst_time=$(TZ=Asia/Tokyo date +'%H:%M')
+    
+    # Dockerコンテナ内でのJST時刻を正確に取得
+    # UTCに9時間を加算してJSTに変換
+    local utc_hour=$(date -u +'%H')
+    local jst_hour=$(( (utc_hour + 9) % 24 ))
+    local jst_minute=$(date -u +'%M')
+    
+    local created_date=$(date -u +'%Y-%m-%d')
+    local created_time=$(date -u)
+    local created_jst_time=$(printf "%02d:%s" "$jst_hour" "$jst_minute")
     
     echo "📋 ブランチ保護設定依頼Issueを作成中..."
     
