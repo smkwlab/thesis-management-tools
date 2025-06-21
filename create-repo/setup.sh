@@ -28,7 +28,7 @@ cleanup() {
         rm -f "$TOKEN_FILE"
     fi
     # Dockerイメージも削除
-    docker rmi thesis-setup-temp 2>/dev/null || true
+    docker rmi thesis-setup-temp >/dev/null 2>&1 || true
 }
 
 # 終了時・エラー時・割り込み時にクリーンアップ
