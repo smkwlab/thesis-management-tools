@@ -336,13 +336,11 @@ create_protection_request_issue() {
     
     local jst_hour=$(( (utc_hour + 9) % 24 ))
     
-    # 日付が変わる場合の処理
+    # 日付が変わる場合の処理（UTC 15:00以降はJST翌日）
     if [ $((utc_hour + 9)) -ge 24 ]; then
-        # 翌日になる場合、日付を1日進める
-        # シンプルな実装：月末や年末の処理は date コマンドに任せる
-        local next_day_seconds=$(( $(date -u +%s) + 86400 ))
-        # Alpine Linux互換の方法で翌日を取得
-        local created_date=$(TZ=UTC-9 date -u +'%Y-%m-%d')
+        # 翌日になる場合、エポック時間を使って正確に計算
+        local tomorrow_epoch=$(( $(date -u +%s) + 86400 ))
+        local created_date=$(date -u -d "@$tomorrow_epoch" +'%Y-%m-%d')
     else
         local created_date="${utc_year}-${utc_month}-${utc_day}"
     fi
