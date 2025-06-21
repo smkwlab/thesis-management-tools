@@ -429,7 +429,6 @@ EOF
         
         # 学生リストファイルへの追加（Dockerコンテナ内では実行環境に依存）
         # Note: Dockerコンテナ内では相対パスが異なるため、Issueでの管理を優先
-        echo -e "${GREEN}ℹ️  学生情報はIssue経由で管理されます${NC}"
         
         return 0
     else
