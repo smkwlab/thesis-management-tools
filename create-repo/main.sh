@@ -203,15 +203,15 @@ echo -e "${GREEN}✓ Git認証設定完了${NC}"
 # 初期ブランチ構成
 echo "ブランチを設定中..."
 
-git checkout -b initial
-git commit --allow-empty -m "初期状態（リポジトリ作成直後）"
-git push -u origin initial
+git checkout -b initial >/dev/null 2>&1
+git commit --allow-empty -m "初期状態（リポジトリ作成直後）" >/dev/null 2>&1
+git push -u origin initial >/dev/null 2>&1
 
-git checkout -b review-branch
-git push -u origin review-branch
+git checkout -b review-branch >/dev/null 2>&1
+git push -u origin review-branch >/dev/null 2>&1
 
-git checkout -b 0th-draft
-git push -u origin 0th-draft
+git checkout -b 0th-draft >/dev/null 2>&1
+git push -u origin 0th-draft >/dev/null 2>&1
 
 # Note: mainブランチ保護は教員が後から設定する必要があります
 # ブランチ保護ツール: thesis-management-tools/scripts/setup-branch-protection.sh

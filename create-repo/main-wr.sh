@@ -187,7 +187,7 @@ echo -e "${GREEN}✓ Git認証設定完了${NC}"
 
 # 初期プッシュ（週報は単純な main ブランチ運用）
 echo "初期プッシュを実行中..."
-git push -u origin main
+git push -u origin main >/dev/null 2>&1
 
 # 完了メッセージ
 echo ""
