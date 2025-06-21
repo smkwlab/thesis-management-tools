@@ -171,7 +171,7 @@ if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smk
     fi
     
     # LaTeX環境セットアップ完了をコミット
-    git add -A && git commit -m "Add LaTeX development environment with devcontainer"
+    git add -A && git commit -m "Add LaTeX development environment with devcontainer" >/dev/null 2>&1
 else
     echo -e "${YELLOW}⚠ LaTeX環境のセットアップに失敗しました${NC}"
 fi

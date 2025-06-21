@@ -165,10 +165,10 @@ echo -e "${GREEN}✓ Git設定完了: $GITHUB_NAME <$GITHUB_EMAIL>${NC}"
 echo "テンプレートファイルを整理中..."
 if [ "$THESIS_TYPE" = "sotsuron" ]; then
     rm -f thesis.tex abstract.tex
-    git add -A && git commit -m "Remove graduate thesis template files"
+    git add -A && git commit -m "Remove graduate thesis template files" >/dev/null 2>&1
 else
     rm -f sotsuron.tex gaiyou.tex example*.tex
-    git add -A && git commit -m "Remove undergraduate thesis template files"
+    git add -A && git commit -m "Remove undergraduate thesis template files" >/dev/null 2>&1
 fi
 
 # devcontainer セットアップ
@@ -185,7 +185,7 @@ if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smk
     fi
     
     # LaTeX環境セットアップ完了をコミット
-    git add -A && git commit -m "Add LaTeX development environment with devcontainer"
+    git add -A && git commit -m "Add LaTeX development environment with devcontainer" >/dev/null 2>&1
 else
     echo -e "${YELLOW}⚠ LaTeX環境のセットアップに失敗しました${NC}"
 fi
