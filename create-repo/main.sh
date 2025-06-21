@@ -196,8 +196,9 @@ git push -u origin 0th-draft
 create_protection_request_issue() {
     local student_id="$1"
     local repo_name="$2"
-    local created_date=$(date +%Y-%m-%d)
-    local created_time=$(date)
+    local created_date=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+    local created_time=$(TZ=Asia/Tokyo date)
+    local created_jst_time=$(TZ=Asia/Tokyo date +'%H:%M')
     
     echo "📋 ブランチ保護設定依頼Issueを作成中..."
     
@@ -241,7 +242,7 @@ echo "${student_id} # Created: ${created_date} Repository: ${repo_name}" >> ../s
 
 ---
 *この Issue は学生の setup.sh 実行時に自動生成されました*
-*学生ID: ${student_id} | リポジトリ: ${repo_name} | 作成: ${created_date} $(TZ=Asia/Tokyo date +'%H:%M JST')*
+*学生ID: ${student_id} | リポジトリ: ${repo_name} | 作成: ${created_date} ${created_jst_time} JST*
 EOF
 )"; then
         local issue_url=$(gh issue list --repo smkwlab/thesis-management-tools --label "branch-protection" --state open --limit 1 --json url --jq '.[0].url')
