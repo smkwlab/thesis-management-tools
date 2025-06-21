@@ -61,14 +61,42 @@ The system uses containerized scripts to eliminate local dependencies:
 
 **Prerequisites for students:**
 - WSL + Docker Desktop (Windows) or Docker Desktop (macOS)
-- No local Git, GitHub CLI, or other tools required
+- GitHub CLI (recommended for improved experience)
+- GitHub account with appropriate organization access
 
 **Creation Process:**
-1. **Authentication**: GitHub CLI authentication via browser in container
-2. **Repository creation**: From appropriate template (sotsuron-template or wr-template)
-3. **File cleanup**: Automatic removal of unused files based on student ID pattern
-4. **Environment setup**: LaTeX devcontainer integration via aldc script
-5. **Workflow initialization**: Review system setup with initial branches
+1. **Host Authentication**: GitHub CLI authentication check and token retrieval on host
+2. **Secure Token Transfer**: Authentication tokens passed to container via environment variables
+3. **Repository creation**: From appropriate template (sotsuron-template or wr-template)
+4. **File cleanup**: Automatic removal of unused files based on student ID pattern
+5. **Environment setup**: LaTeX devcontainer integration via aldc script
+6. **Workflow initialization**: Review system setup with initial branches
+
+### Enhanced Authentication System
+The authentication system provides a secure and user-friendly experience:
+
+**Authentication Flow:**
+1. **Host-side Validation**: Check GitHub CLI installation and authentication status
+2. **Multiple Account Detection**: Automatically detect and validate multiple GitHub accounts
+3. **Token Extraction**: Securely retrieve authentication tokens using `gh auth token`
+4. **Container Security**: Pass tokens via environment variables, no persistent storage
+5. **Fallback Support**: Maintain browser authentication for environments without GitHub CLI
+
+**Multiple Account Support:**
+```bash
+# Automatic account detection with conflict resolution
+CURRENT_USER=$(gh api user --jq .login)
+if [ "$CURRENT_USER" != "$TARGET_ORG" ]; then
+    # Provide clear guidance for account switching
+    echo "gh auth switch --user $TARGET_ORG"
+fi
+```
+
+**Security Features:**
+- No persistent authentication storage in containers
+- Automatic token validation before use
+- Clear permission error handling for student accounts
+- Secure token passing via environment variables
 
 ### Student ID Pattern Recognition
 ```bash
@@ -223,15 +251,29 @@ STUDENT_ID=k21rs001 ./setup.sh  # Should handle gracefully
 
 ### Common Issues
 
+**GitHub CLI Authentication Problems:**
+- Verify GitHub CLI is installed: `command -v gh`
+- Check authentication status: `gh auth status`
+- Re-authenticate if needed: `gh auth login`
+- Refresh expired tokens: `gh auth refresh`
+
+**Multiple Account Issues:**
+- Check active account: `gh api user --jq .login`
+- Switch accounts: `gh auth switch --user target-username`
+- Verify organization access: `gh org list`
+- Check TARGET_ORG environment variable
+
 **Docker authentication problems:**
 - Verify Docker Desktop is running
-- Check GitHub CLI authentication in container
+- Ensure host GitHub CLI authentication is complete
 - Test with `DEBUG=1` for detailed output
+- Check token passing: `echo $GH_TOKEN` (in container)
 
 **Repository creation failures:**
 - Verify student ID format matches patterns
 - Check GitHub API rate limits
 - Validate template repository access
+- Confirm organization membership and permissions
 
 **File cleanup issues:**
 - Test student ID pattern matching
@@ -240,32 +282,62 @@ STUDENT_ID=k21rs001 ./setup.sh  # Should handle gracefully
 
 ### Debug Commands
 ```bash
-# Enable debug mode
+# Check host authentication status
+gh auth status
+gh api user --jq .login
+
+# Enable debug mode for detailed output
 DEBUG=1 STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL ...)"
 
-# Test Docker container manually
-docker run -it --rm thesis-creator bash
+# Test multiple account scenarios
+gh auth list
+gh auth switch --user target-username
 
-# Check GitHub CLI in container
-docker run --rm thesis-creator gh auth status
+# Test Docker container with token
+docker run -it --rm -e GH_TOKEN="$(gh auth token)" thesis-creator bash
+
+# Check GitHub CLI in container (with token)
+docker run --rm -e GH_TOKEN="$(gh auth token)" thesis-creator gh auth status
+
+# Test token validity manually
+gh auth token | gh auth login --with-token
 
 # Verify student ID patterns
 echo "k21rs001" | grep -E "k[0-9]{2}rs[0-9]{3}" && echo "undergraduate" || echo "graduate"
+
+# Test TARGET_ORG scenarios
+TARGET_ORG=your-username STUDENT_ID=k21rs001 ./setup.sh
 ```
 
 ## Security Considerations
 
+### Enhanced Authentication Security
+- **Host-side Authentication**: GitHub CLI authentication performed on user's machine
+- **Secure Token Transfer**: Tokens passed via environment variables, not stored in containers
+- **Token Lifecycle**: Tokens are temporary and automatically expire
+- **No Persistent Storage**: Containers do not store authentication information
+- **Fallback Security**: Browser-based authentication maintained as secure fallback
+
 ### Container Security
 - Minimal container images with only required tools
 - No persistent storage of credentials
-- GitHub authentication via secure browser flow
+- Temporary token-based authentication only
 - Regular base image updates
+- Process isolation prevents token leakage
 
 ### Access Control
 - Repository creation limited to authenticated GitHub users
+- Multiple account support with proper validation
 - Template access controlled via GitHub permissions
 - Faculty review permissions managed through GitHub teams
+- Student permission limitations handled gracefully
 - Audit trail through GitHub activity logs
+
+### Token Security Considerations
+- **Environment Variable Exposure**: Tokens visible in process lists (acceptable for personal PC use)
+- **Scope Limitation**: Tokens use minimal required scopes
+- **Automatic Validation**: Token validity checked before use
+- **Future Enhancement**: Consider file-based token transfer for enhanced security
 
 ## Ecosystem Integration
 

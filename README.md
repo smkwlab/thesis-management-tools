@@ -19,16 +19,30 @@ GitHub を使った効率的な論文指導をサポートします。
 **前提条件:**
 - Windows: WSL + Docker Desktop
 - macOS: Docker Desktop
+- GitHub CLI（推奨、認証を大幅に簡素化）
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
 **実行手順:**
-1. 上記コマンドを実行
-2. GitHub認証：ワンタイムコードをブラウザで入力
+1. GitHub CLI がある場合：
+   - `gh auth login` でGitHubにログイン
+   - 上記コマンドを実行（自動認証）
+2. GitHub CLI がない場合：
+   - 上記コマンドを実行
+   - GitHub認証：ワンタイムコードをブラウザで入力
 3. 学籍番号を入力
 4. 自動でリポジトリ作成・セットアップ完了
+
+**複数GitHubアカウントがある場合:**
+```bash
+# アカウント切り替え
+gh auth switch --user your-username
+
+# または個人アカウントに作成
+TARGET_ORG=your-username /bin/bash -c "$(curl -fsSL ...)"
+```
 
 ### 📚 手動テンプレート使用
 1. [sotsuron-template](https://github.com/smkwlab/sotsuron-template) にアクセス
@@ -110,6 +124,13 @@ GitHub を使った効率的な論文指導をサポートします。
 
 ## 🔧 主要機能
 
+### 論文リポジトリ作成・管理
+
+- ✅ **自動リポジトリ作成**: Docker経由での依存関係なしセットアップ
+- ✅ **ブランチ保護設定**: 教員レビュー必須の安全なワークフロー
+- ✅ **Issue自動管理**: ブランチ保護設定依頼の自動化
+- ✅ **一括管理機能**: 複数学生のリポジトリを効率的に管理
+
 ### 完全自動化ワークフロー
 
 - ✅ **次稿ブランチ自動作成**: 1st-draft → 2nd-draft → ... → 20th-draft
@@ -141,10 +162,71 @@ GitHub を使った効率的な論文指導をサポートします。
 2. **技術的な詳細・上級操作**
    → [TEACHER-GUIDE.md](docs/TEACHER-GUIDE.md)
 
+3. **リポジトリ管理・一括操作**
+   → [管理ツール使用方法](#管理ツール) 参照
+
 ### 学生向け
 
 **論文執筆ガイドは各テンプレートリポジトリにあります**:
 - [sotsuron-template](https://github.com/smkwlab/sotsuron-template) - 卒業論文・修士論文用
+
+## 📊 管理ツール
+
+### thesis-repo-manager.sh
+
+学生論文リポジトリの一括管理ツールです。
+
+#### 基本的な使用方法
+
+```bash
+# 全学生リポジトリの状況確認
+./thesis-repo-manager.sh status
+
+# 一括ブランチ保護設定
+./thesis-repo-manager.sh bulk
+
+# ブランチ保護状況の確認
+./thesis-repo-manager.sh check
+
+# ヘルプ表示
+./thesis-repo-manager.sh help
+```
+
+#### 主要機能
+
+- **status**: 全学生リポジトリの状況をGitHub API経由で取得・表示
+- **bulk**: pending-protection.txt内の学生に一括でブランチ保護設定
+- **check**: 保護設定待ちリポジトリの確認
+- **pr-stats**: PRと Issue の統計情報表示
+- **activity**: 最近7日間のコミット活動表示
+
+#### ファイル管理
+
+- `student-repos/pending-protection.txt`: ブランチ保護設定待ちの学生リスト
+- `student-repos/completed-protection.txt`: 設定完了済みの学生リスト
+
+これらのファイルは bulk 処理により自動的に更新されます。
+
+#### 設定される保護ルール
+
+- 1つ以上の承認レビューが必要
+- 新しいコミット時に古いレビューを無効化
+- フォースプッシュとブランチ削除を禁止
+- 管理者に対する制限は適用なし
+
+### 個別スクリプト
+
+#### scripts/setup-branch-protection.sh
+
+単一学生のブランチ保護設定用：
+
+```bash
+cd scripts
+./setup-branch-protection.sh k21rs001
+```
+
+- Issue の自動クローズ機能付き
+- エラー時の詳細診断機能
 
 ## 🛠️ システム要件
 
