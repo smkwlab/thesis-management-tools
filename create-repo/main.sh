@@ -283,7 +283,7 @@ create_protection_request_issue() {
     # GitHub Issue作成（学生でも権限があれば可能）
     if gh issue create \
         --repo smkwlab/thesis-management-tools \
-        --title "🔒 ブランチ保護設定依頼: ${student_id}" \
+        --title "🔒 ブランチ保護設定依頼: smkwlab/${repo_name}" \
         --assignee toshi0806 \
         --label "branch-protection,auto-generated" \
         --body "$(cat <<EOF
