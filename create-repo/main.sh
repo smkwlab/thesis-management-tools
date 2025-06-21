@@ -276,14 +276,28 @@ create_protection_request_issue() {
     local repo_name="$2"
     
     # Dockerコンテナ内でのJST時刻を正確に取得
-    # UTCに9時間を加算してJSTに変換
+    # UTCに9時間を加算してJSTに変換（日付境界も考慮）
     local utc_hour=$(date -u +'%H')
-    local jst_hour=$(( (utc_hour + 9) % 24 ))
-    local jst_minute=$(date -u +'%M')
+    local utc_minute=$(date -u +'%M')
+    local utc_year=$(date -u +'%Y')
+    local utc_month=$(date -u +'%m')
+    local utc_day=$(date -u +'%d')
     
-    local created_date=$(date -u +'%Y-%m-%d')
+    local jst_hour=$(( (utc_hour + 9) % 24 ))
+    
+    # 日付が変わる場合の処理
+    if [ $((utc_hour + 9)) -ge 24 ]; then
+        # 翌日になる場合、日付を1日進める
+        # シンプルな実装：月末や年末の処理は date コマンドに任せる
+        local next_day_seconds=$(( $(date -u +%s) + 86400 ))
+        # Alpine Linux互換の方法で翌日を取得
+        local created_date=$(TZ=UTC-9 date -u +'%Y-%m-%d')
+    else
+        local created_date="${utc_year}-${utc_month}-${utc_day}"
+    fi
+    
     local created_time=$(date -u)
-    local created_jst_time=$(printf "%02d:%s" "$jst_hour" "$jst_minute")
+    local created_jst_time=$(printf "%02d:%02d" "$jst_hour" "$utc_minute")
     
     echo "📋 ブランチ保護設定依頼Issueを作成中..."
     
