@@ -1,0 +1,3 @@
+# ブランチ保護設定完了済み学生リスト  
+# Format: student_id # Created: YYYY-MM-DD Repository: repo_name Protected: YYYY-MM-DD
+# このファイルは bulk-setup-protection.sh によって自動更新されます
