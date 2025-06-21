@@ -13,14 +13,19 @@ fi
 # 引数または環境変数から学籍番号を取得
 STUDENT_ID="${1:-$STUDENT_ID}"
 
-# 一時ディレクトリ変数（グローバルスコープ）
+# 一時ディレクトリ・ファイル変数（グローバルスコープ）
 TEMP_DIR=""
+TOKEN_FILE=""
 
 # クリーンアップ関数
 cleanup() {
     if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
         echo "🧹 クリーンアップ中..."
         rm -rf "$TEMP_DIR"
+    fi
+    # セキュアなトークンファイルの削除
+    if [ -n "$TOKEN_FILE" ] && [ -f "$TOKEN_FILE" ]; then
+        rm -f "$TOKEN_FILE"
     fi
     # Dockerイメージも削除
     docker rmi thesis-setup-temp 2>/dev/null || true
@@ -122,11 +127,13 @@ if [ "$ACCOUNT_COUNT" -gt 1 ]; then
     echo "現在のアクティブアカウント ($CURRENT_USER) を使用します"
 fi
 
-# GitHub トークンの取得
-echo "🎫 GitHub 認証トークンを取得中..."
-GITHUB_TOKEN=""
-if GITHUB_TOKEN=$(gh auth token 2>/dev/null); then
-    echo "✅ GitHub 認証トークンを取得しました"
+# GitHub トークンをセキュアな一時ファイルに保存
+echo "🎫 GitHub 認証トークンを準備中..."
+TOKEN_FILE=$(mktemp)
+chmod 600 "$TOKEN_FILE"  # 所有者のみ読み書き可能
+
+if gh auth token > "$TOKEN_FILE" 2>/dev/null; then
+    echo "✅ GitHub 認証トークンを安全に準備しました"
 else
     echo "❌ トークン取得に失敗しました"
     echo "以下のコマンドでGitHub CLIを再認証してください："
@@ -175,11 +182,18 @@ echo "🚀 セットアップ実行中..."
 # 元のディレクトリに戻って実行
 cd "$ORIGINAL_DIR"
 
-# Docker実行（TTY対応、GitHub認証トークンを環境変数で渡す）
+# Docker実行（TTY対応、GitHub認証トークンをセキュアファイル経由で渡す）
 if [ -n "$STUDENT_ID" ]; then
-    docker run --rm -it -e GH_TOKEN="$GITHUB_TOKEN" thesis-setup-temp "$STUDENT_ID"
+    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" thesis-setup-temp "$STUDENT_ID"; then
+        echo "❌ セットアップスクリプトの実行に失敗しました"
+        echo "学籍番号: $STUDENT_ID"
+        exit 1
+    fi
 else
-    docker run --rm -it -e GH_TOKEN="$GITHUB_TOKEN" thesis-setup-temp
+    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" thesis-setup-temp; then
+        echo "❌ セットアップスクリプトの実行に失敗しました"
+        exit 1
+    fi
 fi
 
 # 成功メッセージ（クリーンアップは trap で自動実行）
