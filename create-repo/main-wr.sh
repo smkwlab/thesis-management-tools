@@ -86,11 +86,10 @@ echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC
 # 学籍番号の入力または引数から取得
 if [ -n "$1" ]; then
     STUDENT_ID="$1"
-    echo -e "${GREEN}学籍番号（入力値）: $STUDENT_ID${NC}"
 else
     echo ""
     echo "学籍番号を入力してください"
-    echo "  例: k21rs001, 21rs001, 21RS001, k21gjk01, 21gjk01"
+    echo "  例: k21rs001, k21gjk01"
     echo ""
     read -p "学籍番号: " STUDENT_ID
 fi
@@ -118,8 +117,7 @@ normalize_student_id() {
     return 0
 }
 
-# 学籍番号を正規化
-echo "学籍番号を正規化中..."
+# 学籍番号を正規化（サイレント処理）
 NORMALIZED_STUDENT_ID=$(normalize_student_id "$STUDENT_ID")
 
 if [ -z "$NORMALIZED_STUDENT_ID" ]; then
@@ -127,14 +125,8 @@ if [ -z "$NORMALIZED_STUDENT_ID" ]; then
     exit 1
 fi
 
-# 入力値と正規化後が異なる場合は表示
-if [ "$STUDENT_ID" != "$NORMALIZED_STUDENT_ID" ]; then
-    echo -e "${YELLOW}✓ 学籍番号を正規化しました: $STUDENT_ID → $NORMALIZED_STUDENT_ID${NC}"
-fi
-
 # 正規化後の学籍番号を使用
 STUDENT_ID="$NORMALIZED_STUDENT_ID"
-echo -e "${GREEN}✓ 使用する学籍番号: $STUDENT_ID${NC}"
 
 # 学籍番号の形式チェック（週報は学年・専攻問わず）
 if [[ ! "$STUDENT_ID" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})$ ]]; then
