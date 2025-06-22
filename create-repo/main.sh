@@ -86,25 +86,70 @@ echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC
 # 学籍番号の入力または引数から取得
 if [ -n "$1" ]; then
     STUDENT_ID="$1"
-    echo -e "${GREEN}学籍番号: $STUDENT_ID${NC}"
+    echo -e "${GREEN}学籍番号（入力値）: $STUDENT_ID${NC}"
 else
     echo ""
     echo "学籍番号を入力してください"
-    echo "  卒業論文の例: k21rs001"
-    echo "  修士論文の例: k21gjk01"
+    echo "  卒業論文の例: k21rs001, 21rs001, 21RS001"
+    echo "  修士論文の例: k21gjk01, 21gjk01, 21GJK01"
     echo ""
     read -p "学籍番号: " STUDENT_ID
 fi
 
+# 学籍番号の正規化（自動補正）
+normalize_student_id() {
+    local input="$1"
+    
+    # 空文字チェック
+    if [ -z "$input" ]; then
+        echo ""
+        return 1
+    fi
+    
+    # 小文字に変換
+    input=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    
+    # 先頭に k がない場合は追加
+    if [ "${input:0:1}" != "k" ]; then
+        input="k$input"
+    fi
+    
+    # 正規化結果を返す
+    echo "$input"
+    return 0
+}
+
+# 学籍番号を正規化
+echo "学籍番号を正規化中..."
+NORMALIZED_STUDENT_ID=$(normalize_student_id "$STUDENT_ID")
+
+if [ -z "$NORMALIZED_STUDENT_ID" ]; then
+    echo -e "${RED}エラー: 学籍番号が入力されていません${NC}"
+    exit 1
+fi
+
+# 入力値と正規化後が異なる場合は表示
+if [ "$STUDENT_ID" != "$NORMALIZED_STUDENT_ID" ]; then
+    echo -e "${YELLOW}✓ 学籍番号を正規化しました: $STUDENT_ID → $NORMALIZED_STUDENT_ID${NC}"
+fi
+
+# 正規化後の学籍番号を使用
+STUDENT_ID="$NORMALIZED_STUDENT_ID"
+echo -e "${GREEN}✓ 使用する学籍番号: $STUDENT_ID${NC}"
+
 # 論文タイプの判定
-if [[ "$STUDENT_ID" =~ k[0-9]{2}rs[0-9]{3} ]]; then
+if [[ "$STUDENT_ID" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
     THESIS_TYPE="sotsuron"
     echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
-elif [[ "$STUDENT_ID" =~ k[0-9]{2}gjk[0-9]{2} ]]; then
+elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
     THESIS_TYPE="thesis"
     echo -e "${GREEN}✓ 修士論文として設定します${NC}"
 else
     echo -e "${RED}エラー: 学籍番号の形式が正しくありません${NC}"
+    echo "期待される形式:"
+    echo "  卒業論文: k[年度2桁]rs[番号3桁] (例: k21rs001)"
+    echo "  修士論文: k[年度2桁]gjk[番号2桁] (例: k21gjk01)"
+    echo "入力された値: $STUDENT_ID"
     exit 1
 fi
 
