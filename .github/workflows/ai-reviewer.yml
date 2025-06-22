@@ -28,4 +28,3 @@ jobs:
           LANGUAGE: "Japanese"
           EXCLUDE_PATHS: >-
             _build/**,deps/**,cover/**,log/**,data/**,*.tmp,*.temp
-          USE_SINGLE_COMMENT_REVIEW: "true"
