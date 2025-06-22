@@ -49,6 +49,47 @@ check_rate_limit() {
     return 0
 }
 
+# アカウント権限チェック
+check_admin_permissions() {
+    log "GitHub CLI認証とアカウント権限を確認中..."
+    
+    # 現在のユーザー名を取得
+    local current_user
+    current_user=$(gh api user --jq '.login' 2>/dev/null)
+    
+    if [ -z "$current_user" ]; then
+        error "GitHub CLI認証に失敗しました"
+        error "gh auth login を実行してください"
+        return 1
+    fi
+    
+    log "現在のアクティブアカウント: $current_user"
+    
+    # テスト用リポジトリでadmin権限をチェック
+    local test_repo="smkwlab/thesis-management-tools"
+    local has_admin
+    
+    has_admin=$(gh api "repos/$test_repo" --jq '.permissions.admin' 2>/dev/null)
+    
+    if [ "$has_admin" = "true" ]; then
+        success "✅ 管理者権限を確認しました"
+        return 0
+    elif [ "$has_admin" = "false" ]; then
+        error "❌ 現在のアカウント（$current_user）は管理者権限がありません"
+        error "   このアカウントではブランチ保護設定に失敗します"
+        echo
+        error "解決方法："
+        error "  管理者アカウントに切り替えてから再実行してください"
+        error "  gh auth switch --user <admin-username>"
+        echo
+        return 1
+    else
+        error "権限確認に失敗しました（テストリポジトリ: $test_repo）"
+        error "リポジトリへのアクセス権限がない可能性があります"
+        return 1
+    fi
+}
+
 # 関連Issueを自動クローズ
 close_related_issue() {
     local repo_name="$1"
@@ -258,6 +299,11 @@ main() {
     if ! gh api user >/dev/null 2>&1; then
         error "GitHub CLI is not authenticated or current account is invalid"
         error "Please run 'gh auth login' first"
+        exit 1
+    fi
+    
+    # アカウント権限チェック
+    if ! check_admin_permissions; then
         exit 1
     fi
     
