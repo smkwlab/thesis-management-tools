@@ -213,6 +213,12 @@ else
     git add -A && git commit -m "Remove undergraduate thesis template files" >/dev/null 2>&1
 fi
 
+# 開発者向けドキュメントを削除（学生環境には不要）
+echo "開発者向けファイルを削除中..."
+rm -rf docs/ || true
+rm -f CLAUDE-BACKUP.md || true
+git add -A && git commit -m "Remove development documentation from student repository" >/dev/null 2>&1
+
 # devcontainer セットアップ
 echo "LaTeX環境をセットアップ中..."
 if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
