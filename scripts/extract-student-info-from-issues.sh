@@ -24,13 +24,14 @@ error() {
     echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR:${NC} $1"
 }
 
-# 学生IDから年度とタイプを解析
-parse_student_id() {
+# 学生IDからタイプを判定し、リポジトリ作成日時から年度を判定
+parse_student_info() {
     local student_id="$1"
-    local year_suffix=$(echo "$student_id" | grep -oE '[0-9]{2}' | head -1)
-    local full_year="20$year_suffix"
-    local type=""
+    local repo_name="$2"
+    local created_at="$3"
     
+    # 学生タイプを判定
+    local type=""
     if echo "$student_id" | grep -q 'rs'; then
         type="undergraduate"
     elif echo "$student_id" | grep -q 'gjk'; then
@@ -40,7 +41,26 @@ parse_student_id() {
         return 1
     fi
     
-    echo "$full_year $type"
+    # リポジトリ作成日時から年度を抽出
+    # GitHub APIの日時フォーマット: 2024-06-21T16:30:00Z
+    local repo_year=""
+    if [[ "$created_at" =~ ^([0-9]{4})-[0-9]{2}-[0-9]{2}T ]]; then
+        repo_year="${BASH_REMATCH[1]}"
+    else
+        # GitHub APIから取得できない場合は、リポジトリの詳細から取得を試行
+        log "Issue作成日時から年度を解析できない場合、リポジトリAPIから取得を試行..."
+        local repo_created=$(gh repo view "smkwlab/$repo_name" --json createdAt --jq '.createdAt' 2>/dev/null || echo "")
+        if [[ "$repo_created" =~ ^([0-9]{4})-[0-9]{2}-[0-9]{2}T ]]; then
+            repo_year="${BASH_REMATCH[1]}"
+            log "  リポジトリ作成年度: $repo_year (リポジトリAPI経由)"
+        else
+            # 最終手段として現在年度を使用
+            repo_year=$(date +%Y)
+            warn "  年度判定失敗、現在年度を使用: $repo_year"
+        fi
+    fi
+    
+    echo "$repo_year $type"
 }
 
 # ディレクトリ構造を作成
@@ -67,10 +87,13 @@ extract_from_issues() {
     gh issue list \
         --repo smkwlab/thesis-management-tools \
         --state open \
-        --json number,title,body,createdAt \
-        --jq '.[] | select(.title | contains("ブランチ保護設定依頼"))' > "$issues_json"
+        --json number,title,body,createdAt > "$issues_json"
     
-    local issue_count=$(jq length "$issues_json")
+    # ブランチ保護設定依頼のIssueをフィルタリング
+    local filtered_issues="/tmp/filtered_issues.json"
+    jq '[.[] | select(.title | contains("ブランチ保護設定依頼"))]' "$issues_json" > "$filtered_issues"
+    
+    local issue_count=$(jq length "$filtered_issues")
     log "発見された未処理Issue数: $issue_count"
     
     if [ "$issue_count" -eq 0 ]; then
@@ -84,7 +107,7 @@ extract_from_issues() {
         if process_single_issue "$issue"; then
             ((processed++))
         fi
-    done < <(jq -c '.[]' "$issues_json")
+    done < <(jq -c '.[]' "$filtered_issues")
     
     log "処理完了: $processed/$issue_count のIssueから学生情報を抽出"
     
@@ -111,10 +134,10 @@ process_single_issue() {
     # 学生IDを抽出
     local student_id=$(echo "$repo_name" | cut -d'-' -f1)
     
-    # 年度とタイプを解析
+    # 年度とタイプを解析（リポジトリ作成日時ベース）
     local parse_result
-    if ! parse_result=$(parse_student_id "$student_id"); then
-        warn "Issue #$issue_number: 学生ID解析失敗 ($student_id)"
+    if ! parse_result=$(parse_student_info "$student_id" "$repo_name" "$created_at"); then
+        warn "Issue #$issue_number: 学生情報解析失敗 ($student_id, $repo_name)"
         return 1
     fi
     
@@ -123,7 +146,7 @@ process_single_issue() {
     
     log "  学籍番号: $student_id"
     log "  リポジトリ: $repo_name"
-    log "  年度: $year"
+    log "  年度: $year (リポジトリ作成年)"
     log "  タイプ: $type"
     
     # 年度ディレクトリを作成
@@ -176,33 +199,37 @@ show_statistics() {
     
     # 年度別統計
     if [ -d "data/students" ]; then
-        for year_dir in data/students/*/; do
+        # 年度ディレクトリのみを対象とする（2020-2030年の範囲）
+        for year in 2020 2021 2022 2023 2024 2025 2026 2027 2028 2029 2030; do
+            local year_dir="data/students/$year"
             if [ -d "$year_dir" ]; then
-                local year=$(basename "$year_dir")
-                if [[ "$year" =~ ^[0-9]{4}$ ]]; then
-                    local undergrad_count=0
-                    local grad_count=0
-                    
-                    [ -f "$year_dir/undergraduate.txt" ] && undergrad_count=$(wc -l < "$year_dir/undergraduate.txt" 2>/dev/null || echo 0)
-                    [ -f "$year_dir/graduate.txt" ] && grad_count=$(wc -l < "$year_dir/graduate.txt" 2>/dev/null || echo 0)
-                    
-                    if [ "$undergrad_count" -gt 0 ] || [ "$grad_count" -gt 0 ]; then
-                        log "$year年度: 学部生 $undergrad_count名, 大学院生 $grad_count名"
-                    fi
+                local undergrad_count=0
+                local grad_count=0
+                
+                [ -f "$year_dir/undergraduate.txt" ] && undergrad_count=$(wc -l < "$year_dir/undergraduate.txt" 2>/dev/null || echo 0)
+                [ -f "$year_dir/graduate.txt" ] && grad_count=$(wc -l < "$year_dir/graduate.txt" 2>/dev/null || echo 0)
+                
+                if [ "$undergrad_count" -gt 0 ] || [ "$grad_count" -gt 0 ]; then
+                    log "${year}年度: 学部生 ${undergrad_count}名, 大学院生 ${grad_count}名"
                 fi
             fi
         done
     fi
     
     # 保護設定統計
-    local pending=$(wc -l < data/protection-status/pending-protection.txt 2>/dev/null || echo 0)
-    local completed=$(wc -l < data/protection-status/completed-protection.txt 2>/dev/null || echo 0)
-    local failed=$(wc -l < data/protection-status/failed-protection.txt 2>/dev/null || echo 0)
+    local pending=0
+    local completed=0
+    local failed=0
+    
+    [ -f "data/protection-status/pending-protection.txt" ] && pending=$(wc -l < data/protection-status/pending-protection.txt 2>/dev/null || echo 0)
+    [ -f "data/protection-status/completed-protection.txt" ] && completed=$(wc -l < data/protection-status/completed-protection.txt 2>/dev/null || echo 0)
+    [ -f "data/protection-status/failed-protection.txt" ] && failed=$(wc -l < data/protection-status/failed-protection.txt 2>/dev/null || echo 0)
     
     log "ブランチ保護設定: 待ち ${pending}件, 完了 ${completed}件, 失敗 ${failed}件"
     
     # アクティブリポジトリ統計
-    local active=$(wc -l < data/repositories/active.txt 2>/dev/null || echo 0)
+    local active=0
+    [ -f "data/repositories/active.txt" ] && active=$(wc -l < data/repositories/active.txt 2>/dev/null || echo 0)
     log "アクティブリポジトリ: ${active}件"
 }
 

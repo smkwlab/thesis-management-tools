@@ -31,17 +31,15 @@ if [ -f "$SCRIPT_DIR/extract-student-info-from-issues.sh" ]; then
     
     echo
     echo "📋 年度別学生数:"
-    for year_dir in data/students/*/; do
+    for year in 2020 2021 2022 2023 2024 2025 2026 2027 2028 2029 2030; do
+        year_dir="data/students/$year"
         if [ -d "$year_dir" ]; then
-            year=$(basename "$year_dir")
-            if [[ "$year" =~ ^[0-9]{4}$ ]]; then
-                undergrad=0
-                grad=0
-                [ -f "$year_dir/undergraduate.txt" ] && undergrad=$(wc -l < "$year_dir/undergraduate.txt" 2>/dev/null || echo 0)
-                [ -f "$year_dir/graduate.txt" ] && grad=$(wc -l < "$year_dir/graduate.txt" 2>/dev/null || echo 0)
-                if [ "$undergrad" -gt 0 ] || [ "$grad" -gt 0 ]; then
-                    echo "  $year年度: 学部生 ${undergrad}名, 大学院生 ${grad}名"
-                fi
+            undergrad=0
+            grad=0
+            [ -f "$year_dir/undergraduate.txt" ] && undergrad=$(wc -l < "$year_dir/undergraduate.txt" 2>/dev/null || echo 0)
+            [ -f "$year_dir/graduate.txt" ] && grad=$(wc -l < "$year_dir/graduate.txt" 2>/dev/null || echo 0)
+            if [ "$undergrad" -gt 0 ] || [ "$grad" -gt 0 ]; then
+                echo "  ${year}年度: 学部生 ${undergrad}名, 大学院生 ${grad}名"
             fi
         fi
     done
