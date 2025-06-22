@@ -103,25 +103,48 @@ update_student_lists() {
     # pending-protection.txt から該当リポジトリを削除
     if [ -f "$pending_file" ]; then
         # 一時ファイルを作成
-        local temp_file=$(mktemp)
-        grep -v "^$repo_name$" "$pending_file" > "$temp_file" || true
+        local temp_file
+        if ! temp_file=$(mktemp); then
+            error "一時ファイルの作成に失敗しました"
+            return 1
+        fi
+        
+        # grep -v で該当行を除外（見つからない場合はエラーではない）
+        if ! grep -v "^$repo_name$" "$pending_file" > "$temp_file"; then
+            # grep -v が失敗した場合は元ファイルをコピー
+            if ! cp "$pending_file" "$temp_file"; then
+                error "ファイルのコピーに失敗しました: $pending_file"
+                rm -f "$temp_file"
+                return 1
+            fi
+        fi
         
         # 元のファイルを更新
-        mv "$temp_file" "$pending_file"
+        if ! mv "$temp_file" "$pending_file"; then
+            error "ファイルの更新に失敗しました: $pending_file"
+            rm -f "$temp_file"
+            return 1
+        fi
         log "pending-protection.txt から $repo_name を削除しました"
     fi
     
     # completed-protection.txt に追加（重複チェック付き）
     if [ -f "$completed_file" ]; then
         if ! grep -q "^$repo_name " "$completed_file"; then
-            echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"
+            if ! echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"; then
+                error "completed-protection.txt への書き込みに失敗しました: $completed_file"
+                return 1
+            fi
             log "completed-protection.txt に $repo_name を追加しました"
         else
             log "$repo_name は既に completed-protection.txt に存在します"
         fi
     else
         # ファイルが存在しない場合は作成
-        echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"
+        if ! echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"; then
+            error "completed-protection.txt の作成に失敗しました: $completed_file"
+            return 1
+        fi
         log "completed-protection.txt を作成し、$repo_name を追加しました"
     fi
     
