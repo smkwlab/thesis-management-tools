@@ -157,24 +157,21 @@ setup_protection() {
         return 1
     fi
     
-    # mainブランチ存在確認
+    # ブランチ存在確認
+    local branches_to_protect=("main")
+    
     if ! gh api "repos/smkwlab/$repo_name/branches/main" >/dev/null 2>&1; then
         error "Main branch not found in repository: smkwlab/$repo_name"
         return 1
     fi
     
-    # 既存のブランチ保護設定を確認（冪等性保証）
-    if gh api "repos/smkwlab/$repo_name/branches/main/protection" >/dev/null 2>&1; then
-        log "ブランチ保護は既に設定済みです"
-        success "✅ Branch protection already configured"
-        success "   Repository: https://github.com/smkwlab/$repo_name"
-        
-        # 既に設定済みでも関連Issueをクローズ
-        close_related_issue "$repo_name"
-        return 0
+    # review-branchの存在確認（存在する場合は保護対象に追加）
+    if gh api "repos/smkwlab/$repo_name/branches/review-branch" >/dev/null 2>&1; then
+        branches_to_protect+=("review-branch")
+        log "review-branchが見つかりました。保護対象に追加します。"
     fi
     
-    # ブランチ保護設定
+    # 各ブランチへの保護設定
     local protection_config='{
         "required_status_checks": {
             "strict": false,
@@ -195,11 +192,34 @@ setup_protection() {
         "allow_deletions": false
     }'
     
-    if echo "$protection_config" | gh api "repos/smkwlab/$repo_name/branches/main/protection" \
-        --method PUT \
-        --input - >/dev/null 2>&1; then
-        success "✅ Branch protection configured successfully"
+    local success_count=0
+    local total_branches=${#branches_to_protect[@]}
+    
+    for branch in "${branches_to_protect[@]}"; do
+        log "ブランチ '$branch' の保護設定を確認中..."
+        
+        # 既存の保護設定確認（冪等性保証）
+        if gh api "repos/smkwlab/$repo_name/branches/$branch/protection" >/dev/null 2>&1; then
+            log "ブランチ '$branch' は既に保護設定済みです"
+            ((success_count++))
+            continue
+        fi
+        
+        log "ブランチ '$branch' に保護設定を適用中..."
+        if echo "$protection_config" | gh api "repos/smkwlab/$repo_name/branches/$branch/protection" \
+            --method PUT \
+            --input - >/dev/null 2>&1; then
+            success "✅ ブランチ '$branch' の保護設定が完了しました"
+            ((success_count++))
+        else
+            error "❌ ブランチ '$branch' の保護設定に失敗しました"
+        fi
+    done
+    
+    if [ "$success_count" -eq "$total_branches" ]; then
+        success "✅ すべてのブランチ保護設定が完了しました ($success_count/$total_branches)"
         success "   Repository: https://github.com/smkwlab/$repo_name"
+        success "   Protected branches: ${branches_to_protect[*]}"
         success "   Protection rules:"
         success "     - Requires 1 approving review before merge"
         success "     - Dismisses stale reviews when new commits are pushed"
@@ -210,8 +230,8 @@ setup_protection() {
         
         return 0
     else
-        error "❌ Failed to configure branch protection"
-        error "   This may be due to insufficient permissions or API limits"
+        error "❌ 一部のブランチ保護設定に失敗しました ($success_count/$total_branches)"
+        error "   成功: $success_count, 失敗: $((total_branches - success_count))"
         return 1
     fi
 }
