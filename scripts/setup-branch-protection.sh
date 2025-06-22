@@ -90,6 +90,67 @@ check_admin_permissions() {
     fi
 }
 
+# 学生リストの更新（pending → completed）
+update_student_lists() {
+    local student_id="$1"
+    local repo_name="$2"
+    local base_dir="$(dirname "$SCRIPT_DIR")"
+    local pending_file="$base_dir/data/protection-status/pending-protection.txt"
+    local completed_file="$base_dir/data/protection-status/completed-protection.txt"
+    
+    log "学生リストを更新中..."
+    
+    # pending-protection.txt から該当リポジトリを削除
+    if [ -f "$pending_file" ]; then
+        # 一時ファイルを作成
+        local temp_file
+        if ! temp_file=$(mktemp); then
+            error "一時ファイルの作成に失敗しました"
+            return 1
+        fi
+        
+        # grep -v で該当行を除外（見つからない場合はエラーではない）
+        if ! grep -v "^$repo_name$" "$pending_file" > "$temp_file"; then
+            # grep -v が失敗した場合は元ファイルをコピー
+            if ! cp "$pending_file" "$temp_file"; then
+                error "ファイルのコピーに失敗しました: $pending_file"
+                rm -f "$temp_file"
+                return 1
+            fi
+        fi
+        
+        # 元のファイルを更新
+        if ! mv "$temp_file" "$pending_file"; then
+            error "ファイルの更新に失敗しました: $pending_file"
+            rm -f "$temp_file"
+            return 1
+        fi
+        log "pending-protection.txt から $repo_name を削除しました"
+    fi
+    
+    # completed-protection.txt に追加（重複チェック付き）
+    if [ -f "$completed_file" ]; then
+        if ! grep -q "^$repo_name " "$completed_file"; then
+            if ! echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"; then
+                error "completed-protection.txt への書き込みに失敗しました: $completed_file"
+                return 1
+            fi
+            log "completed-protection.txt に $repo_name を追加しました"
+        else
+            log "$repo_name は既に completed-protection.txt に存在します"
+        fi
+    else
+        # ファイルが存在しない場合は作成
+        if ! echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"; then
+            error "completed-protection.txt の作成に失敗しました: $completed_file"
+            return 1
+        fi
+        log "completed-protection.txt を作成し、$repo_name を追加しました"
+    fi
+    
+    success "✅ 学生リストの更新が完了しました"
+}
+
 # 関連Issueを自動クローズ
 close_related_issue() {
     local repo_name="$1"
@@ -268,6 +329,9 @@ setup_protection() {
         
         # 対応するIssueを自動クローズ
         close_related_issue "$repo_name"
+        
+        # 学生リストの更新（pending → completed）
+        update_student_lists "$student_id" "$repo_name"
         
         return 0
     else
