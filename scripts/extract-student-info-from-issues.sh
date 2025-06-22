@@ -150,16 +150,28 @@ process_single_issue() {
     log "  タイプ: $type"
     
     # 年度ディレクトリを作成
-    mkdir -p "data/students/$year"
+    if ! mkdir -p "data/students/$year"; then
+        error "年度ディレクトリ作成失敗: data/students/$year"
+        return 1
+    fi
     
     # 学生レジストリに追加
-    echo "$student_id" >> "data/students/$year/$type.txt"
+    if ! echo "$student_id" >> "data/students/$year/$type.txt"; then
+        error "学生レジストリ書き込み失敗: data/students/$year/$type.txt"
+        return 1
+    fi
     
     # ブランチ保護待ちリストに追加
-    echo "$repo_name" >> "data/protection-status/pending-protection.txt"
+    if ! echo "$repo_name" >> "data/protection-status/pending-protection.txt"; then
+        error "ブランチ保護リスト書き込み失敗: data/protection-status/pending-protection.txt"
+        return 1
+    fi
     
     # アクティブリポジトリリストに追加
-    echo "$repo_name" >> "data/repositories/active.txt"
+    if ! echo "$repo_name" >> "data/repositories/active.txt"; then
+        error "アクティブリポジトリリスト書き込み失敗: data/repositories/active.txt"
+        return 1
+    fi
     
     log "  Issue #$issue_number の情報をレジストリに記録しました"
     return 0
