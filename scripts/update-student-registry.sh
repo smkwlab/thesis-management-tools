@@ -48,17 +48,24 @@ validate_registry() {
         find data/students -maxdepth 1 -type d -name "[0-9][0-9][0-9][0-9]" | while read -r year_dir; do
             local year=$(basename "$year_dir")
             
-            # 学生IDフォーマットの検証
+            # 学生IDフォーマットの検証（年度は関係なし）
             for type in "undergraduate" "graduate"; do
                 local file="$year_dir/$type.txt"
                 if [ -f "$file" ]; then
                     local invalid_ids=0
                     while read -r student_id; do
                         if [ -n "$student_id" ]; then
-                            local expected_year_suffix=$(echo "$year" | sed 's/^20//')
-                            if ! echo "$student_id" | grep -qE "^k${expected_year_suffix}(rs[0-9]{3}|gjk[0-9]{2})$"; then
-                                warn "不正な学生ID形式: $student_id (expected year: $year)"
-                                ((invalid_ids++))
+                            # 年度に関係なく、学生IDの形式のみを検証
+                            if [[ "$type" == "undergraduate" ]]; then
+                                if ! echo "$student_id" | grep -qE "^k[0-9]{2}rs[0-9]{3}$"; then
+                                    warn "不正な学部生ID形式: $student_id (expected: k??rs???)"
+                                    ((invalid_ids++))
+                                fi
+                            elif [[ "$type" == "graduate" ]]; then
+                                if ! echo "$student_id" | grep -qE "^k[0-9]{2}gjk[0-9]{2}$"; then
+                                    warn "不正な大学院生ID形式: $student_id (expected: k??gjk??)"
+                                    ((invalid_ids++))
+                                fi
                             fi
                         fi
                     done < "$file"
