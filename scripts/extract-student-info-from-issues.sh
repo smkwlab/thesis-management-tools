@@ -44,14 +44,16 @@ parse_student_info() {
     # リポジトリ作成日時から年度を抽出
     # GitHub APIの日時フォーマット: 2024-06-21T16:30:00Z
     local repo_year=""
-    if [[ "$created_at" =~ ^([0-9]{4})-[0-9]{2}-[0-9]{2}T ]]; then
-        repo_year="${BASH_REMATCH[1]}"
+    
+    # より安全な方法で年度を抽出（BASH_REMATCHを使用しない）
+    if echo "$created_at" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'; then
+        repo_year=$(echo "$created_at" | cut -d'-' -f1)
     else
         # GitHub APIから取得できない場合は、リポジトリの詳細から取得を試行
         log "Issue作成日時から年度を解析できない場合、リポジトリAPIから取得を試行..."
         local repo_created=$(gh repo view "smkwlab/$repo_name" --json createdAt --jq '.createdAt' 2>/dev/null || echo "")
-        if [[ "$repo_created" =~ ^([0-9]{4})-[0-9]{2}-[0-9]{2}T ]]; then
-            repo_year="${BASH_REMATCH[1]}"
+        if echo "$repo_created" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'; then
+            repo_year=$(echo "$repo_created" | cut -d'-' -f1)
             log "  リポジトリ作成年度: $repo_year (リポジトリAPI経由)"
         else
             # 最終手段として現在年度を使用
@@ -150,16 +152,40 @@ process_single_issue() {
     log "  タイプ: $type"
     
     # 年度ディレクトリを作成
-    mkdir -p "data/students/$year"
+    if ! mkdir -p "data/students/$year"; then
+        error "年度ディレクトリの作成に失敗: data/students/$year"
+        return 1
+    fi
+    
+    # ブランチ保護ステータスディレクトリを作成
+    if ! mkdir -p "data/protection-status"; then
+        error "保護ステータスディレクトリの作成に失敗: data/protection-status"
+        return 1
+    fi
+    
+    # リポジトリディレクトリを作成
+    if ! mkdir -p "data/repositories"; then
+        error "リポジトリディレクトリの作成に失敗: data/repositories"
+        return 1
+    fi
     
     # 学生レジストリに追加
-    echo "$student_id" >> "data/students/$year/$type.txt"
+    if ! echo "$student_id" >> "data/students/$year/$type.txt"; then
+        error "学生レジストリへの書き込みに失敗: data/students/$year/$type.txt"
+        return 1
+    fi
     
     # ブランチ保護待ちリストに追加
-    echo "$repo_name" >> "data/protection-status/pending-protection.txt"
+    if ! echo "$repo_name" >> "data/protection-status/pending-protection.txt"; then
+        error "保護待ちリストへの書き込みに失敗: data/protection-status/pending-protection.txt"
+        return 1
+    fi
     
     # アクティブリポジトリリストに追加
-    echo "$repo_name" >> "data/repositories/active.txt"
+    if ! echo "$repo_name" >> "data/repositories/active.txt"; then
+        error "アクティブリポジトリリストへの書き込みに失敗: data/repositories/active.txt"
+        return 1
+    fi
     
     log "  Issue #$issue_number の情報をレジストリに記録しました"
     return 0
