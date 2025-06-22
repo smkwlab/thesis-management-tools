@@ -117,12 +117,17 @@ normalize_student_id() {
     return 0
 }
 
-# 学籍番号を正規化（サイレント処理）
+# 学籍番号を正規化
 NORMALIZED_STUDENT_ID=$(normalize_student_id "$STUDENT_ID")
 
 if [ -z "$NORMALIZED_STUDENT_ID" ]; then
     echo -e "${RED}エラー: 学籍番号が入力されていません${NC}"
     exit 1
+fi
+
+# 入力値と正規化後が異なる場合は表示
+if [ "$STUDENT_ID" != "$NORMALIZED_STUDENT_ID" ]; then
+    echo -e "${YELLOW}✓ 学籍番号を正規化しました: $STUDENT_ID → $NORMALIZED_STUDENT_ID${NC}"
 fi
 
 # 正規化後の学籍番号を使用
