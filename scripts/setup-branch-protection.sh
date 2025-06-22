@@ -90,6 +90,44 @@ check_admin_permissions() {
     fi
 }
 
+# 学生リストの更新（pending → completed）
+update_student_lists() {
+    local student_id="$1"
+    local repo_name="$2"
+    local base_dir="$(dirname "$SCRIPT_DIR")"
+    local pending_file="$base_dir/data/protection-status/pending-protection.txt"
+    local completed_file="$base_dir/data/protection-status/completed-protection.txt"
+    
+    log "学生リストを更新中..."
+    
+    # pending-protection.txt から該当リポジトリを削除
+    if [ -f "$pending_file" ]; then
+        # 一時ファイルを作成
+        local temp_file=$(mktemp)
+        grep -v "^$repo_name$" "$pending_file" > "$temp_file" || true
+        
+        # 元のファイルを更新
+        mv "$temp_file" "$pending_file"
+        log "pending-protection.txt から $repo_name を削除しました"
+    fi
+    
+    # completed-protection.txt に追加（重複チェック付き）
+    if [ -f "$completed_file" ]; then
+        if ! grep -q "^$repo_name " "$completed_file"; then
+            echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"
+            log "completed-protection.txt に $repo_name を追加しました"
+        else
+            log "$repo_name は既に completed-protection.txt に存在します"
+        fi
+    else
+        # ファイルが存在しない場合は作成
+        echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"
+        log "completed-protection.txt を作成し、$repo_name を追加しました"
+    fi
+    
+    success "✅ 学生リストの更新が完了しました"
+}
+
 # 関連Issueを自動クローズ
 close_related_issue() {
     local repo_name="$1"
@@ -268,6 +306,9 @@ setup_protection() {
         
         # 対応するIssueを自動クローズ
         close_related_issue "$repo_name"
+        
+        # 学生リストの更新（pending → completed）
+        update_student_lists "$student_id" "$repo_name"
         
         return 0
     else

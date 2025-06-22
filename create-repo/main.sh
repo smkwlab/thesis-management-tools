@@ -444,10 +444,9 @@ cd thesis-management-tools/scripts
 複数の学生を一括処理する場合：
 \`\`\`bash
 cd thesis-management-tools/scripts
-# 学生リストファイルに追加
-echo "${student_id} # Created: ${created_date} Repository: ${repo_name}" >> ../student-repos/pending-protection.txt
-# 一括実行
-./bulk-setup-protection.sh ../student-repos/pending-protection.txt
+# GitHub Actionsの自動処理を利用
+# または手動で一括実行
+./bulk-setup-protection.sh
 \`\`\`
 
 ### 設定される保護ルール

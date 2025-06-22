@@ -131,6 +131,12 @@ TARGET_ORG=your-username /bin/bash -c "$(curl -fsSL ...)"
 - ✅ **Issue自動管理**: ブランチ保護設定依頼の自動化
 - ✅ **一括管理機能**: 複数学生のリポジトリを効率的に管理
 
+#### 管理システムアーキテクチャ（2025-06-22統一）
+- **データ統一管理**: `data/` ディレクトリで一元管理
+- **学生レジストリ**: `data/students/` で年度別・タイプ別管理
+- **保護状況追跡**: `data/protection-status/` で設定状況を追跡
+- **GitHub Actions連携**: Issue駆動の自動処理
+
 ### 完全自動化ワークフロー
 
 - ✅ **次稿ブランチ自動作成**: 1st-draft → 2nd-draft → ... → 20th-draft
