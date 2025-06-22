@@ -24,3 +24,10 @@ create-repo/*-wr/
 k[0-9][0-9]rs[0-9][0-9][0-9]-*
 k[0-9][0-9]gjk[0-9][0-9]-*
 test-*/
+
+# Student registry data files (contain sensitive student information)
+data/students/
+data/protection-status/
+data/repositories/
+data/backups/
+data/statistics-report.txt
