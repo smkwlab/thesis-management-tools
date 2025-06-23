@@ -233,9 +233,11 @@ jobs:
                   2>/dev/null || echo "unknown")
               fi
 
-              commit_msg="Auto-update repository registry for student: $processed_student
+              commit_msg="Auto-update repository registry for student: \
+              $processed_student
 
-              - Added/updated repository information after branch protection completion
+              - Added/updated repository information after branch protection \
+              completion
               - Synchronized with thesis-management-tools workflow
               - Student: $processed_student
               - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
