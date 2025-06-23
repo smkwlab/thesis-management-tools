@@ -138,8 +138,9 @@ main() {
     log "Starting bulk branch protection setup..."
     
     if [ ! -f "$PENDING_FILE" ]; then
-        error "Pending file not found: $PENDING_FILE"
-        exit 1
+        log "Pending file not found: $PENDING_FILE"
+        log "No repositories to process. Exiting normally."
+        exit 0
     fi
     
     # GitHub CLI認証確認
@@ -152,10 +153,16 @@ main() {
     local success_count=0
     local failed_students=""
     
+    # ファイルが空かチェック
+    if [ ! -s "$PENDING_FILE" ]; then
+        log "Pending file is empty. No repositories to process."
+        exit 0
+    fi
+    
     # 処理対象のリポジトリをカウント
     while read -r repo_name; do
         if [ -n "$repo_name" ] && [[ "$repo_name" =~ ^k[0-9]{2}[rg][sjk][0-9]+-[a-z]+$ ]]; then
-            ((total_count++))
+            total_count=$((total_count + 1))
         fi
     done < "$PENDING_FILE"
     
