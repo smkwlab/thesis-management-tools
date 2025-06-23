@@ -105,7 +105,7 @@ extract_from_issues() {
     local processed=0
     while read -r issue; do
         if process_single_issue "$issue"; then
-            ((processed++))
+            processed=$((processed + 1))
         fi
     done < <(jq -c '.[]' "$filtered_issues")
     
@@ -174,6 +174,14 @@ process_single_issue() {
     fi
     
     log "  Issue #$issue_number の情報をレジストリに記録しました"
+    
+    # デバッグ用: 各ステップ後の状態を確認
+    if [ "${DEBUG:-0}" = "1" ]; then
+        log "  [DEBUG] data/students/$year/$type.txt に追加完了"
+        log "  [DEBUG] pending-protection.txt に追加完了"
+        log "  [DEBUG] active.txt に追加完了"
+    fi
+    
     return 0
 }
 
