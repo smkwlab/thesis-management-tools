@@ -121,15 +121,8 @@ update_student_lists() {
             return 1
         fi
         
-        # grep -v で該当行を除外（見つからない場合はエラーではない）
-        if ! grep -v "^$repo_name$" "$pending_file" > "$temp_file"; then
-            # grep -v が失敗した場合は元ファイルをコピー
-            if ! cp "$pending_file" "$temp_file"; then
-                error "ファイルのコピーに失敗しました: $pending_file"
-                rm -f "$temp_file"
-                return 1
-            fi
-        fi
+        # grep -v で該当行を除外（見つからない場合やファイルが空の場合も正常）
+        grep -v "^$repo_name$" "$pending_file" > "$temp_file" 2>/dev/null || true
         
         # 元のファイルを更新
         if ! mv "$temp_file" "$pending_file"; then
@@ -142,7 +135,7 @@ update_student_lists() {
     
     # completed-protection.txt に追加（重複チェック付き）
     if [ -f "$completed_file" ]; then
-        if ! grep -q "^$repo_name " "$completed_file"; then
+        if ! grep -q "^$repo_name " "$completed_file" 2>/dev/null; then
             if ! echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"; then
                 error "completed-protection.txt への書き込みに失敗しました: $completed_file"
                 return 1
