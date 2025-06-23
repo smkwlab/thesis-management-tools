@@ -169,9 +169,11 @@ jobs:
                 # 複数のリポジトリタイプを処理
                 for repo_type in sotsuron ise-report1 ise-report2 wr; do
                   repo_name="${latest_student}-${repo_type}"
-
-                  # リポジトリの存在確認
-                  if gh repo view "smkwlab/$repo_name" >/dev/null 2>&1; then
+                  
+                  echo "🔍 Checking repository: smkwlab/$repo_name"
+                  
+                  # リポジトリの存在確認（詳細エラー出力付き）
+                  if gh_output=$(gh repo view "smkwlab/$repo_name" 2>&1); then
                     echo "📦 Found repository: $repo_name"
 
                     # thesis-student-registryを更新
@@ -188,6 +190,9 @@ jobs:
                            "type is not supported"
                     fi
                     cd ..
+                  else
+                    echo "❌ Repository not found or access denied: $repo_name"
+                    echo "   Error: $gh_output"
                   fi
                 done
               else
