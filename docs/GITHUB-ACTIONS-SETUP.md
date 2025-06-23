@@ -16,13 +16,10 @@ Organization管理者権限を持つPersonal Access Token (PAT)を作成し、�
 
 1. GitHubの[Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)にアクセス
 2. "Generate new token (classic)" をクリック
-3. 以下の設定を行う：
+3. 以下を設定：
    - **Note**: `thesis-management-tools-admin`
-   - **Expiration**: 適切な期限を設定（推奨：1年）
-   - **Scopes**:
-     - ✅ `repo` (Full control of private repositories)
-     - ✅ `admin:org` (Full control of orgs and teams)
-     - ✅ `workflow` (Update GitHub Action workflows)
+   - **Expiration**: 1年（推奨）
+   - **Select scopes**: `repo` にチェック（これだけで十分）
 4. "Generate token"をクリックし、トークンをコピー
 
 ### 2. Repository Secretsへの追加
@@ -44,9 +41,29 @@ Organization管理者権限を持つPersonal Access Token (PAT)を作成し、�
 
 ## セキュリティ上の注意
 
-- PATは強力な権限を持つため、厳重に管理してください
-- 定期的にトークンを更新してください
-- 不要になったトークンは速やかに削除してください
+### 権限の最小化
+- **Fine-grained token推奨**: より細かい権限制御が可能
+- **Repository scope**: 必要なリポジトリのみに限定
+- **権限監査**: 定期的に使用されている権限を確認
+
+### 運用管理
+- **定期更新**: トークンを3-6ヶ月毎に更新
+- **アクセス監査**: GitHub の Audit log で使用状況を監視
+- **即座削除**: 不要時やセキュリティ侵害時の迅速な削除
+- **複数人確認**: 設定変更時の相互確認
+
+### リスク軽減
+- **`repo`権限のリスク**: Organization内全プライベートリポジトリにアクセス可能
+- **実際の使用**: ブランチ保護設定とIssue操作のみに限定
+- **軽減策**: 
+  - 定期的なアクセスログ監視
+  - トークンの定期更新 (3-6ヶ月)
+  - 不要時の即座削除
+  - GitHub Audit logでの利用状況確認
+
+### 注意事項
+- Fine-grained tokenは新しいリポジトリ作成時に手動更新が必要なため使用しません
+- Classic tokenの`repo`スコープは必要最小限の権限です
 
 ## トラブルシューティング
 
