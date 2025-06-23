@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup GitHub CLI
         env:
@@ -39,9 +39,16 @@ jobs:
             sudo apt update
             sudo apt install gh
           )
-          # GitHub CLI認証確認（GH_TOKENが自動使用される）
+          # GitHub CLI認証確認とトークン権限検証
           echo "Verifying GitHub CLI authentication..."
           gh auth status
+          echo "Validating token permissions..."
+          if [ -n "${{ secrets.ORG_ADMIN_TOKEN }}" ]; then
+            echo "✅ Using ORG_ADMIN_TOKEN for enhanced permissions"
+          else
+            echo "⚠️ Using GITHUB_TOKEN (limited permissions)"
+            echo "Note: Cross-repository operations may fail without ORG_ADMIN_TOKEN"
+          fi
 
       - name: Extract student info from issues
         env:
