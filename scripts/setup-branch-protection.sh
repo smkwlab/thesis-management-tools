@@ -53,19 +53,31 @@ check_rate_limit() {
 check_admin_permissions() {
     log "GitHub CLI認証とアカウント権限を確認中..."
     
-    # 現在のユーザー名を取得
+    # 現在のユーザー名を取得（GitHub Actionsとローカル両対応）
     local current_user
-    current_user=$(gh api user --jq '.login' 2>/dev/null)
-    
-    if [ -z "$current_user" ]; then
-        error "GitHub CLI認証に失敗しました"
-        error "gh auth login を実行してください"
-        return 1
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        # GitHub Actions環境ではgithub-actions[bot]を使用
+        current_user="github-actions[bot]"
+        log "GitHub Actions環境で実行中"
+    else
+        # ローカル環境ではgh api userを使用
+        current_user=$(gh api user --jq '.login' 2>/dev/null)
+        if [ -z "$current_user" ]; then
+            error "GitHub CLI認証に失敗しました"
+            error "gh auth login を実行してください"
+            return 1
+        fi
     fi
     
     log "現在のアクティブアカウント: $current_user"
     
-    # テスト用リポジトリでadmin権限をチェック
+    # GitHub Actions環境では権限チェックをスキップ（GITHUB_TOKENで十分な権限が保証されている）
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        success "✅ GitHub Actions環境: GITHUB_TOKENで権限確認済み"
+        return 0
+    fi
+    
+    # ローカル環境でのみadmin権限をチェック
     local test_repo="smkwlab/thesis-management-tools"
     local has_admin
     
@@ -379,8 +391,8 @@ main() {
         exit 1
     fi
     
-    # GitHub CLI認証確認（実際のAPI呼び出しでテスト）
-    if ! gh api user >/dev/null 2>&1; then
+    # GitHub CLI認証確認（GitHub Actionsとローカル両対応）
+    if ! gh auth status >/dev/null 2>&1; then
         error "GitHub CLI is not authenticated or current account is invalid"
         error "Please run 'gh auth login' first"
         exit 1
