@@ -22,11 +22,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup GitHub CLI
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           type -p gh >/dev/null || (
             curl -fsSL \
@@ -45,14 +45,14 @@ jobs:
 
       - name: Extract student info from issues
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           echo "📊 未処理Issueから学生情報を抽出中..."
           bash scripts/extract-student-info-from-issues.sh
 
       - name: Setup branch protection
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           echo "🔒 ブランチ保護設定を実行中..."
           if [ "${{ github.event_name }}" = "issues" ]; then
@@ -82,7 +82,7 @@ jobs:
 
       - name: Update student registry
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           echo "📝 学生レジストリを更新中..."
           bash scripts/update-student-registry.sh
@@ -107,7 +107,7 @@ jobs:
       - name: Close completed issue
         if: github.event_name == 'issues' && env.PROTECTION_SUCCESS == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           echo "🎯 ブランチ保護設定完了によるIssue自動クローズ"
           gh issue comment ${{ github.event.issue.number }} --body "✅ **ブランチ保護設定が自動完了しました**
