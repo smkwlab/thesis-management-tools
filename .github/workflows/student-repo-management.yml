@@ -57,8 +57,10 @@ jobs:
             echo "TOKEN_TYPE=ORG_ADMIN" >> "$GITHUB_ENV"
           else
             echo "⚠️ Using GITHUB_TOKEN (limited permissions)"
-            echo "Note: Cross-repository operations may fail without ORG_ADMIN_TOKEN"
-            echo "Consider setting ORG_ADMIN_TOKEN secret for full functionality"
+            echo "Note: Cross-repository operations may fail" \
+                 "without ORG_ADMIN_TOKEN"
+            echo "Consider setting ORG_ADMIN_TOKEN secret" \
+                 "for full functionality"
             echo "TOKEN_TYPE=GITHUB_DEFAULT" >> "$GITHUB_ENV"
           fi
 
@@ -82,7 +84,8 @@ jobs:
             student_id=$(echo "$ISSUE_BODY" | \
                          grep -oE 'k[0-9]{2}[rg][sjk][0-9]+' | \
                          head -1 || true)
-            echo "Extracted student ID from issue: ${student_id:-'(none found)'}"
+            echo "Extracted student ID from issue:" \
+                 "${student_id:-'(none found)'}"
             if [ -n "$student_id" ]; then
               echo "🎯 Issue作成による即座のブランチ保護設定: $student_id"
 
@@ -170,7 +173,8 @@ jobs:
                       echo "✅ Updated registry for: $repo_name"
                     else
                       echo "⚠️ Failed to update registry for: $repo_name"
-                      echo "This may be normal if the repository type is not supported"
+                      echo "This may be normal if the repository" \
+                           "type is not supported"
                     fi
                     cd ..
                   fi
@@ -180,7 +184,8 @@ jobs:
               fi
             else
               echo "⚠️ completed-protection.txt not found"
-              echo "This is expected on first run or if no protections have been completed yet"
+              echo "This is expected on first run or if no" \
+                   "protections have been completed yet"
             fi
           else
             echo "⚠️ thesis-student-registry not found"
