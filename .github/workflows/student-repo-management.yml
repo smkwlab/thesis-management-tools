@@ -1,9 +1,9 @@
 ---
 name: Student Repository Management
 "on":
-  schedule:
-    # 2時間ごとに実行
-    - cron: '0 */2 * * *'
+  # schedule:
+  #   # 2時間ごとに実行
+  #   - cron: '0 */2 * * *'
   workflow_dispatch:
     inputs:
       force_update:
