@@ -82,7 +82,7 @@ jobs:
           if [ "${{ github.event_name }}" = "issues" ]; then
             # Issue作成時：該当学生のブランチ保護を即座に設定
             student_id=$(echo "$ISSUE_BODY" | \
-                         grep -oE 'k[0-9]{2}[rg][sjk][0-9]+' | \
+                         grep -oE 'k[0-9]{2}(rs|jk|gjk)[0-9]+' | \
                          head -1 || true)
             echo "Extracted student ID from issue:" \
                  "${student_id:-'(none found)'}"
