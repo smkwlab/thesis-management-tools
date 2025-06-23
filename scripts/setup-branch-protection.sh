@@ -308,18 +308,33 @@ setup_protection() {
         # 既存の保護設定確認（冪等性保証）
         if gh api "repos/smkwlab/$repo_name/branches/$branch/protection" >/dev/null 2>&1; then
             log "ブランチ '$branch' は既に保護設定済みです"
-            ((success_count++))
+            success_count=$((success_count + 1))
             continue
         fi
         
         log "ブランチ '$branch' に保護設定を適用中..."
-        if echo "$protection_config" | gh api "repos/smkwlab/$repo_name/branches/$branch/protection" \
-            --method PUT \
-            --input - >/dev/null 2>&1; then
-            success "✅ ブランチ '$branch' の保護設定が完了しました"
-            ((success_count++))
+        if [ -n "${GITHUB_ACTIONS:-}" ]; then
+            # GitHub Actions環境では詳細なエラー情報を出力
+            if echo "$protection_config" | gh api "repos/smkwlab/$repo_name/branches/$branch/protection" \
+                --method PUT \
+                --input - 2>&1; then
+                success "✅ ブランチ '$branch' の保護設定が完了しました"
+                success_count=$((success_count + 1))
+            else
+                local api_exit_code=$?
+                error "❌ ブランチ '$branch' の保護設定に失敗しました (exit code: $api_exit_code)"
+                error "GitHub Actions環境でのAPI エラーです。詳細は上記のエラーメッセージを確認してください。"
+            fi
         else
-            error "❌ ブランチ '$branch' の保護設定に失敗しました"
+            # ローカル環境では従来通り
+            if echo "$protection_config" | gh api "repos/smkwlab/$repo_name/branches/$branch/protection" \
+                --method PUT \
+                --input - >/dev/null 2>&1; then
+                success "✅ ブランチ '$branch' の保護設定が完了しました"
+                success_count=$((success_count + 1))
+            else
+                error "❌ ブランチ '$branch' の保護設定に失敗しました"
+            fi
         fi
     done
     
