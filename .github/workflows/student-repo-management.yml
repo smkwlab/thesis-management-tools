@@ -43,7 +43,7 @@ jobs:
               https://cli.github.com/packages stable main" | \
               sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
             sudo apt update
-            sudo apt install gh
+            sudo apt install gh jq
           )
           # GitHub CLI認証確認とトークン権限検証
           echo "Verifying GitHub CLI authentication..."
@@ -166,6 +166,7 @@ jobs:
 
                     # thesis-student-registryを更新
                     cd thesis-student-registry
+                    chmod +x update-repository-registry.sh
                     script_args=("$repo_name" "$latest_student" "$repo_type" \
                                  "completed")
                     if ./update-repository-registry.sh "${script_args[@]}" \
@@ -218,7 +219,7 @@ jobs:
 
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
-            git add data/students/repositories.json
+            git add data/students/repositories.json data/students/ || true
 
             if git diff --staged --quiet; then
               echo "📋 変更なし: thesis-student-registry は最新状態です"
@@ -232,9 +233,11 @@ jobs:
                   2>/dev/null || echo "unknown")
               fi
 
-              commit_msg="Auto-update repository registry for student: $processed_student
+              commit_msg="Auto-update repository registry for student: \
+              $processed_student
 
-              - Added/updated repository information after branch protection completion
+              - Added/updated repository information after branch protection \
+              completion
               - Synchronized with thesis-management-tools workflow
               - Student: $processed_student
               - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
