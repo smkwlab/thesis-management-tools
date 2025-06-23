@@ -39,7 +39,7 @@ validate_registry() {
     for dir in "data/students" "data/protection-status" "data/repositories"; do
         if [ ! -d "$dir" ]; then
             error "必要なディレクトリが存在しません: $dir"
-            ((errors++))
+            errors=$((errors + 1))
         fi
     done
     
@@ -59,12 +59,12 @@ validate_registry() {
                             if [[ "$type" == "undergraduate" ]]; then
                                 if ! echo "$student_id" | grep -qE "^k[0-9]{2}rs[0-9]{3}$"; then
                                     warn "不正な学部生ID形式: $student_id (expected: k??rs???)"
-                                    ((invalid_ids++))
+                                    invalid_ids=$((invalid_ids + 1))
                                 fi
                             elif [[ "$type" == "graduate" ]]; then
                                 if ! echo "$student_id" | grep -qE "^k[0-9]{2}gjk[0-9]{2}$"; then
                                     warn "不正な大学院生ID形式: $student_id (expected: k??gjk??)"
-                                    ((invalid_ids++))
+                                    invalid_ids=$((invalid_ids + 1))
                                 fi
                             fi
                         fi
@@ -102,7 +102,7 @@ cleanup_orphaned_entries() {
                     echo "$repo_name" >> "$temp_file"
                 else
                     warn "存在しないリポジトリを pending から削除: $repo_name"
-                    ((cleaned++))
+                    cleaned=$((cleaned + 1))
                 fi
             fi
         done < "data/protection-status/pending-protection.txt"
@@ -135,11 +135,11 @@ sync_repository_status() {
                 if [ "$repo_status" = "true" ]; then
                     # アーカイブ済みリポジトリをarchivedリストに移動
                     echo "$repo_name" >> "data/repositories/archived.txt"
-                    ((archived_count++))
+                    archived_count=$((archived_count + 1))
                 elif [ "$repo_status" = "false" ]; then
                     # アクティブリポジトリを維持
                     echo "$repo_name" >> "$temp_active"
-                    ((active_count++))
+                    active_count=$((active_count + 1))
                 else
                     warn "リポジトリ状態を確認できません: $repo_name"
                 fi
