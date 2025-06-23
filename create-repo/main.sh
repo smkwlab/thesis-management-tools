@@ -138,6 +138,9 @@ STUDENT_ID="$NORMALIZED_STUDENT_ID"
 if [[ "$STUDENT_ID" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
     THESIS_TYPE="sotsuron"
     echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
+elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}jk[0-9]{3}$ ]]; then
+    THESIS_TYPE="sotsuron"
+    echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
 elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
     THESIS_TYPE="thesis"
     echo -e "${GREEN}✓ 修士論文として設定します${NC}"

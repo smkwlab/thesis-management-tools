@@ -134,7 +134,7 @@ fi
 STUDENT_ID="$NORMALIZED_STUDENT_ID"
 
 # 学籍番号の形式チェック（週報は学年・専攻問わず）
-if [[ ! "$STUDENT_ID" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})$ ]]; then
+if [[ ! "$STUDENT_ID" =~ ^k[0-9]{2}(rs[0-9]{3}|jk[0-9]{3}|gjk[0-9]{2})$ ]]; then
     echo -e "${RED}エラー: 学籍番号の形式が正しくありません${NC}"
     echo "期待される形式:"
     echo "  学部生: k[年度2桁]rs[番号3桁] (例: k21rs001)"

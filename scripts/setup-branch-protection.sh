@@ -234,7 +234,7 @@ setup_protection() {
     local student_id="$1"
     
     # 学生ID検証
-    if ! [[ "$student_id" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})$ ]]; then
+    if ! [[ "$student_id" =~ ^k[0-9]{2}(rs[0-9]{3}|jk[0-9]{3}|gjk[0-9]{2})$ ]]; then
         error "Invalid student ID format: $student_id"
         error "Expected format: k##rs### (undergraduate) or k##gjk## (graduate)"
         return 1
@@ -242,6 +242,8 @@ setup_protection() {
     
     # 論文タイプの判定
     if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
+        thesis_type="sotsuron"
+    elif [[ "$student_id" =~ ^k[0-9]{2}jk[0-9]{3}$ ]]; then
         thesis_type="sotsuron"
     elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
         thesis_type="thesis"
