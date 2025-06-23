@@ -1,9 +1,8 @@
 ---
 name: Student Repository Management
 "on":
-  # schedule:
-  #   # 2時間ごとに実行
-  #   - cron: '0 */2 * * *'
+  issues:
+    types: [opened]
   workflow_dispatch:
     inputs:
       force_update:
@@ -15,6 +14,10 @@ name: Student Repository Management
 jobs:
   manage-repositories:
     runs-on: ubuntu-latest
+    # ブランチ保護設定依頼のIssueのみで実行
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.issue.title || '', 'ブランチ保護設定依頼')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
