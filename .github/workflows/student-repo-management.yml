@@ -43,7 +43,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "📊 未処理Issueから学生情報を抽出中..."
-          ./scripts/extract-student-info-from-issues.sh
+          bash scripts/extract-student-info-from-issues.sh
 
       - name: Setup branch protection
         env:
@@ -55,7 +55,7 @@ jobs:
             student_id=$(echo "${{ github.event.issue.body }}" | grep -oE 'k[0-9]{2}[rg][sjk][0-9]+' | head -1 || true)
             if [ -n "$student_id" ]; then
               echo "🎯 Issue作成による即座のブランチ保護設定: $student_id"
-              if ./scripts/setup-branch-protection.sh "$student_id"; then
+              if bash scripts/setup-branch-protection.sh "$student_id"; then
                 echo "✅ ブランチ保護設定完了: $student_id"
                 echo "PROTECTION_SUCCESS=true" >> $GITHUB_ENV
                 echo "STUDENT_ID=$student_id" >> $GITHUB_ENV
@@ -71,7 +71,7 @@ jobs:
           else
             # 手動実行時：一括処理
             echo "📋 一括ブランチ保護設定を実行中..."
-            ./scripts/bulk-setup-protection.sh
+            bash scripts/bulk-setup-protection.sh
             echo "PROTECTION_SUCCESS=true" >> $GITHUB_ENV
           fi
 
@@ -80,7 +80,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "📝 学生レジストリを更新中..."
-          ./scripts/update-student-registry.sh
+          bash scripts/update-student-registry.sh
 
       - name: Commit registry updates
         run: |
