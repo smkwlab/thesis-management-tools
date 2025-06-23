@@ -138,6 +138,8 @@ jobs:
 
       - name: Update thesis student registry
         if: env.PROTECTION_SUCCESS == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           echo "📋 thesis-student-registry を更新中..."
 
