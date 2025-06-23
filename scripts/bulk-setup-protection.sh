@@ -52,33 +52,45 @@ setup_branch_protection_for_repo() {
     fi
     
     # mainブランチ保護設定
-    if gh api -X PUT "/repos/$org_name/$repo_name/branches/main/protection" \
+    local api_response
+    local protection_json='{
+        "required_status_checks": null,
+        "enforce_admins": false,
+        "required_pull_request_reviews": {
+            "required_approving_review_count": 1,
+            "dismiss_stale_reviews": true
+        },
+        "restrictions": null,
+        "allow_force_pushes": false,
+        "allow_deletions": false
+    }'
+    
+    if api_response=$(echo "$protection_json" | gh api \
         --method PUT \
-        --field required_status_checks='{"strict":false,"contexts":[]}' \
-        --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
-        --field enforce_admins=false \
-        --field allow_force_pushes=false \
-        --field allow_deletions=false \
-        >/dev/null 2>&1; then
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "/repos/$org_name/$repo_name/branches/main/protection" \
+        --input - \
+        2>&1); then
         success "Main branch protection configured for $repo_name"
     else
-        error "Failed to configure main branch protection for $repo_name"
+        error "Failed to configure main branch protection for $repo_name: $api_response"
         return 1
     fi
     
     # review-branchブランチ保護設定
-    if gh api -X PUT "/repos/$org_name/$repo_name/branches/review-branch/protection" \
+    if api_response=$(echo "$protection_json" | gh api \
         --method PUT \
-        --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
-        --field enforce_admins=false \
-        --field allow_force_pushes=false \
-        --field allow_deletions=false \
-        >/dev/null 2>&1; then
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "/repos/$org_name/$repo_name/branches/review-branch/protection" \
+        --input - \
+        2>&1); then
         success "Review branch protection configured for $repo_name"
         return 0
     else
-        error "Failed to configure review branch protection for $repo_name"
-        return 1
+        warn "Failed to configure review branch protection (branch might not exist yet): $api_response"
+        return 0  # 成功扱い（review-branchは初回コミット時に作成される）
     fi
 }
 
