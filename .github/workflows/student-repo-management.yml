@@ -25,6 +25,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           type -p gh >/dev/null || (
             curl -fsSL \
@@ -37,6 +39,10 @@ jobs:
             sudo apt update
             sudo apt install gh
           )
+          # GitHub CLI認証確認
+          echo "Configuring GitHub CLI authentication..."
+          echo "$GH_TOKEN" | gh auth login --with-token
+          gh auth status
 
       - name: Extract student info from issues
         env:
