@@ -413,10 +413,10 @@ create_protection_request_issue() {
     local utc_month=$(date -u +'%m')
     local utc_day=$(date -u +'%d')
     
-    local jst_hour=$(( (utc_hour + 9) % 24 ))
+    local jst_hour=$(( (10#$utc_hour + 9) % 24 ))
     
     # 日付が変わる場合の処理（UTC 15:00以降はJST翌日）
-    if [ $((utc_hour + 9)) -ge 24 ]; then
+    if [ $((10#$utc_hour + 9)) -ge 24 ]; then
         # 翌日になる場合、エポック時間を使って正確に計算
         local tomorrow_epoch=$(( $(date -u +%s) + 86400 ))
         local created_date=$(date -u -d "@$tomorrow_epoch" +'%Y-%m-%d')
@@ -425,7 +425,7 @@ create_protection_request_issue() {
     fi
     
     local created_time=$(date -u)
-    local created_jst_time=$(printf "%02d:%02d" "$jst_hour" "$utc_minute")
+    local created_jst_time=$(printf "%02d:%02d" "$jst_hour" "$((10#$utc_minute))")
     
     echo "📋 ブランチ保護設定依頼Issueを作成中..."
     
