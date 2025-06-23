@@ -41,7 +41,7 @@ get_repo_name_from_git() {
         # .git サフィックスを削除
         repo_name="${repo_name%.git}"
         # 学生リポジトリの形式かチェック
-        if [[ "$repo_name" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})-(sotsuron|master)$ ]]; then
+        if [[ "$repo_name" =~ ^k[0-9]{2}(rs[0-9]{3}|jk[0-9]{3}|gjk[0-9]{2})-(sotsuron|master)$ ]]; then
             echo "$repo_name"
             return 0
         fi

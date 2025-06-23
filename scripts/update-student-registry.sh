@@ -57,7 +57,7 @@ validate_registry() {
                         if [ -n "$student_id" ]; then
                             # 年度に関係なく、学生IDの形式のみを検証
                             if [[ "$type" == "undergraduate" ]]; then
-                                if ! echo "$student_id" | grep -qE "^k[0-9]{2}rs[0-9]{3}$"; then
+                                if ! echo "$student_id" | grep -qE "^k[0-9]{2}(rs|jk)[0-9]{3}$"; then
                                     warn "不正な学部生ID形式: $student_id (expected: k??rs???)"
                                     invalid_ids=$((invalid_ids + 1))
                                 fi
