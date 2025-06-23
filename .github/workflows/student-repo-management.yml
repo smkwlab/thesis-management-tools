@@ -39,9 +39,8 @@ jobs:
             sudo apt update
             sudo apt install gh
           )
-          # GitHub CLI認証確認
-          echo "Configuring GitHub CLI authentication..."
-          echo "$GH_TOKEN" | gh auth login --with-token
+          # GitHub CLI認証確認（GH_TOKENが自動使用される）
+          echo "Verifying GitHub CLI authentication..."
           gh auth status
 
       - name: Extract student info from issues
