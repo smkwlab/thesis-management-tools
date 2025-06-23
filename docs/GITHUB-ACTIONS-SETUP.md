@@ -1,26 +1,34 @@
-# GitHub Actions Setup Guide
+# GitHub Actions 管理者セットアップガイド
 
-このガイドでは、thesis-management-toolsのGitHub Actionsワークフローを正しく動作させるための設定方法を説明します。
+## 📋 概要
 
-## 問題と解決策
+thesis-management-toolsのGitHub Actionsワークフローが学生リポジトリにアクセスできるようにするための管理者向けセットアップガイドです。
 
-### 問題
-デフォルトの`GITHUB_TOKEN`では、GitHub Actions環境から他のリポジトリ（学生のthesisリポジトリ）にアクセスできません。
+## ⚡ クイックセットアップ
 
-### 解決策
-Organization管理者権限を持つPersonal Access Token (PAT)を作成し、リポジトリのSecretsに追加します。
+### 必要な権限
+- **`repo`スコープのみ** - 最小限の必要権限
 
-## 設定手順
+### 設定手順（2分で完了）
+1. [Personal Access Token作成](#1-personal-access-token-pat-の作成)
+2. [Repository Secretsに追加](#2-repository-secretsへの追加)
+3. [動作確認](#3-動作確認)
+
+---
+
+## 🔧 詳細設定手順
 
 ### 1. Personal Access Token (PAT) の作成
 
 1. GitHubの[Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)にアクセス
 2. "Generate new token (classic)" をクリック
-3. 以下を設定：
+3. **最小権限設定**：
    - **Note**: `thesis-management-tools-admin`
    - **Expiration**: 1年（推奨）
-   - **Select scopes**: `repo` にチェック（これだけで十分）
+   - **Select scopes**: **`repo`のみにチェック**
 4. "Generate token"をクリックし、トークンをコピー
+
+> ⚠️ **重要**: `repo`以外の権限は不要です。他の権限を追加すると不要なセキュリティリスクが発生します。
 
 ### 2. Repository Secretsへの追加
 
@@ -39,31 +47,33 @@ Organization管理者権限を持つPersonal Access Token (PAT)を作成し、�
 2. GitHub Actionsが起動し、ブランチ保護設定を実行
 3. 設定完了後、Issueが自動クローズされる
 
-## セキュリティ上の注意
+## 🔒 セキュリティ考慮事項
 
-### 権限の最小化
-- **Fine-grained token推奨**: より細かい権限制御が可能
-- **Repository scope**: 必要なリポジトリのみに限定
-- **権限監査**: 定期的に使用されている権限を確認
+### 権限の最小化原則
+- **使用権限**: `repo`スコープのみ（最小限）
+- **アクセス範囲**: Organization内のプライベートリポジトリ
+- **実際の操作**: ブランチ保護設定とIssue管理のみ
 
-### 運用管理
-- **定期更新**: トークンを3-6ヶ月毎に更新
-- **アクセス監査**: GitHub の Audit log で使用状況を監視
-- **即座削除**: 不要時やセキュリティ侵害時の迅速な削除
-- **複数人確認**: 設定変更時の相互確認
+### 運用管理ベストプラクティス
+- **定期更新**: 3-6ヶ月毎のトークン更新
+- **監査**: GitHub Audit logでの使用状況確認
+- **即座対応**: 不要時・侵害時の迅速な削除
+- **権限確認**: 定期的な権限使用状況の監査
 
-### リスク軽減
-- **`repo`権限のリスク**: Organization内全プライベートリポジトリにアクセス可能
-- **実際の使用**: ブランチ保護設定とIssue操作のみに限定
-- **軽減策**: 
-  - 定期的なアクセスログ監視
-  - トークンの定期更新 (3-6ヶ月)
-  - 不要時の即座削除
-  - GitHub Audit logでの利用状況確認
+### リスク評価と軽減策
 
-### 注意事項
-- Fine-grained tokenは新しいリポジトリ作成時に手動更新が必要なため使用しません
-- Classic tokenの`repo`スコープは必要最小限の権限です
+#### リスクレベル: 低〜中
+- **潜在リスク**: Organization内全プライベートリポジトリへのアクセス
+- **実際の影響**: 学生thesis関連リポジトリのブランチ保護設定のみ
+- **軽減策**:
+  - コードベースでの操作制限（ブランチ保護のみ）
+  - 定期的なアクセスログ確認
+  - トークンの短期更新サイクル
+
+#### Fine-grained Token vs Classic Token
+- **Fine-grained**: より細かい制御可能だが、新リポジトリ作成時に手動更新必要
+- **Classic (`repo`)**: 管理オーバーヘッドが少なく、運用に適している
+- **選択理由**: 運用効率とセキュリティのバランスでClassic tokenを採用
 
 ## トラブルシューティング
 
