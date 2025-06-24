@@ -228,6 +228,51 @@ echo -e "${GREEN}✓ Git認証設定完了${NC}"
 echo "初期プッシュを実行中..."
 git push -u origin main >/dev/null 2>&1
 
+# リポジトリ一覧への自動登録（Issue作成）
+echo "リポジトリ一覧への登録を依頼中..."
+
+# GitHub CLI認証確認
+if ! gh auth status >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠ GitHub認証が無効です。リポジトリ一覧への登録をスキップします${NC}"
+    echo -e "${YELLOW}  対処法: 'gh auth login' コマンドで認証を設定してください${NC}"
+    echo -e "${YELLOW}  手動登録が必要な場合: https://github.com/smkwlab/thesis-management-tools/issues${NC}"
+else
+    # REPO_NAMEの検証
+    if [ -z "${REPO_NAME}" ]; then
+        echo -e "${RED}✗ エラー: リポジトリ名が空です${NC}"
+    else
+        # Issue作成（バッククォートをエスケープ、エラー出力をキャプチャ）
+        ERROR_LOG=$(mktemp)
+        if gh issue create \
+            --repo smkwlab/thesis-management-tools \
+            --title "🔒 ブランチ保護設定依頼: smkwlab/${REPO_NAME}" \
+            --body "週報リポジトリ \\\`${REPO_NAME}\\\` のブランチ保護設定とリポジトリ一覧への登録を依頼します。
+
+**リポジトリ情報:**
+- 学生ID: \\\`${STUDENT_ID}\\\`
+- リポジトリ名: \\\`${REPO_NAME}\\\`
+- リポジトリタイプ: weekly report (wr)
+- 作成日時: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+自動生成されたIssueです。" 2>"${ERROR_LOG}"; then
+            echo -e "${GREEN}✓ リポジトリ一覧への登録依頼を送信しました${NC}"
+            echo -e "${GREEN}  GitHub Actionsワークフローによって自動的に処理されます${NC}"
+        else
+            echo -e "${YELLOW}⚠ リポジトリ一覧への登録依頼に失敗しました（リポジトリは正常に作成済み）${NC}"
+            ERROR_MSG=$(cat "${ERROR_LOG}")
+            if [[ "${ERROR_MSG}" == *"permission"* ]] || [[ "${ERROR_MSG}" == *"auth"* ]]; then
+                echo -e "${YELLOW}  エラー: Issue作成権限がない可能性があります${NC}"
+            elif [[ "${ERROR_MSG}" == *"network"* ]] || [[ "${ERROR_MSG}" == *"connection"* ]]; then
+                echo -e "${YELLOW}  エラー: ネットワーク接続の問題です${NC}"
+            else
+                echo -e "${YELLOW}  エラー詳細: ${ERROR_MSG}${NC}"
+            fi
+            echo -e "${YELLOW}  手動登録: https://github.com/smkwlab/thesis-management-tools/issues/new${NC}"
+        fi
+        rm -f "${ERROR_LOG}"
+    fi
+fi
+
 # 完了メッセージ
 echo ""
 echo -e "${GREEN}✅ セットアップ完了！${NC}"
