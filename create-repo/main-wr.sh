@@ -228,6 +228,25 @@ echo -e "${GREEN}✓ Git認証設定完了${NC}"
 echo "初期プッシュを実行中..."
 git push -u origin main >/dev/null 2>&1
 
+# リポジトリ一覧への自動登録（Issue作成）
+echo "リポジトリ一覧への登録を依頼中..."
+if gh issue create \
+    --repo smkwlab/thesis-management-tools \
+    --title "🔒 ブランチ保護設定依頼: smkwlab/${REPO_NAME}" \
+    --body "週報リポジトリ \`${REPO_NAME}\` のブランチ保護設定とリポジトリ一覧への登録を依頼します。
+
+**リポジトリ情報:**
+- 学生ID: \`${STUDENT_ID}\`
+- リポジトリ名: \`${REPO_NAME}\`
+- リポジトリタイプ: weekly report (wr)
+- 作成日時: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+自動生成されたIssueです。"; then
+    echo -e "${GREEN}✓ リポジトリ一覧への登録依頼完了${NC}"
+else
+    echo -e "${YELLOW}⚠ リポジトリ一覧への登録依頼に失敗しました（リポジトリは正常に作成済み）${NC}"
+fi
+
 # 完了メッセージ
 echo ""
 echo -e "${GREEN}✅ セットアップ完了！${NC}"
