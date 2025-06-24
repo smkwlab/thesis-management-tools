@@ -168,10 +168,10 @@ cd create-repo
 echo "🐳 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
     # デバッグモードでは詳細出力を表示
-    docker build --progress=plain -f Dockerfile.alpine -t thesis-setup-alpine .
+    docker build --progress=plain -f Dockerfile -t thesis-setup-alpine .
 else
     # 通常モードでも進行状況を表示
-    if ! docker build --progress=auto -f Dockerfile.alpine -t thesis-setup-alpine .; then
+    if ! docker build --progress=auto -f Dockerfile -t thesis-setup-alpine .; then
         echo "❌ Dockerイメージのビルドに失敗しました"
         exit 1
     fi
