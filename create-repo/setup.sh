@@ -73,6 +73,14 @@ if ! gh auth status >/dev/null 2>&1; then
     echo "以下のコマンドでログインしてください："
     echo "  gh auth login"
     echo ""
+    echo "💡 認証方法："
+    echo "  - ブラウザ認証（推奨）: Enter → ワンタイムコードを入力"
+    echo "  - Personal Access Token: トークンを直接入力"
+    echo ""
+    echo "🔧 トラブルシューティング："
+    echo "  - エラー時: gh auth refresh"
+    echo "  - 複数アカウント: gh auth switch --user USERNAME"
+    echo ""
     exit 1
 fi
 
