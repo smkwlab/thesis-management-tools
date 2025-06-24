@@ -25,6 +25,9 @@ k[0-9][0-9]rs[0-9][0-9][0-9]-*
 k[0-9][0-9]gjk[0-9][0-9]-*
 test-*/
 
+# Act (GitHub Actions local testing)
+.act/
+
 # Student registry data files (contain sensitive student information)
 data/students/
 data/protection-status/
