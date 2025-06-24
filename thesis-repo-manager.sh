@@ -11,8 +11,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PENDING_FILE="$SCRIPT_DIR/student-repos/pending-protection.txt"
-COMPLETED_FILE="$SCRIPT_DIR/student-repos/completed-protection.txt"
+PENDING_FILE="$SCRIPT_DIR/data/protection-status/pending-protection.txt"
+COMPLETED_FILE="$SCRIPT_DIR/data/protection-status/completed-protection.txt"
 
 # カラー定義
 RED='\033[0;31m'
@@ -126,7 +126,7 @@ api_sleep() {
 # 学生ID検証
 validate_student_id() {
     local student_id="$1"
-    if ! [[ "$student_id" =~ ^k[0-9]{2}(rs[0-9]{3}|gjk[0-9]{2})$ ]]; then
+    if ! [[ "$student_id" =~ ^k[0-9]{2}(rs|jk|gjk)[0-9]+$ ]]; then
         warn "Invalid student ID format: $student_id"
         return 1
     fi
@@ -143,10 +143,10 @@ determine_repo_name() {
         return 1
     fi
     
-    if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
-        # 卒業論文
+    if [[ "$student_id" =~ ^k[0-9]{2}(rs|jk)[0-9]+$ ]]; then
+        # 卒業論文（rs）・大学院論文（jk）
         echo "${student_id}-sotsuron"
-    elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
+    elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]+$ ]]; then
         # 修士論文
         echo "${student_id}-thesis"
     else
@@ -183,10 +183,20 @@ check_branch_protection() {
 get_all_students() {
     {
         if [ -f "$PENDING_FILE" ]; then
-            grep -E '^k[0-9]{2}[a-z]{2,3}[0-9]+' "$PENDING_FILE" | cut -d' ' -f1
+            # Student:形式から抽出を試行
+            grep -E 'Student: k[0-9]{2}(rs|jk|gjk)[0-9]+' "$PENDING_FILE" | \
+            sed -E 's/.*Student: (k[0-9]{2}(rs|jk|gjk)[0-9]+).*/\1/'
+            # フォールバック: 行頭の学生IDを抽出
+            grep -E '^k[0-9]{2}(rs|jk|gjk)[0-9]+' "$PENDING_FILE" | \
+            sed -E 's/^(k[0-9]{2}(rs|jk|gjk)[0-9]+).*/\1/'
         fi
         if [ -f "$COMPLETED_FILE" ]; then
-            grep -E '^k[0-9]{2}[a-z]{2,3}[0-9]+' "$COMPLETED_FILE" | cut -d' ' -f1
+            # Student:形式から抽出を試行
+            grep -E 'Student: k[0-9]{2}(rs|jk|gjk)[0-9]+' "$COMPLETED_FILE" | \
+            sed -E 's/.*Student: (k[0-9]{2}(rs|jk|gjk)[0-9]+).*/\1/'
+            # フォールバック: 行頭の学生IDを抽出
+            grep -E '^k[0-9]{2}(rs|jk|gjk)[0-9]+' "$COMPLETED_FILE" | \
+            sed -E 's/^(k[0-9]{2}(rs|jk|gjk)[0-9]+).*/\1/'
         fi
     } | sort -u
 }
@@ -421,7 +431,7 @@ check_protection() {
     local pending_students
     
     if [ -f "$PENDING_FILE" ]; then
-        pending_students=$(grep -E '^k[0-9]{2}[a-z]{2,3}[0-9]+' "$PENDING_FILE" | cut -d' ' -f1)
+        pending_students=$(get_all_students)
     fi
     
     if [ -n "$pending_students" ]; then
@@ -641,11 +651,13 @@ EOF
     local failed_students=""
     
     # 処理対象の学生をカウント
-    while IFS=' ' read -r student_id _; do
-        if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
-            ((total_count++))
-        fi
-    done < "$pending_file"
+    local students_list
+    students_list=$(get_all_students)
+    if [ -n "$students_list" ]; then
+        total_count=$(echo "$students_list" | wc -l | tr -d ' ')
+    else
+        total_count=0
+    fi
     
     if [ "$total_count" -eq 0 ]; then
         warn "No students found in pending file"
@@ -656,8 +668,8 @@ EOF
     echo
     
     # 各学生のブランチ保護設定
-    while IFS=' ' read -r student_id _; do
-        if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
+    while IFS= read -r student_id; do
+        if [[ "$student_id" =~ ^k[0-9]{2}(rs|jk|gjk)[0-9]+$ ]]; then
             if setup_branch_protection "$student_id"; then
                 ((success_count++))
                 
@@ -684,37 +696,14 @@ EOF
                 failed_students+="$student_id "
             fi
         fi
-    done < "$pending_file"
+    done <<< "$students_list"
     
     # 成功分をpendingから削除
     if [ "$success_count" -gt 0 ]; then
-        # 成功した学生IDを一時ファイルに保存
-        local temp_success
-        temp_success=$(mktemp)
-        while IFS=' ' read -r student_id _; do
-            if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
-                if grep -q "^$student_id.*Protected:" "$COMPLETED_FILE"; then
-                    echo "$student_id"
-                fi
-            fi
-        done < "$pending_file" > "$temp_success"
-        
         # pendingファイルから成功分を除外
-        local temp_pending
-        temp_pending=$(mktemp)
-        while IFS=' ' read -r student_id rest; do
-            if [[ "$student_id" =~ ^k[0-9]{2}[a-z]{2,3}[0-9]+$ ]]; then
-                if ! grep -q "^$student_id$" "$temp_success"; then
-                    echo "$student_id $rest"
-                fi
-            else
-                # コメント行はそのまま保持
-                echo "$student_id $rest"
-            fi
-        done < "$pending_file" > "$temp_pending"
-        
-        mv "$temp_pending" "$pending_file"
-        rm -f "$temp_success"
+        # 現在の実装では学生リストは完了ファイルに移動済みのため
+        # pendingファイルの更新は不要（既にGitHub Actionsで管理済み）
+        log "Successfully processed $success_count students"
     fi
     
     # 結果報告
