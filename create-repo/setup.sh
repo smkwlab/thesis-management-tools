@@ -28,75 +28,74 @@ cleanup() {
         rm -f "$TOKEN_FILE"
     fi
     # Dockerイメージも削除
-    docker rmi thesis-setup-temp >/dev/null 2>&1 || true
+    if docker images -q thesis-setup-alpine >/dev/null 2>&1; then
+        echo "🗑️  Dockerイメージをクリーンアップ中..."
+        docker rmi thesis-setup-alpine >/dev/null 2>&1 || true
+    fi
 }
 
-# 終了時・エラー時・割り込み時にクリーンアップ
-trap cleanup EXIT ERR INT TERM
+# 終了時・中断時のクリーンアップ
+trap cleanup EXIT
+trap cleanup INT
+trap cleanup TERM
 
-echo "🎓 論文リポジトリ セットアップ"
-echo "=============================================="
+echo "==============================================="
+echo "📚 論文リポジトリ作成ツール"
+echo "🐳 Dockerベース"
+echo "==============================================="
 
 # Docker の確認
-if ! command -v docker &> /dev/null; then
-    echo "❌ Docker が見つかりません"
-    echo "Docker Desktop をインストールしてください："
-    echo "  Windows: https://docs.docker.com/desktop/windows/"
-    echo "  macOS: https://docs.docker.com/desktop/mac/"
+if ! command -v docker >/dev/null 2>&1; then
+    echo "❌ Dockerがインストールされていません"
+    echo "   https://docs.docker.com/get-docker/ からインストールしてください"
     exit 1
 fi
 
-if ! docker info &> /dev/null; then
-    echo "❌ Docker が起動していません"
-    echo "Docker Desktop を起動してください"
+if ! docker info >/dev/null 2>&1; then
+    echo "❌ Dockerデーモンが起動していません"
+    echo "   Dockerを起動してから再実行してください"
     exit 1
 fi
 
-echo "✅ Docker 確認完了"
-
-# GitHub CLI の確認と認証
-echo "🔐 GitHub CLI の確認..."
-
-# GitHub CLI のインストール確認
-if ! command -v gh &> /dev/null; then
-    echo "❌ GitHub CLI が見つかりません"
-    echo "GitHub CLI をインストールしてください："
-    echo "  Windows: winget install --id GitHub.cli"
-    echo "  macOS: brew install gh"
-    echo "  Linux: https://github.com/cli/cli/blob/trunk/docs/install_linux.md"
+# GitHub CLI の確認（ホスト側）
+if ! command -v gh >/dev/null 2>&1; then
+    echo "❌ GitHub CLI (gh) がインストールされていません"
+    echo "   https://cli.github.com/ からインストールしてください"
     exit 1
 fi
 
-echo "✅ GitHub CLI 確認完了"
+# GitHub 認証状況を確認
+echo "🔐 GitHub 認証状況を確認中..."
 
-# GitHub 認証状態の確認（現在アクティブなアカウントの認証確認）
-echo "🔑 GitHub 認証状態を確認中..."
-if ! gh api user --jq .login &> /dev/null; then
-    echo "❌ 現在のアカウントの認証が必要です"
-    echo "自動的にGitHub認証を開始します..."
+if ! gh auth status >/dev/null 2>&1; then
+    echo "❌ GitHub CLI にログインしていません"
     echo ""
-    
-    if gh auth login --hostname github.com --git-protocol https --web --scopes "repo,workflow,read:org"; then
-        echo "✅ GitHub認証が完了しました"
-    else
-        echo "❌ GitHub認証に失敗しました"
-        echo "手動で 'gh auth login' を実行してから再度お試しください"
-        exit 1
-    fi
-fi
-
-# 複数アカウントの確認と適切なアカウント選択
-echo "👤 GitHub アカウント状況を確認中..."
-
-# 現在のアクティブアカウントを取得（認証確認済みなので必ず成功）
-CURRENT_USER=$(gh api user --jq .login 2>/dev/null)
-if [ -z "$CURRENT_USER" ]; then
-    echo "❌ アクティブなGitHubアカウントの情報取得に失敗しました"
-    echo "認証に問題がある可能性があります。'gh auth refresh' を試してください"
+    echo "以下のコマンドでログインしてください："
+    echo "  gh auth login"
+    echo ""
+    echo "💡 認証方法："
+    echo "  - ブラウザ認証（推奨）: Enter → ワンタイムコードを入力"
+    echo "  - Personal Access Token: トークンを直接入力"
+    echo ""
+    echo "🔧 トラブルシューティング："
+    echo "  - エラー時: gh auth refresh"
+    echo "  - 複数アカウント: gh auth switch --user USERNAME"
+    echo ""
     exit 1
 fi
 
-echo "✅ 現在のアクティブアカウント: $CURRENT_USER"
+# 現在のユーザーアカウントを取得
+if ! CURRENT_USER=$(gh api user --jq .login 2>/dev/null); then
+    echo "❌ GitHub APIアクセスに失敗しました"
+    echo "認証トークンを更新してください："
+    echo "  gh auth refresh"
+    exit 1
+fi
+
+echo "✅ GitHub認証済み (ユーザー: $CURRENT_USER)"
+
+# TARGET_ORG（対象組織）の設定
+TARGET_ORG="${TARGET_ORG:-smkwlab}"
 
 # TARGET_ORG が指定されている場合、アカウントの整合性をチェック
 if [ -n "$TARGET_ORG" ] && [ "$TARGET_ORG" != "smkwlab" ]; then
@@ -147,6 +146,7 @@ echo "🔧 セットアップ開始..."
 # 一時ディレクトリでリポジトリをクローン
 TEMP_DIR=$(mktemp -d)
 ORIGINAL_DIR=$(pwd)
+
 echo "📥 リポジトリを取得中..."
 
 if ! git clone https://github.com/smkwlab/thesis-management-tools.git "$TEMP_DIR" 2>/dev/null; then
@@ -165,13 +165,13 @@ fi
 
 cd create-repo
 
-echo "🔨 Dockerイメージをビルド中..."
+echo "🐳 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
     # デバッグモードでは詳細出力を表示
-    docker build --progress=plain -t thesis-setup-temp .
+    docker build --progress=plain -f Dockerfile.alpine -t thesis-setup-alpine .
 else
     # 通常モードでも進行状況を表示
-    if ! docker build --progress=auto -t thesis-setup-temp .; then
+    if ! docker build --progress=auto -f Dockerfile.alpine -t thesis-setup-alpine .; then
         echo "❌ Dockerイメージのビルドに失敗しました"
         exit 1
     fi
@@ -184,17 +184,18 @@ cd "$ORIGINAL_DIR"
 
 # Docker実行（TTY対応、GitHub認証トークンをセキュアファイル経由で渡す）
 if [ -n "$STUDENT_ID" ]; then
-    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" thesis-setup-temp "$STUDENT_ID"; then
+    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" thesis-setup-alpine "$STUDENT_ID"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         echo "学籍番号: $STUDENT_ID"
         exit 1
     fi
 else
-    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" thesis-setup-temp; then
+    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" thesis-setup-alpine; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         exit 1
     fi
 fi
 
 # 成功メッセージ（クリーンアップは trap で自動実行）
-echo "🎉 セットアップ完了！"
+echo ""
+echo "✅ セットアップが完了しました！"
