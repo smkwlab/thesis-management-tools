@@ -712,19 +712,23 @@ process_issue_interactive() {
         case "$choice" in
             p|P)
                 echo
-                return execute_issue_processing
+                execute_issue_processing
+                return $?
                 ;;
             c|C)
                 echo
-                return execute_issue_close_only
+                execute_issue_close_only
+                return $?
                 ;;
             d)
                 echo
-                return execute_issue_delete
+                execute_issue_delete
+                return $?
                 ;;
             D)
                 echo
-                return execute_repository_delete
+                execute_repository_delete
+                return $?
                 ;;
             s|S)
                 echo
