@@ -962,7 +962,19 @@ Issue #${CURRENT_ISSUE_NUMBER} を手動でクローズしました。
 #
 execute_issue_delete() {
     echo "⚠️  警告: Issue削除は取り消しできません"
-    echo "Issue #${CURRENT_ISSUE_NUMBER}: ${CURRENT_ISSUE_TITLE}"
+    echo
+    echo "削除対象Issueの詳細情報:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Issue番号: #${CURRENT_ISSUE_NUMBER}"
+    echo "  タイトル: ${CURRENT_ISSUE_TITLE}"
+    echo "  作成者: ${CURRENT_ISSUE_AUTHOR}"
+    echo "  作成日時: $(echo "$CURRENT_ISSUE_CREATED" | sed 's/T/ /' | sed 's/Z/ UTC/')"
+    echo "  URL: ${CURRENT_ISSUE_URL}"
+    echo
+    echo "  関連リポジトリ: smkwlab/${CURRENT_REPO_NAME}"
+    echo "  リポジトリタイプ: ${CURRENT_REPO_TYPE}"
+    echo "  学生ID: ${CURRENT_STUDENT_ID}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo
     echo -n "本当に削除しますか? [yes/NO]: "
     read -r confirm_delete
