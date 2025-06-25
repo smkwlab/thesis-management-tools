@@ -1,0 +1,63 @@
+[0;34m[INFO] 2025-06-25 21:40:30 前提条件をチェック中...[0m
+[0;36m[DEBUG] 2025-06-25 21:40:30 ✓ gh コマンド確認済み[0m
+[0;36m[DEBUG] 2025-06-25 21:40:30 ✓ jq コマンド確認済み[0m
+[0;36m[DEBUG] 2025-06-25 21:40:30 ✓ git コマンド確認済み[0m
+[0;36m[DEBUG] 2025-06-25 21:40:32 ✓ GitHub CLI認証確認済み[0m
+[0;32m[SUCCESS] 2025-06-25 21:40:32 前提条件チェック完了[0m
+[0;34m[INFO] 2025-06-25 21:40:32 [DRY-RUN] バックアップ作成をスキップ[0m
+[0;34m[INFO] 2025-06-25 21:40:32 thesis-student-registry を準備中...[0m
+[0;36m[DEBUG] 2025-06-25 21:40:32 既存のthesis-student-registryを更新[0m
+[0;32m[SUCCESS] 2025-06-25 21:40:33 thesis-student-registry 準備完了[0m
+[0;34m[INFO] 2025-06-25 21:40:33 未処理Issueを検索中...[0m
+[0;36m[DEBUG] 2025-06-25 21:40:33 対象リポジトリ: smkwlab/thesis-management-tools[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 GitHub CLI コマンド実行成功[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 タイトルフィルターを適用中...[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 取得したIssue総数: 24[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 フィルター後のIssue数: 14[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 タイプフィルター適用: sotsuron[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 制限数適用: 1[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 制限適用後のIssue数: 1[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 取得したJSON: [
+  {
+    "body": "## ブランチ保護設定依頼
+
+### リポジトリ情報
+- **リポジトリ**: [smkwlab/k18rs905-sotsuron](https://gi...[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 Issue数チェック結果: '1'[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 最終的なTOTAL_ISSUES: 1[0m
+[0;34m[INFO] 2025-06-25 21:40:34 見つかったIssue: 1件[0m
+[0;34m[INFO] 2025-06-25 21:40:34 自動処理モードで実行中...[0m
+[0;36m[DEBUG] 2025-06-25 21:40:34 Issue #102: k18rs905-sotsuron (sotsuron) - k18rs905[0m
+[0;34m[INFO] 2025-06-25 21:40:34 処理中 (1/1): Issue #102 - k18rs905-sotsuron[0m
+[0;36m[DEBUG] 2025-06-25 21:40:35 リポジトリ存在確認: smkwlab/k18rs905-sotsuron ✓[0m
+[0;34m[INFO] 2025-06-25 21:40:35 論文リポジトリ処理: k18rs905-sotsuron[0m
+[0;36m[DEBUG] 2025-06-25 21:40:35 ブランチ保護設定開始: k18rs905-sotsuron[0m
+[0;34m[INFO] 2025-06-25 21:40:35 [DRY-RUN] ブランチ保護設定: k18rs905-sotsuron[0m
+[0;36m[DEBUG] 2025-06-25 21:40:35 thesis-student-registry 更新: k18rs905-sotsuron (sotsuron) - k18rs905[0m
+[0;34m[INFO] 2025-06-25 21:40:35 [DRY-RUN] thesis-student-registry 更新: k18rs905-sotsuron[0m
+[0;36m[DEBUG] 2025-06-25 21:40:35 active.txt への追加: k18rs905-sotsuron[0m
+[0;34m[INFO] 2025-06-25 21:40:35 [DRY-RUN] active.txt への追加: k18rs905-sotsuron[0m
+[0;36m[DEBUG] 2025-06-25 21:40:35 completed-protection.txt への追加: k18rs905-sotsuron[0m
+[0;34m[INFO] 2025-06-25 21:40:35 [DRY-RUN] completed-protection.txt への追加: k18rs905-sotsuron[0m
+[0;34m[INFO] 2025-06-25 21:40:35 [DRY-RUN] Issue #102 をクローズ: ✅ 論文リポジトリの設定が完了しました
+
+## 設定内容
+- **リポジトリ**: smkwlab/k18rs905-sotsuron
+- **学生ID**: k18rs905
+- **設定日時**: 2025-06-25 21:40:35 JST
+
+## ブランチ保護設定
+- **main ブランチ**: 1つ以上の承認レビューが必要
+- **review-branch**: 存在する場合は同様に保護
+- **新しいコミット時**: 古いレビューを無効化
+- **フォースプッシュ**: 禁止
+- **ブランチ削除**: 禁止
+
+## 確認
+リポジトリ設定: https://github.com/smkwlab/k18rs905-sotsuron/settings/branches
+
+論文執筆は以下のガイドを参照してください：
+https://github.com/smkwlab/k18rs905-sotsuron/blob/main/WRITING-GUIDE.md[0m
+[0;32m[SUCCESS] 2025-06-25 21:40:35 論文リポジトリ処理完了: k18rs905-sotsuron[0m
+[0;32m[SUCCESS] 2025-06-25 21:40:35 Issue #102: 処理完了[0m
+[0;32m[SUCCESS] 2025-06-25 21:40:35 スクリプト実行完了[0m
