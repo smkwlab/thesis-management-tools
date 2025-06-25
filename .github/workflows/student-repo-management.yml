@@ -14,10 +14,10 @@ name: Student Repository Management
 jobs:
   manage-repositories:
     runs-on: ubuntu-latest
-    # ブランチ保護設定依頼のIssueのみで実行
+    # リポジトリ登録依頼のIssueのみで実行
     if: >
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.issue.title || '', 'ブランチ保護設定依頼')
+      contains(github.event.issue.title || '', 'リポジトリ登録依頼')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
