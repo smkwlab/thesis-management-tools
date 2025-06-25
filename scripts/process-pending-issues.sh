@@ -313,11 +313,11 @@ fetch_pending_issues() {
     while [ $retry_count -lt $max_retries ]; do
         log_debug "Issue取得試行 $((retry_count + 1))/$max_retries"
         
-        # GitHub CLI でサポートされているフィールドのみを使用
+        # GitHub CLI でサポートされているフィールドのみを使用（author情報も含める）
         if gh_error_output=$(gh issue list \
             --repo "$REPO" \
             --state open \
-            --json number,title,body,createdAt,url \
+            --json number,title,body,createdAt,url,author \
             --limit 100 2>&1); then
             issues_json="$gh_error_output"
             log_debug "GitHub CLI コマンド実行成功"
@@ -392,6 +392,7 @@ extract_issue_info() {
     CURRENT_ISSUE_BODY=$(echo "$issue_json" | jq -r '.body')
     CURRENT_ISSUE_URL=$(echo "$issue_json" | jq -r '.url')
     CURRENT_ISSUE_CREATED=$(echo "$issue_json" | jq -r '.createdAt')
+    CURRENT_ISSUE_AUTHOR=$(echo "$issue_json" | jq -r '.author.login // "unknown"')
     
     # リポジトリ名抽出（複数パターン対応）
     CURRENT_REPO_NAME=""
@@ -704,7 +705,7 @@ process_issue_interactive() {
         show_issue_summary "$current"
         
         echo "  処理方法を選択してください:"
-        echo "  [p] 処理実行   [s] スキップ   [v] 詳細表示   [q] 終了"
+        echo "  [p] 処理実行   [c] Issueクローズ   [d] Issue削除   [D] リポジトリ削除   [s] スキップ   [v] 詳細表示   [q] 終了"
         echo -n "  選択: "
         read -r choice
         
@@ -712,6 +713,18 @@ process_issue_interactive() {
             p|P)
                 echo
                 return execute_issue_processing
+                ;;
+            c|C)
+                echo
+                return execute_issue_close_only
+                ;;
+            d)
+                echo
+                return execute_issue_delete
+                ;;
+            D)
+                echo
+                return execute_repository_delete
                 ;;
             s|S)
                 echo
@@ -724,7 +737,7 @@ process_issue_interactive() {
                 show_issue_details
                 echo
                 echo "処理方法を選択してください:"
-                echo "[p] 処理実行   [s] スキップ   [b] 戻る   [q] 終了"
+                echo "[p] 処理実行   [c] Issueクローズ   [d] Issue削除   [D] リポジトリ削除   [s] スキップ   [b] 戻る   [q] 終了"
                 echo -n "選択: "
                 read -r detail_choice
                 
@@ -732,6 +745,21 @@ process_issue_interactive() {
                     p|P)
                         echo
                         execute_issue_processing
+                        return $?
+                        ;;
+                    c|C)
+                        echo
+                        execute_issue_close_only
+                        return $?
+                        ;;
+                    d)
+                        echo
+                        execute_issue_delete
+                        return $?
+                        ;;
+                    D)
+                        echo
+                        execute_repository_delete
                         return $?
                         ;;
                     s|S)
@@ -791,6 +819,7 @@ show_issue_summary() {
             ;;
     esac
     
+    echo "  発行者: ${CURRENT_ISSUE_AUTHOR:-'不明'}"
     echo "  学生ID: ${CURRENT_STUDENT_ID:-'不明'}"
     echo "  リポジトリ: smkwlab/${CURRENT_REPO_NAME}"
     
@@ -884,6 +913,199 @@ execute_issue_processing() {
             read -r
             return 1
         fi
+    fi
+    
+    echo
+    echo -n "続行しますか? [Enter] で次へ、[q] で終了: "
+    read -r continue_choice
+    if [ "$continue_choice" = "q" ] || [ "$continue_choice" = "Q" ]; then
+        return 2  # 終了シグナル
+    fi
+    
+    return 0
+}
+
+#
+# Issueクローズのみ実行
+#
+execute_issue_close_only() {
+    echo "Issueをクローズ中..."
+    echo
+    
+    if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ Issue手動クローズ
+
+Issue #${CURRENT_ISSUE_NUMBER} を手動でクローズしました。
+リポジトリ登録やブランチ保護設定は実行されていません。
+
+必要に応じて個別に処理を実行してください。"; then
+        echo "✅ Issue #${CURRENT_ISSUE_NUMBER} をクローズしました"
+    else
+        echo "❌ Issue クローズに失敗しました"
+        echo
+        echo "続行するには Enter を押してください..."
+        read -r
+        return 1
+    fi
+    
+    echo
+    echo -n "続行しますか? [Enter] で次へ、[q] で終了: "
+    read -r continue_choice
+    if [ "$continue_choice" = "q" ] || [ "$continue_choice" = "Q" ]; then
+        return 2  # 終了シグナル
+    fi
+    
+    return 0
+}
+
+#
+# Issue削除実行
+#
+execute_issue_delete() {
+    echo "⚠️  警告: Issue削除は取り消しできません"
+    echo
+    echo "削除対象Issueの詳細情報:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Issue番号: #${CURRENT_ISSUE_NUMBER}"
+    echo "  タイトル: ${CURRENT_ISSUE_TITLE}"
+    echo "  作成者: ${CURRENT_ISSUE_AUTHOR}"
+    echo "  作成日時: $(echo "$CURRENT_ISSUE_CREATED" | sed 's/T/ /' | sed 's/Z/ UTC/')"
+    echo "  URL: ${CURRENT_ISSUE_URL}"
+    echo
+    echo "  関連リポジトリ: smkwlab/${CURRENT_REPO_NAME}"
+    echo "  リポジトリタイプ: ${CURRENT_REPO_TYPE}"
+    echo "  学生ID: ${CURRENT_STUDENT_ID}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo
+    echo -n "本当に削除しますか? [yes/NO]: "
+    read -r confirm_delete
+    
+    if [ "$confirm_delete" = "yes" ]; then
+        echo "Issue削除中..."
+        echo
+        
+        # GitHub CLIでIssue削除（要管理者権限）
+        if gh issue delete "$CURRENT_ISSUE_NUMBER" --repo "$REPO" --confirm >/dev/null 2>&1; then
+            echo "✅ Issue #${CURRENT_ISSUE_NUMBER} を削除しました"
+        else
+            echo "❌ Issue削除に失敗しました"
+            echo "  削除には管理者権限が必要です"
+            echo
+            echo "続行するには Enter を押してください..."
+            read -r
+            return 1
+        fi
+    else
+        echo "Issue削除をキャンセルしました"
+    fi
+    
+    echo
+    echo -n "続行しますか? [Enter] で次へ、[q] で終了: "
+    read -r continue_choice
+    if [ "$continue_choice" = "q" ] || [ "$continue_choice" = "Q" ]; then
+        return 2  # 終了シグナル
+    fi
+    
+    return 0
+}
+
+#
+# リポジトリ削除実行
+#
+execute_repository_delete() {
+    echo "🚨 危険: リポジトリ完全削除"
+    echo "⚠️  この操作は取り消しできません"
+    echo
+    echo "削除対象リポジトリ: smkwlab/${CURRENT_REPO_NAME}"
+    echo "Issue: #${CURRENT_ISSUE_NUMBER} - ${CURRENT_ISSUE_TITLE}"
+    echo "発行者: ${CURRENT_ISSUE_AUTHOR}"
+    echo
+    
+    # リポジトリ情報の詳細確認
+    echo "リポジトリの詳細情報を確認中..."
+    if gh repo view "smkwlab/$CURRENT_REPO_NAME" --json name,description,createdAt,isPrivate --jq '{name: .name, description: .description, created: .createdAt, private: .isPrivate}' 2>/dev/null; then
+        echo
+    else
+        echo "❌ リポジトリ情報の取得に失敗しました"
+    fi
+    
+    echo "🔴 リポジトリを削除すると以下の内容が失われます:"
+    echo "  • すべてのコード履歴"
+    echo "  • Issues、Pull Requests"
+    echo "  • Wiki、Releases"
+    echo "  • すべての設定とコラボレーター"
+    echo
+    
+    # 最初の確認：テスト用リポジトリかどうか
+    echo -n "これはテスト用リポジトリですか? [yes/NO]: "
+    read -r is_test_repo
+    
+    if [ "$is_test_repo" != "yes" ]; then
+        echo "❌ テスト用リポジトリ以外の削除はキャンセルされました"
+        echo
+        echo "続行するには Enter を押してください..."
+        read -r
+        return 0
+    fi
+    
+    # 二重確認：リポジトリ名の入力
+    echo
+    echo "⚠️  最終確認: リポジトリを完全に削除します"
+    echo "確認のため、リポジトリ名を正確に入力してください"
+    echo -n "リポジトリ名 '${CURRENT_REPO_NAME}' を入力: "
+    read -r confirm_repo_name
+    
+    if [ "$confirm_repo_name" != "$CURRENT_REPO_NAME" ]; then
+        echo "❌ リポジトリ名が一致しません。削除をキャンセルしました"
+        echo
+        echo "続行するには Enter を押してください..."
+        read -r
+        return 0
+    fi
+    
+    # 最終確認
+    echo
+    echo "🔴 最終確認: 本当に削除を実行しますか?"
+    echo -n "削除を実行する場合は 'DELETE-PERMANENTLY' と入力: "
+    read -r final_confirm
+    
+    if [ "$final_confirm" = "DELETE-PERMANENTLY" ]; then
+        echo
+        echo "リポジトリ削除中..."
+        echo
+        
+        # GitHub CLIでリポジトリ削除（要管理者権限）
+        if gh repo delete "smkwlab/$CURRENT_REPO_NAME" --confirm >/dev/null 2>&1; then
+            echo "✅ リポジトリ smkwlab/${CURRENT_REPO_NAME} を削除しました"
+            
+            # Issueも自動的にクローズ
+            echo "📝 関連Issueをクローズ中..."
+            if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ テストリポジトリ削除完了
+
+リポジトリ **smkwlab/${CURRENT_REPO_NAME}** を削除しました。
+
+## 削除内容
+- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **削除日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+- **操作者**: 管理者による手動削除
+
+テスト用リポジトリの削除が完了しました。"; then
+                echo "✅ Issue #${CURRENT_ISSUE_NUMBER} もクローズしました"
+            else
+                echo "⚠️  Issue クローズに失敗しましたが、リポジトリ削除は完了しています"
+            fi
+        else
+            echo "❌ リポジトリ削除に失敗しました"
+            echo "  考えられる原因:"
+            echo "  - 管理者権限が不足"
+            echo "  - リポジトリが既に削除されている"
+            echo "  - ネットワーク接続問題"
+            echo
+            echo "続行するには Enter を押してください..."
+            read -r
+            return 1
+        fi
+    else
+        echo "❌ 削除をキャンセルしました"
     fi
     
     echo
