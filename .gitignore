@@ -34,3 +34,7 @@ data/protection-status/
 data/repositories/
 data/backups/
 data/statistics-report.txt
+
+# Script execution logs (development and runtime logs)
+logs/
+backups/
