@@ -246,7 +246,7 @@ else
         if gh issue create \
             --repo smkwlab/thesis-management-tools \
             --title "📋 リポジトリ登録依頼: smkwlab/${REPO_NAME}" \
-            --body "週報リポジトリ \\\`${REPO_NAME}\\\` のブランチ保護設定とリポジトリ一覧への登録を依頼します。
+            --body "週報リポジトリ \\\`${REPO_NAME}\\\` のリポジトリ一覧への登録を依頼します。
 
 **リポジトリ情報:**
 - 学生ID: \\\`${STUDENT_ID}\\\`
