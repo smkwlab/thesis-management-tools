@@ -51,7 +51,9 @@ TOTAL_ISSUES=0
 PROCESSED_COUNT=0
 SKIPPED_COUNT=0
 FAILED_COUNT=0
+EXTRACTION_ERROR_COUNT=0
 declare -a FAILED_ISSUES=()
+declare -a EXTRACTION_ERROR_ISSUES=()
 
 #
 # ログ関数
@@ -295,25 +297,49 @@ prepare_registry() {
 }
 
 #
-# Issue取得
+# Issue取得（リトライ機能付き）
 #
 fetch_pending_issues() {
     log_info "未処理Issueを検索中..."
     log_debug "対象リポジトリ: $REPO"
     
-    # Issue取得（検索機能を使わずにタイトルフィルターで対応）
     local issues_json
     local gh_error_output
-    if ! gh_error_output=$(gh issue list \
-        --repo "$REPO" \
-        --state open \
-        --json number,title,body,createdAt,url \
-        --limit 100 2>&1); then
-        log_error "Issue取得に失敗しました: $gh_error_output"
-        return 1
-    fi
-    issues_json="$gh_error_output"
-    log_debug "GitHub CLI コマンド実行成功"
+    local retry_count=0
+    local max_retries=3
+    
+    while [ $retry_count -lt $max_retries ]; do
+        log_debug "Issue取得試行 $((retry_count + 1))/$max_retries"
+        
+        # GitHub CLI でサポートされているフィールドのみを使用
+        if gh_error_output=$(gh issue list \
+            --repo "$REPO" \
+            --state open \
+            --json number,title,body,createdAt,url \
+            --limit 100 2>&1); then
+            issues_json="$gh_error_output"
+            log_debug "GitHub CLI コマンド実行成功"
+            break
+        else
+            retry_count=$((retry_count + 1))
+            log_warn "Issue取得試行 $retry_count 失敗: $gh_error_output"
+            
+            if [ $retry_count -lt $max_retries ]; then
+                local wait_time=$((retry_count * 2))
+                log_info "${wait_time}秒待機後に再試行します..."
+                sleep $wait_time
+            else
+                log_error "Issue取得に失敗しました (全${max_retries}回の試行):"
+                log_error "最終エラー: $gh_error_output"
+                log_error "考えられる原因:"
+                log_error "  - GitHub APIレート制限"
+                log_error "  - ネットワーク接続問題"
+                log_error "  - GitHub CLI認証期限切れ"
+                log_error "  - リポジトリアクセス権限不足"
+                return 1
+            fi
+        fi
+    done
     
     # タイトルでフィルター
     log_debug "タイトルフィルターを適用中..."
@@ -365,36 +391,78 @@ extract_issue_info() {
     CURRENT_ISSUE_URL=$(echo "$issue_json" | jq -r '.url')
     CURRENT_ISSUE_CREATED=$(echo "$issue_json" | jq -r '.createdAt')
     
-    # リポジトリ名抽出
+    # リポジトリ名抽出（複数パターン対応）
     CURRENT_REPO_NAME=""
+    
+    # パターン1: smkwlab/k##xxx-yyy 形式
     if [[ "$CURRENT_ISSUE_TITLE" =~ smkwlab/([k][0-9]{2}[a-z0-9]+-[a-z]+) ]]; then
         CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
+    # パターン2: Issue本文からリポジトリ名を抽出
+    elif [[ "$CURRENT_ISSUE_BODY" =~ smkwlab/([k][0-9]{2}[a-z0-9]+-[a-z]+) ]]; then
+        CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 本文からリポジトリ名を抽出: $CURRENT_REPO_NAME"
+    # パターン3: より柔軟なパターン（バックティック囲み等）
+    elif [[ "$CURRENT_ISSUE_TITLE$CURRENT_ISSUE_BODY" =~ \`([k][0-9]{2}[a-z0-9]+-[a-z]+)\` ]]; then
+        CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: バックティック囲みからリポジトリ名を抽出: $CURRENT_REPO_NAME"
     else
-        log_warn "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名を抽出できませんでした (タイトル: $CURRENT_ISSUE_TITLE)"
-        return 1
+        log_error "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名を抽出できませんでした"
+        log_debug "タイトル: $CURRENT_ISSUE_TITLE"
+        log_debug "本文（先頭200文字）: ${CURRENT_ISSUE_BODY:0:200}"
+        return 2  # 情報抽出エラーとして区別
     fi
     
-    # 学生ID抽出
+    # 学生ID抽出（Issue本文とリポジトリ名の両方から試行）
     CURRENT_STUDENT_ID=""
+    
+    # パターン1: Issue本文から抽出
     if [[ "$CURRENT_ISSUE_BODY" =~ (k[0-9]{2}(rs|jk|gjk)[0-9]+) ]]; then
         CURRENT_STUDENT_ID="${BASH_REMATCH[1]}"
+    # パターン2: リポジトリ名から抽出
+    elif [[ "$CURRENT_REPO_NAME" =~ ^(k[0-9]{2}[a-z0-9]+)- ]]; then
+        CURRENT_STUDENT_ID="${BASH_REMATCH[1]}"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名から学生IDを抽出: $CURRENT_STUDENT_ID"
     else
-        log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDを抽出できませんでした"
-        return 1
+        log_error "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDを抽出できませんでした"
+        log_debug "Issue本文（先頭200文字）: ${CURRENT_ISSUE_BODY:0:200}"
+        log_debug "リポジトリ名: $CURRENT_REPO_NAME"
+        return 2  # 情報抽出エラーとして区別
     fi
     
-    # リポジトリタイプ判定
+    # リポジトリタイプ判定（複数要素から総合判断）
     CURRENT_REPO_TYPE=""
+    
+    # パターン1: リポジトリ名から判定
     if [[ "$CURRENT_REPO_NAME" == *"-wr" ]]; then
         CURRENT_REPO_TYPE="wr"
     elif [[ "$CURRENT_REPO_NAME" == *"-sotsuron" ]]; then
         CURRENT_REPO_TYPE="sotsuron"
     elif [[ "$CURRENT_REPO_NAME" == *"-thesis" ]]; then
         CURRENT_REPO_TYPE="thesis"
+    # パターン2: Issue本文から判定
+    elif [[ "$CURRENT_ISSUE_BODY" =~ 週報|weekly ]]; then
+        CURRENT_REPO_TYPE="wr"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から週報タイプを判定"
+    elif [[ "$CURRENT_ISSUE_BODY" =~ 卒業論文|undergraduate|sotsuron ]]; then
+        CURRENT_REPO_TYPE="sotsuron"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から卒論タイプを判定"
+    elif [[ "$CURRENT_ISSUE_BODY" =~ 修士論文|graduate|thesis ]]; then
+        CURRENT_REPO_TYPE="thesis"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から修論タイプを判定"
+    # パターン3: 学生IDパターンから推測
+    elif [[ "$CURRENT_STUDENT_ID" =~ ^k[0-9]{2}rs[0-9]+ ]]; then
+        CURRENT_REPO_TYPE="sotsuron"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDパターンから卒論タイプを推測"
+    elif [[ "$CURRENT_STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]+ ]]; then
+        CURRENT_REPO_TYPE="thesis"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDパターンから修論タイプを推測"
     else
         CURRENT_REPO_TYPE="unknown"
-        log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 不明なリポジトリタイプ: $CURRENT_REPO_NAME"
-        return 1
+        log_error "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリタイプを判定できませんでした"
+        log_debug "リポジトリ名: $CURRENT_REPO_NAME"
+        log_debug "学生ID: $CURRENT_STUDENT_ID"
+        log_debug "Issue本文（先頭100文字）: ${CURRENT_ISSUE_BODY:0:100}"
+        return 2  # 情報抽出エラーとして区別
     fi
     
     log_debug "Issue #${CURRENT_ISSUE_NUMBER}: $CURRENT_REPO_NAME ($CURRENT_REPO_TYPE) - $CURRENT_STUDENT_ID"
@@ -486,8 +554,15 @@ process_issues_automatic() {
         local issue=$(echo "$issues_json" | jq ".[$i]")
         
         if ! extract_issue_info "$issue"; then
-            log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 情報抽出に失敗、スキップします"
-            ((SKIPPED_COUNT++))
+            local extract_exit_code=$?
+            if [ "$extract_exit_code" = "2" ]; then
+                log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 情報抽出エラー、エラーカウントに追加"
+                ((EXTRACTION_ERROR_COUNT++))
+                EXTRACTION_ERROR_ISSUES+=("$CURRENT_ISSUE_NUMBER")
+            else
+                log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 一般的な抽出失敗、スキップします"
+                ((SKIPPED_COUNT++))
+            fi
             continue
         fi
         
@@ -533,8 +608,15 @@ process_issues_interactive() {
         local issue=$(echo "$issues_json" | jq ".[$i]")
         
         if ! extract_issue_info "$issue"; then
-            log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 情報抽出に失敗、スキップします"
-            ((SKIPPED_COUNT++))
+            local extract_exit_code=$?
+            if [ "$extract_exit_code" = "2" ]; then
+                log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 情報抽出エラー、エラーカウントに追加"
+                ((EXTRACTION_ERROR_COUNT++))
+                EXTRACTION_ERROR_ISSUES+=("$CURRENT_ISSUE_NUMBER")
+            else
+                log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 一般的な抽出失敗、スキップします"
+                ((SKIPPED_COUNT++))
+            fi
             continue
         fi
         
@@ -943,12 +1025,21 @@ show_interactive_summary() {
     echo "処理済み: ${PROCESSED_COUNT}件"
     echo "スキップ: ${SKIPPED_COUNT}件"
     echo "失敗: ${FAILED_COUNT}件"
+    echo "情報抽出エラー: ${EXTRACTION_ERROR_COUNT}件"
     
     if [ ${FAILED_COUNT} -gt 0 ]; then
         echo
         echo "失敗したIssue:"
         for failed_issue in "${FAILED_ISSUES[@]}"; do
             echo "  - Issue #${failed_issue}"
+        done
+    fi
+    
+    if [ ${EXTRACTION_ERROR_COUNT} -gt 0 ]; then
+        echo
+        echo "情報抽出エラーのIssue（データ形式確認が必要）:"
+        for error_issue in "${EXTRACTION_ERROR_ISSUES[@]}"; do
+            echo "  - Issue #${error_issue}"
         done
     fi
 }
@@ -1151,11 +1242,11 @@ add_to_active_repos() {
     if echo "$repo_name" >> "$active_file"; then
         log_debug "active.txt に追加完了: $repo_name"
         
-        # ソート（重複排除込み）
-        if sort -u "$active_file" -o "$active_file"; then
-            log_debug "active.txt ソート完了"
-        else
+        # ソート（重複排除込み）- エラーが発生しても処理を継続
+        if ! sort -u "$active_file" -o "$active_file" 2>/dev/null; then
             log_warn "active.txt ソートに失敗しましたが、処理を続行します"
+        else
+            log_debug "active.txt ソート完了"
         fi
         
         return 0
@@ -1178,26 +1269,30 @@ setup_branch_protection_for_issue() {
         return 0
     fi
     
-    # 保護設定のJSON設定
-    local protection_config='{
-        "required_status_checks": {
-            "strict": false,
-            "contexts": []
-        },
-        "required_pull_request_reviews": {
-            "required_approving_review_count": 1,
-            "dismiss_stale_reviews": true,
-            "require_code_owner_reviews": false,
-            "dismissal_restrictions": {
-                "users": [],
-                "teams": []
-            }
-        },
-        "enforce_admins": false,
-        "restrictions": null,
-        "allow_force_pushes": false,
-        "allow_deletions": false
-    }'
+    # ブランチ保護設定（将来的に外部ファイル化を検討）
+    local protection_config
+    protection_config=$(cat <<'EOF'
+{
+    "required_status_checks": {
+        "strict": false,
+        "contexts": []
+    },
+    "required_pull_request_reviews": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews": true,
+        "require_code_owner_reviews": false,
+        "dismissal_restrictions": {
+            "users": [],
+            "teams": []
+        }
+    },
+    "enforce_admins": false,
+    "restrictions": null,
+    "allow_force_pushes": false,
+    "allow_deletions": false
+}
+EOF
+)
     
     # ブランチ存在確認とリスト作成
     local branches_to_protect=("main")
@@ -1361,7 +1456,16 @@ main() {
     echo "  処理済み: ${PROCESSED_COUNT}件"
     echo "  スキップ: ${SKIPPED_COUNT}件"
     echo "  失敗: ${FAILED_COUNT}件"
+    echo "  情報抽出エラー: ${EXTRACTION_ERROR_COUNT}件"
     echo "  ログファイル: $LOG_FILE"
+    
+    if [ ${EXTRACTION_ERROR_COUNT} -gt 0 ]; then
+        echo
+        echo "情報抽出エラーのIssue（確認推奨）:"
+        for error_issue in "${EXTRACTION_ERROR_ISSUES[@]}"; do
+            echo "  - Issue #${error_issue}"
+        done
+    fi
 }
 
 # オプション解析
