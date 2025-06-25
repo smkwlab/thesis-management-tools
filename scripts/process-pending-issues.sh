@@ -263,36 +263,38 @@ create_backup() {
 }
 
 #
-# thesis-student-registry の準備
+# thesis-student-registry の準備（GitHub API使用時は不要）
 #
 prepare_registry() {
-    log_info "thesis-student-registry を準備中..."
-
-    local registry_path="$PROJECT_ROOT/thesis-student-registry"
-
-    if [ -d "$registry_path" ]; then
-        log_debug "既存のthesis-student-registryを更新"
-        cd "$registry_path"
-        git pull origin main >/dev/null 2>&1 || {
-            log_warn "thesis-student-registry の更新に失敗しました"
-        }
-        cd "$PROJECT_ROOT"
-    else
-        log_debug "thesis-student-registry をクローン"
-        git clone "https://github.com/$REGISTRY_REPO.git" "$registry_path" >/dev/null 2>&1 || {
-            log_error "thesis-student-registry のクローンに失敗しました"
+    log_info "GitHub API経由でthesis-student-registryを更新します"
+    
+    # GitHub APIアクセステスト（読み取り＋書き込み権限確認）
+    if ! gh api repos/smkwlab/thesis-student-registry >/dev/null 2>&1; then
+        log_error "thesis-student-registryへのアクセスに失敗しました"
+        log_error "GitHub CLI認証またはリポジトリ権限を確認してください"
+        return 1
+    fi
+    
+    # 書き込み権限の具体的確認（repositories.jsonファイルアクセステスト）
+    if ! gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json >/dev/null 2>&1; then
+        log_error "repositories.jsonへのアクセスに失敗しました"
+        log_error "ファイルの読み取り権限を確認してください"
+        return 1
+    fi
+    
+    # 実際の書き込み権限確認（現在のユーザーの権限レベルをチェック）
+    local user_permission
+    if user_permission=$(gh api repos/smkwlab/thesis-student-registry --jq '.permissions.push' 2>/dev/null); then
+        if [ "$user_permission" != "true" ]; then
+            log_error "リポジトリへの書き込み権限がありません"
+            log_error "管理者にpush権限の付与を依頼してください"
             return 1
-        }
+        fi
+    else
+        log_warn "権限レベルの確認に失敗しましたが、処理を続行します"
     fi
-
-    # update-repository-registry.sh の実行権限確認
-    local update_script="$registry_path/update-repository-registry.sh"
-    if [ ! -x "$update_script" ]; then
-        chmod +x "$update_script"
-        log_debug "update-repository-registry.sh に実行権限を付与"
-    fi
-
-    log_success "thesis-student-registry 準備完了"
+    
+    log_success "GitHub API経由での thesis-student-registry アクセス確認完了"
     return 0
 }
 
@@ -1180,7 +1182,7 @@ add_issue_comment() {
 }
 
 #
-# thesis-student-registry 更新
+# thesis-student-registry 更新（GitHub API経由）
 #
 update_thesis_student_registry() {
     local repo_name="$1"
@@ -1195,24 +1197,86 @@ update_thesis_student_registry() {
         return 0
     fi
     
-    local registry_path="$PROJECT_ROOT/thesis-student-registry"
-    local update_script="$registry_path/update-repository-registry.sh"
-    
-    if [ ! -f "$update_script" ]; then
-        log_error "update-repository-registry.sh が見つかりません: $update_script"
+    # 現在のrepositories.jsonを取得
+    local current_json
+    if ! current_json=$(gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json --jq '.content' | base64 -d 2>/dev/null); then
+        log_error "repositories.json の取得に失敗: $repo_name"
+        log_error "考えられる原因:"
+        log_error "  - GitHub APIアクセス権限不足"
+        log_error "  - ネットワーク接続問題"
+        log_error "  - thesis-student-registry リポジトリへのアクセス権限不足"
         return 1
     fi
     
-    # thesis-student-registry ディレクトリで実行
-    cd "$registry_path"
+    # 新しいエントリを作成
+    local updated_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+    local new_entry=$(cat <<EOF
+{
+  "student_id": "$student_id",
+  "repository_type": "$repo_type",
+  "status": "$status",
+  "stage": "$repo_type",
+  "updated_at": "$updated_at"
+}
+EOF
+)
     
-    if ./update-repository-registry.sh "$repo_name" "$student_id" "$repo_type" "$status" >/dev/null 2>&1; then
+    # JSONを更新（既存エントリを明示的に削除してから新規追加）
+    local updated_json
+    if ! updated_json=$(echo "$current_json" | jq --arg repo_name "$repo_name" --argjson new_entry "$new_entry" 'del(.[$repo_name]) | . + {($repo_name): $new_entry}'); then
+        log_error "JSON更新処理に失敗: $repo_name"
+        return 1
+    fi
+    
+    # GitHub APIで更新
+    local sha
+    if ! sha=$(gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json --jq '.sha'); then
+        log_error "SHA取得に失敗: $repo_name"
+        log_error "考えられる原因:"
+        log_error "  - GitHub APIアクセス権限不足"
+        log_error "  - repositories.json ファイルが存在しない"
+        log_error "  - リポジトリアクセス権限不足"
+        return 1
+    fi
+    
+    # 個人情報保護のため学生IDをマスク化
+    local masked_student_id="${student_id:0:3}***${student_id: -2}"
+    local commit_message="Add/update repository: $repo_name
+
+Repository: $repo_name
+Student ID: $masked_student_id
+Type: $repo_type
+Status: $status
+Updated: $updated_at
+
+Processed via automated issue processor."
+    
+    # base64エンコードしてGitHub APIで更新
+    local encoded_content
+    if ! encoded_content=$(echo "$updated_json" | base64); then
+        log_error "base64エンコードに失敗: $repo_name"
+        log_error "考えられる原因:"
+        log_error "  - JSON形式エラー"
+        log_error "  - base64コマンドの問題"
+        log_error "  - メモリ不足"
+        return 1
+    fi
+    
+    if gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json \
+        --method PUT \
+        --field message="$commit_message" \
+        --field content="$encoded_content" \
+        --field sha="$sha" >/dev/null 2>&1; then
         log_debug "thesis-student-registry 更新成功: $repo_name"
-        cd "$PROJECT_ROOT"
         return 0
     else
-        log_error "thesis-student-registry 更新失敗: $repo_name"
-        cd "$PROJECT_ROOT"
+        log_error "GitHub API更新に失敗: $repo_name"
+        log_error "考えられる原因:"
+        log_error "  - GitHub APIレート制限"
+        log_error "  - ファイル書き込み権限不足"
+        log_error "  - SHA値の不一致（同時更新による競合）"
+        log_error "  - ネットワーク接続問題"
+        log_error "  - API認証期限切れ"
         return 1
     fi
 }
