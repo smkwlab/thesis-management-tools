@@ -436,7 +436,7 @@ create_protection_request_issue() {
     local issue_number=""
     if issue_number=$(gh issue create \
         --repo smkwlab/thesis-management-tools \
-        --title "🔒 ブランチ保護設定依頼: smkwlab/${repo_name}" \
+        --title "📋 リポジトリ登録依頼: smkwlab/${repo_name}" \
         --assignee toshi0806 \
         --body "$(cat <<EOF
 ## ブランチ保護設定依頼

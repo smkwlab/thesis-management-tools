@@ -245,7 +245,7 @@ else
         ERROR_LOG=$(mktemp)
         if gh issue create \
             --repo smkwlab/thesis-management-tools \
-            --title "🔒 ブランチ保護設定依頼: smkwlab/${REPO_NAME}" \
+            --title "📋 リポジトリ登録依頼: smkwlab/${REPO_NAME}" \
             --body "週報リポジトリ \\\`${REPO_NAME}\\\` のブランチ保護設定とリポジトリ一覧への登録を依頼します。
 
 **リポジトリ情報:**
