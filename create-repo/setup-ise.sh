@@ -128,9 +128,8 @@ determine_ise_report_number() {
         # 2回目のリポジトリが存在するかチェック
         if gh repo view "${ORGANIZATION}/${student_id}-ise-report2" >/dev/null 2>&1; then
             echo "❌ 情報科学演習レポートは最大2つまでです" >&2
-            echo "   既存リポジトリ:" >&2
-            echo "   - https://github.com/${ORGANIZATION}/${student_id}-ise-report1" >&2
-            echo "   - https://github.com/${ORGANIZATION}/${student_id}-ise-report2" >&2
+            echo "   前期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report1" >&2
+            echo "   後期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report2" >&2
             echo "" >&2
             echo "   新しいレポートが必要な場合は、既存のリポジトリを削除するか、" >&2
             echo "   担当教員にご相談ください。" >&2
@@ -308,13 +307,18 @@ echo "📝 ISE学習用初期コンテンツ作成完了"
 # ALDC (Add LaTeX DevContainer) の実行
 echo "🔧 DevContainer環境をセットアップ中..."
 if command -v npm >/dev/null 2>&1; then
-    npm install -g @smkwlab/aldc@latest
-    
-    # ISE用のDevContainer設定
-    echo "ISE用のDevContainer設定を適用中..."
-    aldc --html || echo "⚠️  ALDC実行中にエラーが発生しましたが、継続します"
+    # ALDCパッケージの存在確認
+    if npm view @smkwlab/aldc@latest >/dev/null 2>&1; then
+        npm install -g @smkwlab/aldc@latest
+        
+        # ISE用のDevContainer設定
+        echo "ISE用のDevContainer設定を適用中..."
+        aldc --html || echo "⚠️ ALDC実行をスキップします"
+    else
+        echo "ℹ️ ALDCパッケージが利用できないため、スキップします"
+    fi
 else
-    echo "⚠️  npmが利用できないため、ALDCをスキップします"
+    echo "⚠️ npmが利用できないため、ALDCをスキップします"
 fi
 
 # mainブランチを作成・設定
@@ -384,4 +388,4 @@ gh issue create \
 
 echo ""
 echo "✅ すべての処理が完了しました！"
-echo "   情報科学演習でのPull Request学習をお楽しみください。"
+echo "   情報科学演習でのPull Request学習を開始してください。"
