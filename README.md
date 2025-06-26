@@ -5,22 +5,28 @@ GitHub を使った効率的な論文指導をサポートします。
 
 ## 対象ユーザー
 
-- **学生**: 論文執筆・提出
+### 組織内ユーザー（smkwlab）
+- **学生**: 論文執筆・提出（PR添削ワークフロー付き）
 - **教員**: 論文添削・指導
 - **管理者**: レビューワークフロー管理
 - **TA・先輩**: 副指導・レビュー支援
 
-## 🎓 学生の方へ
+### 個人ユーザー（組織外）
+- **個人研究者・学習者**: LaTeX環境での文書作成
+- **他大学の学生**: 個人的なLaTeX論文執筆環境
 
-**論文執筆用リポジトリの作成方法**
+## 🎓 LaTeX環境のセットアップ
 
-### 📋 セットアップスクリプトを使用
+### 組織内学生向け（smkwlab所属）
+
+**PR添削ワークフロー付き論文執筆環境の作成**
 
 **前提条件:**
 - Windows: WSL + Docker Desktop
 - macOS: Docker Desktop
 - GitHub CLI（推奨、認証を大幅に簡素化）
 
+**セットアップコマンド:**
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
@@ -43,6 +49,38 @@ gh auth switch --user your-username
 # または個人アカウントに作成
 TARGET_ORG=your-username /bin/bash -c "$(curl -fsSL ...)"
 ```
+
+### 個人ユーザー向け（組織外）
+
+**高品質なLaTeX文書作成環境を個人でも利用可能**
+
+smkwlab組織に所属していない方でも、同じセットアップスクリプトで個人用のLaTeX環境を構築できます。組織外ユーザーは自動的に個人モードで動作します。
+
+**セットアップコマンド:**
+```bash
+# 自動判定（推奨）- 組織外ユーザーは自動的に個人モードになります
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+
+# 明示的に個人モード指定（組織メンバーが個人利用したい場合）
+INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+```
+
+**個人モードの特徴:**
+| 機能 | 個人モード | 組織モード |
+|------|-----------|-----------|
+| LaTeX環境 (DevContainer) | ✅ 提供 | ✅ 提供 |
+| textlint日本語校正 | ✅ 提供 | ✅ 提供 |
+| VS Code統合 | ✅ 提供 | ✅ 提供 |
+| リポジトリ作成先 | 個人アカウント | smkwlab組織 |
+| ブランチ保護 | ❌ なし | ✅ 自動設定 |
+| PR添削ワークフロー | ❌ なし | ✅ 教員レビュー |
+| 進捗管理 | ❌ なし | ✅ 組織レベル |
+
+**実行手順:**
+1. `gh auth login` でGitHubにログイン
+2. 上記コマンドを実行
+3. リポジトリ名のベースを入力（例: your-username, my-thesis など）
+4. 個人用LaTeX環境が自動設定されます
 
 ### 📚 手動テンプレート使用
 1. [sotsuron-template](https://github.com/smkwlab/sotsuron-template) にアクセス
