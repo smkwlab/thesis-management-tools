@@ -192,26 +192,26 @@ cleanup_duplicates() {
     # 各ファイルの重複を除去
     while IFS= read -r -d '' file; do
         if [ -f "$file" ] && [ -s "$file" ]; then
-            if ! sort -u "$file" -o "$file"; then
-                warn "重複除去失敗: $file"
+            if ! sort -u "$file" -o "$file" 2>&1; then
+                warn "重複除去失敗: $file ($(wc -l < "$file") 行)"
             fi
         fi
     done < <(find data/students -name "*.txt" -type f -print0)
     
     # protection-statusファイルの重複除去
     for file in data/protection-status/*.txt; do
-        if [ -f "$file" ] && [ -e "$file" ] && [ -s "$file" ]; then
-            if ! sort -u "$file" -o "$file"; then
-                warn "重複除去失敗: $file"
+        if [ -f "$file" ] && [ -s "$file" ]; then
+            if ! sort -u "$file" -o "$file" 2>&1; then
+                warn "重複除去失敗: $file ($(wc -l < "$file") 行)"
             fi
         fi
     done
     
     # repositoriesファイルの重複除去
     for file in data/repositories/*.txt; do
-        if [ -f "$file" ] && [ -e "$file" ] && [ -s "$file" ]; then
-            if ! sort -u "$file" -o "$file"; then
-                warn "重複除去失敗: $file"
+        if [ -f "$file" ] && [ -s "$file" ]; then
+            if ! sort -u "$file" -o "$file" 2>&1; then
+                warn "重複除去失敗: $file ($(wc -l < "$file") 行)"
             fi
         fi
     done
