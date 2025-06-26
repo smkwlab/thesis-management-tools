@@ -50,7 +50,10 @@ check_rate_limit() {
 }
 
 # アカウント権限チェック
-check_admin_permissions() {
+# 返り値:
+#   0: 管理者権限あり
+#   1: 権限なしまたはエラー
+verify_admin_permissions() {
     log "GitHub CLI認証とアカウント権限を確認中..."
     
     # 現在のユーザー名を取得（GitHub Actionsとローカル両対応）
@@ -80,6 +83,8 @@ check_admin_permissions() {
     # ローカル環境でのみadmin権限をチェック
     local test_repo="smkwlab/thesis-management-tools"
     local has_admin
+    
+    log "権限確認対象: $test_repo"
     
     has_admin=$(gh api "repos/$test_repo" --jq '.permissions.admin' 2>/dev/null)
     
@@ -409,7 +414,7 @@ main() {
     fi
     
     # アカウント権限チェック
-    if ! check_admin_permissions; then
+    if ! verify_admin_permissions; then
         exit 1
     fi
     
