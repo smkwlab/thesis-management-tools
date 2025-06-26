@@ -1516,9 +1516,9 @@ add_to_active_repos() {
         return 0
     fi
     
-    # thesis-student-registry への登録は update-repository-registry.sh が担当
+    # thesis-student-registry への登録は registry-manager が担当
     log_debug "データ管理は thesis-student-registry に統合済み"
-    log_debug "update-repository-registry.sh でリポジトリ情報を管理してください"
+    log_debug "registry-manager でリポジトリ情報を管理してください"
     
     return 0
 }
@@ -1625,7 +1625,7 @@ add_to_completed_protection() {
     
     # thesis-student-registry での管理に移行
     log_debug "データ管理は thesis-student-registry に統合済み"
-    log_debug "保護状態は thesis-monitor または update-repository-registry.sh で管理"
+    log_debug "保護状態は thesis-monitor または registry-manager で管理"
     
     return 0
 }
