@@ -39,7 +39,7 @@ jobs:
       - name: Run actionlint
         run: |
           echo "Running actionlint on GitHub Actions workflows..."
-          actionlint
+          actionlint -config-file .actionlint.yml
 
       - name: Validation summary
         run: |
