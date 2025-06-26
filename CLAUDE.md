@@ -36,12 +36,19 @@ create-repo/
 
 scripts/
 ├── setup-branch-protection.sh    # Branch protection for individual student
+├── process-pending-issues.sh     # Batch processing of pending repository requests
+├── extract-student-info-from-issues.sh  # Extract student info from GitHub Issues
 └── update-review-branch.sh       # Emergency manual review branch update
 
-data/protection-status/
-├── pending-protection.txt        # Students awaiting branch protection
-└── completed-protection.txt      # Students with protection enabled
-```
+## Data Management Integration
+
+**IMPORTANT**: Student data management has been consolidated into `thesis-student-registry`:
+
+- **Student registry**: `thesis-student-registry/data/repositories.json`
+- **Management tool**: `update-repository-registry.sh` 
+- **Monitoring tool**: `thesis-monitor` command
+
+All scripts now use GitHub API to access centralized data instead of local files.
 
 ## Student ID Patterns
 
@@ -64,6 +71,22 @@ cd create-repo && ./main.sh k21rs999
 
 # Docker testing
 docker build -f create-repo/Dockerfile -t test-creator .
+```
+
+### Data Management (Post-Integration)
+```bash
+# View repository registry status
+thesis-monitor status
+
+# Add new repository to registry
+cd thesis-student-registry
+./update-repository-registry.sh add k21rs001-sotsuron k21rs001 sotsuron active
+
+# Mark branch protection complete
+./update-repository-registry.sh protect k21rs001-sotsuron
+
+# Update repository status
+./update-repository-registry.sh update k21rs001-sotsuron status completed
 ```
 
 ### Debug Authentication Issues
