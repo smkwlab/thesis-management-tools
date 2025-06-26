@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.22.0
 
 # 必要なツールをインストール
 RUN apk add --no-cache \
@@ -6,11 +6,12 @@ RUN apk add --no-cache \
     curl \
     bash \
     ca-certificates \
-    unzip
+    unzip \
+    jq
 
 # GitHub CLI をインストール
 RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
-    LATEST_VERSION=$(curl -s https://api.github.com/repos/cli/cli/releases/latest | grep tag_name | cut -d'"' -f4 | tr -d 'v') && \
+    LATEST_VERSION=$(curl -s https://api.github.com/repos/cli/cli/releases/latest | jq -r .tag_name | tr -d 'v') && \
     curl -fsSL "https://github.com/cli/cli/releases/latest/download/gh_${LATEST_VERSION}_linux_${ARCH}.tar.gz" \
     | tar -xz -C /tmp && \
     mv "/tmp/gh_${LATEST_VERSION}_linux_${ARCH}/bin/gh" /usr/local/bin/ && \
