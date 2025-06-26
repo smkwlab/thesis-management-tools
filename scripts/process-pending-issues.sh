@@ -1026,7 +1026,7 @@ execute_repository_delete() {
     
     # リポジトリ情報の詳細確認
     echo "リポジトリの詳細情報を確認中..."
-    if gh repo view "smkwlab/$CURRENT_REPO_NAME" --json name,description,createdAt,isPrivate --jq '{name: .name, description: .description, created: .createdAt, private: .isPrivate}' 2>/dev/null; then
+    if gh --no-pager repo view "smkwlab/$CURRENT_REPO_NAME" --json name,description,createdAt,isPrivate --jq '{name: .name, description: .description, created: .createdAt, private: .isPrivate}' 2>/dev/null; then
         echo
     else
         echo "❌ リポジトリ情報の取得に失敗しました"
@@ -1043,36 +1043,32 @@ execute_repository_delete() {
     echo -n "これはテスト用リポジトリですか? [yes/NO]: "
     read -r is_test_repo
     
-    if [ "$is_test_repo" != "yes" ]; then
-        echo "❌ テスト用リポジトリ以外の削除はキャンセルされました"
+    if [ "$is_test_repo" = "yes" ]; then
+        # 二重確認：リポジトリ名の入力
         echo
-        echo "続行するには Enter を押してください..."
-        read -r
-        return 0
-    fi
-    
-    # 二重確認：リポジトリ名の入力
-    echo
-    echo "⚠️  最終確認: リポジトリを完全に削除します"
-    echo "確認のため、リポジトリ名を正確に入力してください"
-    echo -n "リポジトリ名 '${CURRENT_REPO_NAME}' を入力: "
-    read -r confirm_repo_name
-    
-    if [ "$confirm_repo_name" != "$CURRENT_REPO_NAME" ]; then
-        echo "❌ リポジトリ名が一致しません。削除をキャンセルしました"
-        echo
-        echo "続行するには Enter を押してください..."
-        read -r
-        return 0
-    fi
-    
-    # 最終確認
-    echo
-    echo "🔴 最終確認: 本当に削除を実行しますか?"
-    echo -n "削除を実行する場合は 'DELETE-PERMANENTLY' と入力: "
-    read -r final_confirm
-    
-    if [ "$final_confirm" = "DELETE-PERMANENTLY" ]; then
+        echo "⚠️  最終確認: リポジトリを完全に削除します"
+        echo "確認のため、リポジトリ名を正確に入力してください"
+        echo -n "リポジトリ名 '${CURRENT_REPO_NAME}' を入力: "
+        read -r confirm_repo_name
+        
+        # 空文字チェック
+        if [ -z "$confirm_repo_name" ]; then
+            echo "❌ リポジトリ名が入力されていません。削除をキャンセルしました"
+            echo
+            echo "続行するには Enter を押してください..."
+            read -r
+            return 0
+        fi
+        
+        # リポジトリ名一致チェック
+        if [ "$confirm_repo_name" != "$CURRENT_REPO_NAME" ]; then
+            echo "❌ リポジトリ名が一致しません。削除をキャンセルしました"
+            echo
+            echo "続行するには Enter を押してください..."
+            read -r
+            return 0
+        fi
+        
         echo
         echo "リポジトリ削除中..."
         echo
@@ -1109,7 +1105,11 @@ execute_repository_delete() {
             return 1
         fi
     else
-        echo "❌ 削除をキャンセルしました"
+        echo "❌ テスト用リポジトリ以外の削除はキャンセルされました"
+        echo
+        echo "続行するには Enter を押してください..."
+        read -r
+        return 0
     fi
     
     echo
