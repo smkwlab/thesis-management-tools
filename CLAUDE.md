@@ -39,7 +39,6 @@ scripts/
 ├── process-pending-issues.sh     # Batch processing of pending repository requests
 ├── bulk-setup-protection.sh      # Bulk branch protection setup
 ├── update-review-branch.sh       # Emergency manual review branch update
-├── update-student-registry.sh    # Registry maintenance utilities
 └── validate-yaml.sh              # YAML/GitHub Actions validation
 
 ## Data Management Integration
