@@ -9,6 +9,6 @@ config-variables: true
 shellcheck:
   enable: false
 
-# Allow potentially untrusted expressions (can be tightened later)  
+# Allow potentially untrusted expressions (can be tightened later)
 expression:
   strict: false
