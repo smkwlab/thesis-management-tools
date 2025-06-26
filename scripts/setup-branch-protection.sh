@@ -135,8 +135,8 @@ update_student_lists() {
     
     # completed-protection.txt に追加（重複チェック付き）
     if [ -f "$completed_file" ]; then
-        if ! grep -q "^$repo_name " "$completed_file" 2>/dev/null; then
-            if ! echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"; then
+        if ! grep -q "^$repo_name|" "$completed_file" 2>/dev/null; then
+            if ! echo "$repo_name|Completed: $(date +%Y-%m-%d)|Student: $student_id" >> "$completed_file"; then
                 error "completed-protection.txt への書き込みに失敗しました: $completed_file"
                 return 1
             fi
@@ -146,7 +146,7 @@ update_student_lists() {
         fi
     else
         # ファイルが存在しない場合は作成
-        if ! echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"; then
+        if ! echo "$repo_name|Completed: $(date +%Y-%m-%d)|Student: $student_id" >> "$completed_file"; then
             error "completed-protection.txt の作成に失敗しました: $completed_file"
             return 1
         fi
