@@ -410,23 +410,13 @@ check_existing_student() {
     
     echo "📋 既存学生ID登録状況をチェック中..."
     
-    # pending-protection.txtの内容を取得して確認
-    local pending_content
-    if pending_content=$(gh api "repos/smkwlab/thesis-management-tools/contents/data/protection-status/pending-protection.txt" \
-       --jq '.content' 2>/dev/null) && [ -n "$pending_content" ] && [ "$pending_content" != "null" ]; then
-        if echo "$pending_content" | base64 -d 2>/dev/null | grep -q "${repo_name}"; then
-            echo -e "${YELLOW}⚠️  リポジトリ ${repo_name} は既に保護設定待ちです${NC}"
-            echo "   既存のIssueを確認してください"
-            return 1
-        fi
-    fi
-    
-    # completed-protection.txtも確認
-    local completed_content
-    if completed_content=$(gh api "repos/smkwlab/thesis-management-tools/contents/data/protection-status/completed-protection.txt" \
-       --jq '.content' 2>/dev/null) && [ -n "$completed_content" ] && [ "$completed_content" != "null" ]; then
-        if echo "$completed_content" | base64 -d 2>/dev/null | grep -q "${repo_name}"; then
-            echo -e "${GREEN}ℹ️  リポジトリ ${repo_name} のブランチ保護は既に設定済みです${NC}"
+    # thesis-student-registry での登録状況確認
+    echo "   thesis-student-registry での登録状況を確認中..."
+    local registry_content
+    if registry_content=$(gh api "repos/smkwlab/thesis-student-registry/contents/data/repositories.json" \
+       --jq '.content' 2>/dev/null) && [ -n "$registry_content" ] && [ "$registry_content" != "null" ]; then
+        if echo "$registry_content" | base64 -d 2>/dev/null | grep -q "\"${repo_name}\""; then
+            echo -e "${GREEN}ℹ️  リポジトリ ${repo_name} は既に thesis-student-registry に登録済みです${NC}"
             echo "   新しいIssue作成をスキップします"
             return 1
         fi

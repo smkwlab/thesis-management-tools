@@ -111,54 +111,16 @@ verify_admin_permissions() {
 update_student_lists() {
     local student_id="$1"
     local repo_name="$2"
-    local base_dir="$(dirname "$SCRIPT_DIR")"
-    local pending_file="$base_dir/data/protection-status/pending-protection.txt"
-    local completed_file="$base_dir/data/protection-status/completed-protection.txt"
+    # データは thesis-student-registry で管理されるため、ローカルファイル操作は不要
     
-    log "学生リストを更新中..."
+    log "ブランチ保護設定の記録中..."
     
-    # pending-protection.txt から該当リポジトリを削除
-    if [ -f "$pending_file" ]; then
-        # 一時ファイルを作成
-        local temp_file
-        if ! temp_file=$(mktemp); then
-            error "一時ファイルの作成に失敗しました"
-            return 1
-        fi
-        
-        # grep -v で該当行を除外（見つからない場合やファイルが空の場合も正常）
-        grep -v "^$repo_name$" "$pending_file" > "$temp_file" 2>/dev/null || true
-        
-        # 元のファイルを更新
-        if ! mv "$temp_file" "$pending_file"; then
-            error "ファイルの更新に失敗しました: $pending_file"
-            rm -f "$temp_file"
-            return 1
-        fi
-        log "pending-protection.txt から $repo_name を削除しました"
-    fi
+    # thesis-student-registry のリポジトリ情報を更新（protection_statusをprotectedに設定）
+    # これは update-repository-registry.sh または thesis-monitor が担当
+    log "リポジトリ情報: $repo_name (学生ID: $student_id)"
+    log "保護状態: protected"
     
-    # completed-protection.txt に追加（重複チェック付き）
-    if [ -f "$completed_file" ]; then
-        if ! grep -q "^$repo_name|" "$completed_file" 2>/dev/null; then
-            if ! echo "$repo_name|Completed: $(date +%Y-%m-%d)|Student: $student_id" >> "$completed_file"; then
-                error "completed-protection.txt への書き込みに失敗しました: $completed_file"
-                return 1
-            fi
-            log "completed-protection.txt に $repo_name を追加しました"
-        else
-            log "$repo_name は既に completed-protection.txt に存在します"
-        fi
-    else
-        # ファイルが存在しない場合は作成
-        if ! echo "$repo_name|Completed: $(date +%Y-%m-%d)|Student: $student_id" >> "$completed_file"; then
-            error "completed-protection.txt の作成に失敗しました: $completed_file"
-            return 1
-        fi
-        log "completed-protection.txt を作成し、$repo_name を追加しました"
-    fi
-    
-    success "✅ 学生リストの更新が完了しました"
+    success "✅ ブランチ保護設定の記録が完了しました"
 }
 
 # 関連Issueを自動クローズ

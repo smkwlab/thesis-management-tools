@@ -28,12 +28,10 @@ test-*/
 # Act (GitHub Actions local testing)
 .act/
 
-# Student registry data files (contain sensitive student information)
-data/students/
-data/protection-status/
-data/repositories/
-data/backups/
-data/statistics-report.txt
+# Student registry data files (moved to thesis-student-registry)
+# NOTE: thesis-management-tools/data has been consolidated into thesis-student-registry
+# Use thesis-student-registry repository for all student data management
+data/
 
 # Script execution logs (development and runtime logs)
 logs/
