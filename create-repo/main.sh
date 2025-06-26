@@ -162,26 +162,26 @@ if [ "$INDIVIDUAL_MODE" = true ]; then
     
     # 論文タイプの決定（環境変数優先、なければインタラクティブ選択）
     if [ -n "$THESIS_TYPE" ] && [ "$THESIS_TYPE" = "thesis" ]; then
-        echo -e "${BLUE}✓ 修士論文形式として設定します${NC}"
+        echo -e "${BLUE}✓ 修士論文リポジトリとして設定します${NC}"
     elif [ -n "$THESIS_TYPE" ] && [ "$THESIS_TYPE" = "sotsuron" ]; then
-        echo -e "${BLUE}✓ 卒業論文形式として設定します${NC}"
+        echo -e "${BLUE}✓ 卒業論文リポジトリとして設定します${NC}"
     else
         # インタラクティブ選択
         echo ""
         echo "論文タイプを選択してください："
-        echo "  1. 卒業論文 (sotsuron) - 学部論文向け"
-        echo "  2. 修士論文 (thesis) - 大学院論文向け"
+        echo "  1. 卒業論文"
+        echo "  2. 修士論文"
         echo ""
         read -p "選択 [1]: " thesis_choice
         
         case "${thesis_choice:-1}" in
             2)
                 THESIS_TYPE="thesis"
-                echo -e "${BLUE}✓ 修士論文形式として設定します${NC}"
+                echo -e "${BLUE}✓ 修士論文リポジトリとして設定します${NC}"
                 ;;
             *)
                 THESIS_TYPE="sotsuron"
-                echo -e "${BLUE}✓ 卒業論文形式として設定します${NC}"
+                echo -e "${BLUE}✓ 卒業論文リポジトリとして設定します${NC}"
                 ;;
         esac
     fi
@@ -205,13 +205,13 @@ else
     # 論文タイプの判定
     if [[ "$STUDENT_ID" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
         THESIS_TYPE="sotsuron"
-        echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
+        echo -e "${GREEN}✓ 卒業論文リポジトリとして設定します${NC}"
     elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}jk[0-9]{3}$ ]]; then
         THESIS_TYPE="sotsuron"
-        echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
+        echo -e "${GREEN}✓ 卒業論文リポジトリとして設定します${NC}"
     elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
         THESIS_TYPE="thesis"
-        echo -e "${GREEN}✓ 修士論文として設定します${NC}"
+        echo -e "${GREEN}✓ 修士論文リポジトリとして設定します${NC}"
     else
         echo -e "${RED}エラー: 学籍番号の形式が正しくありません${NC}"
         echo "期待される形式:"
