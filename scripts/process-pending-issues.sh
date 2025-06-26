@@ -228,8 +228,8 @@ check_prerequisites() {
         fi
     done
 
-    # プロジェクトルートの確認
-    if [ ! -f "$PROJECT_ROOT/data/protection-status/completed-protection.txt" ]; then
+    # プロジェクトルートの確認（スクリプトディレクトリの存在確認に変更）
+    if [ ! -d "$PROJECT_ROOT/scripts" ]; then
         log_error "プロジェクトルートが正しくありません: $PROJECT_ROOT"
         return 1
     fi
@@ -251,12 +251,8 @@ create_backup() {
 
     mkdir -p "$BACKUP_PATH"
 
-    # thesis-management-tools のデータバックアップ
-    local data_dir="$PROJECT_ROOT/data"
-    if [ -d "$data_dir" ]; then
-        cp -r "$data_dir" "$BACKUP_PATH/thesis-management-tools-data"
-        log_debug "バックアップ作成: thesis-management-tools/data"
-    fi
+    # データは thesis-student-registry で管理されるため、ローカルバックアップは不要
+    log_debug "データ管理は thesis-student-registry に統合済み"
 
     log_success "バックアップ作成完了: $BACKUP_PATH"
     return 0
@@ -1508,42 +1504,23 @@ Processed via automated issue processor."
 }
 
 #
-# active.txt への追加
+# リポジトリ登録（thesis-student-registry統合後）
 #
 add_to_active_repos() {
     local repo_name="$1"
     
-    log_debug "active.txt への追加: $repo_name"
+    log_debug "リポジトリ情報登録: $repo_name"
     
     if [ "$DRY_RUN_MODE" = true ]; then
-        log_info "[DRY-RUN] active.txt への追加: $repo_name"
+        log_info "[DRY-RUN] リポジトリ情報登録: $repo_name"
         return 0
     fi
     
-    local active_file="$PROJECT_ROOT/data/repositories/active.txt"
+    # thesis-student-registry への登録は update-repository-registry.sh が担当
+    log_debug "データ管理は thesis-student-registry に統合済み"
+    log_debug "update-repository-registry.sh でリポジトリ情報を管理してください"
     
-    # 重複チェック
-    if [ -f "$active_file" ] && grep -q "^$repo_name$" "$active_file" 2>/dev/null; then
-        log_debug "active.txt に既に存在: $repo_name"
-        return 0
-    fi
-    
-    # 追加
-    if echo "$repo_name" >> "$active_file"; then
-        log_debug "active.txt に追加完了: $repo_name"
-        
-        # ソート（重複排除込み）- エラーが発生しても処理を継続
-        if ! sort -u "$active_file" -o "$active_file" 2>/dev/null; then
-            log_warn "active.txt ソートに失敗しましたが、処理を続行します"
-        else
-            log_debug "active.txt ソート完了"
-        fi
-        
-        return 0
-    else
-        log_error "active.txt への書き込みに失敗: $repo_name"
-        return 1
-    fi
+    return 0
 }
 
 #
@@ -1633,42 +1610,24 @@ EOF
 }
 
 #
-# completed-protection.txt への追加
+# 保護設定完了記録（thesis-student-registry統合後）
 #
 add_to_completed_protection() {
     local repo_name="$1"
     local student_id="$2"
     
-    log_debug "completed-protection.txt への追加: $repo_name"
+    log_debug "保護設定完了記録: $repo_name (学生ID: $student_id)"
     
     if [ "$DRY_RUN_MODE" = true ]; then
-        log_info "[DRY-RUN] completed-protection.txt への追加: $repo_name"
+        log_info "[DRY-RUN] 保護設定完了記録: $repo_name"
         return 0
     fi
     
-    local completed_file="$PROJECT_ROOT/data/protection-status/completed-protection.txt"
+    # thesis-student-registry での管理に移行
+    log_debug "データ管理は thesis-student-registry に統合済み"
+    log_debug "保護状態は thesis-monitor または update-repository-registry.sh で管理"
     
-    # ディレクトリ作成
-    local protection_dir="$(dirname "$completed_file")"
-    if [ ! -d "$protection_dir" ]; then
-        mkdir -p "$protection_dir"
-        log_debug "ディレクトリを作成: $protection_dir"
-    fi
-    
-    # 重複チェック
-    if [ -f "$completed_file" ] && grep -q "^$repo_name " "$completed_file" 2>/dev/null; then
-        log_debug "completed-protection.txt に既に存在: $repo_name"
-        return 0
-    fi
-    
-    # 追加
-    if echo "$repo_name|Completed: $(date +%Y-%m-%d)|Student: $student_id" >> "$completed_file"; then
-        log_debug "completed-protection.txt に追加完了: $repo_name"
-        return 0
-    else
-        log_error "completed-protection.txt への書き込みに失敗: $repo_name"
-        return 1
-    fi
+    return 0
 }
 
 #
