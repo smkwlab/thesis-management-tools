@@ -37,18 +37,19 @@ create-repo/
 scripts/
 ├── setup-branch-protection.sh    # Branch protection for individual student
 ├── process-pending-issues.sh     # Batch processing of pending repository requests
-├── extract-student-info-from-issues.sh  # Extract student info from GitHub Issues
-└── update-review-branch.sh       # Emergency manual review branch update
+├── bulk-setup-protection.sh      # Bulk branch protection setup
+├── update-review-branch.sh       # Emergency manual review branch update
+└── validate-yaml.sh              # YAML/GitHub Actions validation
 
 ## Data Management Integration
 
 **IMPORTANT**: Student data management has been consolidated into `thesis-student-registry`:
 
 - **Student registry**: `thesis-student-registry/data/repositories.json`
-- **Management tool**: `update-repository-registry.sh` 
-- **Monitoring tool**: `thesis-monitor` command
+- **Management tool**: `registry-manager` (Elixir escript)
+- **Monitoring tool**: `thesis-monitor` (Elixir escript)
 
-All scripts now use GitHub API to access centralized data instead of local files.
+All operations now use GitHub API for safe, atomic data management instead of local files.
 
 ## Student ID Patterns
 
@@ -73,20 +74,20 @@ cd create-repo && ./main.sh k21rs999
 docker build -f create-repo/Dockerfile -t test-creator .
 ```
 
-### Data Management (Post-Integration)
+### Data Management (Registry Manager Integration)
 ```bash
 # View repository registry status
-thesis-monitor status
+cd thesis-student-registry
+./thesis_monitor/thesis-monitor status
 
 # Add new repository to registry
-cd thesis-student-registry
-./update-repository-registry.sh add k21rs001-sotsuron k21rs001 sotsuron active
+./registry_manager/registry-manager add k21rs001-sotsuron k21rs001 sotsuron active thesis
 
 # Mark branch protection complete
-./update-repository-registry.sh protect k21rs001-sotsuron
+./registry_manager/registry-manager protect k21rs001-sotsuron
 
 # Update repository status
-./update-repository-registry.sh update k21rs001-sotsuron status completed
+./registry_manager/registry-manager update k21rs001-sotsuron status completed
 ```
 
 ### Debug Authentication Issues

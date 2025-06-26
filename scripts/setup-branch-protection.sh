@@ -116,7 +116,7 @@ update_student_lists() {
     log "ブランチ保護設定の記録中..."
     
     # thesis-student-registry のリポジトリ情報を更新（protection_statusをprotectedに設定）
-    # これは update-repository-registry.sh または thesis-monitor が担当
+    # これは registry-manager または thesis-monitor が担当
     log "リポジトリ情報: $repo_name (学生ID: $student_id)"
     log "保護状態: protected"
     
