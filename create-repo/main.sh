@@ -60,6 +60,23 @@ else
     echo -e "${GREEN}✓ GitHub認証済み${NC}"
 fi
 
+# 動作モードの判定（setup.shから渡された環境変数）
+USER_TYPE="${USER_TYPE:-organization_member}"
+INDIVIDUAL_MODE=false
+
+if [ "$USER_TYPE" = "individual_user" ]; then
+    INDIVIDUAL_MODE=true
+    echo -e "${BLUE}👤 個人ユーザーモード有効${NC}"
+    echo -e "${BLUE}   - ブランチ保護: 無効${NC}"
+    echo -e "${BLUE}   - Registry登録: 無効${NC}"
+    echo -e "${BLUE}   - Issue作成: 無効${NC}"
+else
+    echo -e "${GREEN}🏢 組織ユーザーモード（従来通り）${NC}"
+    echo -e "${GREEN}   - ブランチ保護: 有効${NC}"
+    echo -e "${GREEN}   - Registry登録: 有効${NC}"
+    echo -e "${GREEN}   - Issue作成: 有効${NC}"
+fi
+
 # 組織/ユーザーの設定
 if [ -n "$TARGET_ORG" ]; then
     # 環境変数で明示的に指定された場合
@@ -83,16 +100,33 @@ else
 fi
 echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
 
-# 学籍番号の入力または引数から取得
-if [ -n "$1" ]; then
-    STUDENT_ID="$1"
+# 識別子の入力または引数から取得
+if [ "$INDIVIDUAL_MODE" = true ]; then
+    # 個人ユーザーモード: ユーザー名ベース
+    if [ -n "$1" ]; then
+        STUDENT_ID="$1"
+    else
+        current_user=$(gh api user --jq '.login' 2>/dev/null || echo "user")
+        echo ""
+        echo "リポジトリ名のベースを入力してください"
+        echo "  例: $current_user (推奨: GitHubユーザー名)"
+        echo "  または任意の名前: my-thesis, graduation-thesis など"
+        echo ""
+        read -p "ベース名 [$current_user]: " input_name
+        STUDENT_ID="${input_name:-$current_user}"
+    fi
 else
-    echo ""
-    echo "学籍番号を入力してください"
-    echo "  卒業論文の例: k21rs001"
-    echo "  修士論文の例: k21gjk01"
-    echo ""
-    read -p "学籍番号: " STUDENT_ID
+    # 組織ユーザーモード: 従来通り学籍番号
+    if [ -n "$1" ]; then
+        STUDENT_ID="$1"
+    else
+        echo ""
+        echo "学籍番号を入力してください"
+        echo "  卒業論文の例: k21rs001"
+        echo "  修士論文の例: k21gjk01"
+        echo ""
+        read -p "学籍番号: " STUDENT_ID
+    fi
 fi
 
 # 学籍番号の正規化（自動補正）
@@ -118,39 +152,52 @@ normalize_student_id() {
     return 0
 }
 
-# 学籍番号を正規化
-NORMALIZED_STUDENT_ID=$(normalize_student_id "$STUDENT_ID")
-
-if [ -z "$NORMALIZED_STUDENT_ID" ]; then
-    echo -e "${RED}エラー: 学籍番号が入力されていません${NC}"
-    exit 1
-fi
-
-# 入力値と正規化後が異なる場合は表示
-if [ "$STUDENT_ID" != "$NORMALIZED_STUDENT_ID" ]; then
-    echo -e "${YELLOW}✓ 学籍番号を正規化しました: $STUDENT_ID → $NORMALIZED_STUDENT_ID${NC}"
-fi
-
-# 正規化後の学籍番号を使用
-STUDENT_ID="$NORMALIZED_STUDENT_ID"
-
-# 論文タイプの判定
-if [[ "$STUDENT_ID" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
+# 識別子の正規化と論文タイプ判定
+if [ "$INDIVIDUAL_MODE" = true ]; then
+    # 個人ユーザーモード: 正規化せずそのまま使用、デフォルトでsotsuron
+    if [ -z "$STUDENT_ID" ]; then
+        echo -e "${RED}エラー: リポジトリベース名が入力されていません${NC}"
+        exit 1
+    fi
+    
+    # 個人ユーザーは常にsotsuron（卒業論文相当）
     THESIS_TYPE="sotsuron"
-    echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
-elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}jk[0-9]{3}$ ]]; then
-    THESIS_TYPE="sotsuron"
-    echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
-elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
-    THESIS_TYPE="thesis"
-    echo -e "${GREEN}✓ 修士論文として設定します${NC}"
+    echo -e "${BLUE}✓ 個人LaTeX文書として設定します (sotsuron形式)${NC}"
 else
-    echo -e "${RED}エラー: 学籍番号の形式が正しくありません${NC}"
-    echo "期待される形式:"
-    echo "  卒業論文: k[年度2桁]rs[番号3桁] (例: k21rs001)"
-    echo "  修士論文: k[年度2桁]gjk[番号2桁] (例: k21gjk01)"
-    echo "入力された値: $STUDENT_ID"
-    exit 1
+    # 組織ユーザーモード: 従来通りの学籍番号正規化と判定
+    NORMALIZED_STUDENT_ID=$(normalize_student_id "$STUDENT_ID")
+
+    if [ -z "$NORMALIZED_STUDENT_ID" ]; then
+        echo -e "${RED}エラー: 学籍番号が入力されていません${NC}"
+        exit 1
+    fi
+
+    # 入力値と正規化後が異なる場合は表示
+    if [ "$STUDENT_ID" != "$NORMALIZED_STUDENT_ID" ]; then
+        echo -e "${YELLOW}✓ 学籍番号を正規化しました: $STUDENT_ID → $NORMALIZED_STUDENT_ID${NC}"
+    fi
+
+    # 正規化後の学籍番号を使用
+    STUDENT_ID="$NORMALIZED_STUDENT_ID"
+
+    # 論文タイプの判定
+    if [[ "$STUDENT_ID" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
+        THESIS_TYPE="sotsuron"
+        echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
+    elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}jk[0-9]{3}$ ]]; then
+        THESIS_TYPE="sotsuron"
+        echo -e "${GREEN}✓ 卒業論文として設定します${NC}"
+    elif [[ "$STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
+        THESIS_TYPE="thesis"
+        echo -e "${GREEN}✓ 修士論文として設定します${NC}"
+    else
+        echo -e "${RED}エラー: 学籍番号の形式が正しくありません${NC}"
+        echo "期待される形式:"
+        echo "  卒業論文: k[年度2桁]rs[番号3桁] (例: k21rs001)"
+        echo "  修士論文: k[年度2桁]gjk[番号2桁] (例: k21gjk01)"
+        echo "入力された値: $STUDENT_ID"
+        exit 1
+    fi
 fi
 
 REPO_NAME="${STUDENT_ID}-${THESIS_TYPE}"
@@ -497,7 +544,9 @@ EOF
 }
 
 # 自動Issue作成の実行
-if [ -n "$STUDENT_ID" ]; then
+if [ "$INDIVIDUAL_MODE" = true ]; then
+    echo -e "${BLUE}👤 個人ユーザーモード: ブランチ保護設定とIssue作成をスキップします${NC}"
+elif [ -n "$STUDENT_ID" ]; then
     # 並行実行防止のためのロック獲得
     if acquire_student_lock "$STUDENT_ID"; then
         # 重複学生ID検出・回避
@@ -511,8 +560,12 @@ if [ -n "$STUDENT_ID" ]; then
         exit 1
     fi
 else
-    echo -e "${YELLOW}⚠️  学籍番号が設定されていないため、自動Issue作成をスキップしました${NC}"
-    echo "   手動で教員にブランチ保護設定を依頼してください"
+    if [ "$INDIVIDUAL_MODE" = true ]; then
+        echo -e "${BLUE}👤 個人ユーザーモード: 組織管理機能は利用されません${NC}"
+    else
+        echo -e "${YELLOW}⚠️  学籍番号が設定されていないため、自動Issue作成をスキップしました${NC}"
+        echo "   手動で教員にブランチ保護設定を依頼してください"
+    fi
 fi
 
 # 完了メッセージ
@@ -522,5 +575,21 @@ echo ""
 echo "リポジトリURL:"
 echo "  https://github.com/${FULL_REPO_NAME}"
 echo ""
-echo "論文執筆の開始方法:"
-echo "  https://github.com/${FULL_REPO_NAME}/blob/main/WRITING-GUIDE.md"
+
+if [ "$INDIVIDUAL_MODE" = true ]; then
+    echo -e "${BLUE}👤 個人LaTeX環境が利用可能です：${NC}"
+    echo "  📝 LaTeX文書執筆環境 (DevContainer)"
+    echo "  📖 textlint による文章校正"
+    echo "  🔧 VS Code 統合環境"
+    echo ""
+    echo "文書作成の開始方法:"
+    echo "  https://github.com/${FULL_REPO_NAME}/blob/main/WRITING-GUIDE.md"
+    echo ""
+    echo -e "${BLUE}個人モードでは以下の機能は無効です：${NC}"
+    echo "  • ブランチ保護設定"
+    echo "  • 組織レベルの管理・監視"
+    echo "  • 自動Issue作成"
+else
+    echo "論文執筆の開始方法:"
+    echo "  https://github.com/${FULL_REPO_NAME}/blob/main/WRITING-GUIDE.md"
+fi
