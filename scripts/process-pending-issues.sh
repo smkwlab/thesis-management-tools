@@ -1662,7 +1662,7 @@ add_to_completed_protection() {
     fi
     
     # 追加
-    if echo "$repo_name # Completed: $(date +%Y-%m-%d) Student: $student_id" >> "$completed_file"; then
+    if echo "$repo_name|Completed: $(date +%Y-%m-%d)|Student: $student_id" >> "$completed_file"; then
         log_debug "completed-protection.txt に追加完了: $repo_name"
         return 0
     else
