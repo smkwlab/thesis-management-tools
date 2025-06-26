@@ -1,14 +1,6 @@
 ---
 # actionlint configuration
-self-hosted-runner:
-  labels: []
-
-config-variables: true
 
 # Disable shellcheck integration for now (can be enabled later)
 shellcheck:
   enable: false
-
-# Allow potentially untrusted expressions (can be tightened later)
-expression:
-  strict: false
