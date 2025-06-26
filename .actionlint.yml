@@ -1,0 +1,6 @@
+---
+# actionlint configuration
+
+# Disable shellcheck integration for now (can be enabled later)
+shellcheck:
+  enable: false

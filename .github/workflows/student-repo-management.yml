@@ -84,7 +84,7 @@ jobs:
             student_id=$(echo "$ISSUE_BODY" | \
                          grep -oE 'k[0-9]{2}(rs|jk|gjk)[0-9]+' | \
                          head -1 || true)
-            
+
             # リポジトリタイプの判定
             repo_type=""
             issue_title="${{ github.event.issue.title }}"
@@ -98,7 +98,7 @@ jobs:
 
             echo "Extracted student ID from issue: ${student_id:-'(none found)'}"
             echo "Detected repository type: ${repo_type:-'(unknown)'}"
-            
+
             if [ -n "$student_id" ] && [ -n "$repo_type" ]; then
               echo "🎯 Issue作成による処理開始: $student_id ($repo_type)"
 
@@ -174,13 +174,13 @@ jobs:
             # 環境変数から学生情報を取得
             processed_student="${{ env.STUDENT_ID }}"
             processed_repo_type="${{ env.REPO_TYPE }}"
-            
+
             if [[ -n "$processed_student" ]] && [[ -n "$processed_repo_type" ]]; then
               echo "🎯 Processing student: $processed_student (type: $processed_repo_type)"
-              
+
               repo_name="${processed_student}-${processed_repo_type}"
               echo "🔍 Checking repository: smkwlab/$repo_name"
-              
+
               # リポジトリの存在確認
               if gh_output=$(gh repo view "smkwlab/$repo_name" 2>&1); then
                 echo "📦 Found repository: $repo_name"
@@ -188,14 +188,14 @@ jobs:
                 # thesis-student-registryを更新
                 cd thesis-student-registry
                 chmod +x update-repository-registry.sh
-                
+
                 # ステータス決定（週報は自動完了、論文系はブランチ保護後に完了）
                 if [[ "$processed_repo_type" == "wr" ]]; then
                   status="completed"
                 else
                   status="completed"  # ここに到達する時点でブランチ保護も完了済み
                 fi
-                
+
                 script_args=("$repo_name" "$processed_student" "$processed_repo_type" "$status")
                 if ./update-repository-registry.sh "${script_args[@]}" 2>&1; then
                   echo "✅ Updated registry for: $repo_name"
