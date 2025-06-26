@@ -1026,7 +1026,7 @@ execute_repository_delete() {
     
     # リポジトリ情報の詳細確認
     echo "リポジトリの詳細情報を確認中..."
-    if gh repo view "smkwlab/$CURRENT_REPO_NAME" --json name,description,createdAt,isPrivate --jq '{name: .name, description: .description, created: .createdAt, private: .isPrivate}' 2>/dev/null; then
+    if gh --no-pager repo view "smkwlab/$CURRENT_REPO_NAME" --json name,description,createdAt,isPrivate --jq '{name: .name, description: .description, created: .createdAt, private: .isPrivate}' 2>/dev/null; then
         echo
     else
         echo "❌ リポジトリ情報の取得に失敗しました"
