@@ -289,6 +289,35 @@ cd test-student-sotsuron
 # 通常の学生ワークフローをテスト
 ```
 
+### YAML ワークフロー検証
+
+GitHub Actions ワークフローの品質を保つため、YAML 検証ツールを導入しています。
+
+```bash
+# 必要ツールのインストール
+pip install yamllint
+brew install actionlint  # macOS
+# or: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
+# ローカル検証実行
+make validate-yaml
+# または直接実行
+./scripts/validate-yaml.sh
+
+# 個別ツール実行
+yamllint -c .yamllint.yml .
+actionlint
+```
+
+**検証内容:**
+- **yamllint**: YAML 構文チェック、フォーマット統一
+- **actionlint**: GitHub Actions 専用検証、型チェック、依存関係チェック
+- **自動実行**: Push/PR 時に CI で検証
+
+**設定ファイル:**
+- `.yamllint.yml`: yamllint 設定（行長120文字、truthy値許可など）
+- `.github/workflows/yaml-validation.yml`: CI 検証ワークフロー
+
 ## 📊 使用状況・統計
 
 ```bash
