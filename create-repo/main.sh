@@ -160,9 +160,31 @@ if [ "$INDIVIDUAL_MODE" = true ]; then
         exit 1
     fi
     
-    # 個人ユーザーは常にsotsuron（卒業論文相当）
-    THESIS_TYPE="sotsuron"
-    echo -e "${BLUE}✓ 個人LaTeX文書として設定します (sotsuron形式)${NC}"
+    # 論文タイプの決定（環境変数優先、なければインタラクティブ選択）
+    if [ -n "$THESIS_TYPE" ] && [ "$THESIS_TYPE" = "thesis" ]; then
+        echo -e "${BLUE}✓ 修士論文形式として設定します${NC}"
+    elif [ -n "$THESIS_TYPE" ] && [ "$THESIS_TYPE" = "sotsuron" ]; then
+        echo -e "${BLUE}✓ 卒業論文形式として設定します${NC}"
+    else
+        # インタラクティブ選択
+        echo ""
+        echo "論文タイプを選択してください："
+        echo "  1. 卒業論文 (sotsuron) - 学部論文向け"
+        echo "  2. 修士論文 (thesis) - 大学院論文向け"
+        echo ""
+        read -p "選択 [1]: " thesis_choice
+        
+        case "${thesis_choice:-1}" in
+            2)
+                THESIS_TYPE="thesis"
+                echo -e "${BLUE}✓ 修士論文形式として設定します${NC}"
+                ;;
+            *)
+                THESIS_TYPE="sotsuron"
+                echo -e "${BLUE}✓ 卒業論文形式として設定します${NC}"
+                ;;
+        esac
+    fi
 else
     # 組織ユーザーモード: 従来通りの学籍番号正規化と判定
     NORMALIZED_STUDENT_ID=$(normalize_student_id "$STUDENT_ID")
