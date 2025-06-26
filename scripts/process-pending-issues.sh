@@ -1051,12 +1051,18 @@ execute_repository_delete() {
         echo -n "リポジトリ名 '${CURRENT_REPO_NAME}' を入力: "
         read -r confirm_repo_name
         
-        if [ -z "$confirm_repo_name" ] || [ "$confirm_repo_name" != "$CURRENT_REPO_NAME" ]; then
-            if [ -z "$confirm_repo_name" ]; then
-                echo "❌ リポジトリ名が入力されていません。削除をキャンセルしました"
-            else
-                echo "❌ リポジトリ名が一致しません。削除をキャンセルしました"
-            fi
+        # 空文字チェック
+        if [ -z "$confirm_repo_name" ]; then
+            echo "❌ リポジトリ名が入力されていません。削除をキャンセルしました"
+            echo
+            echo "続行するには Enter を押してください..."
+            read -r
+            return 0
+        fi
+        
+        # リポジトリ名一致チェック
+        if [ "$confirm_repo_name" != "$CURRENT_REPO_NAME" ]; then
+            echo "❌ リポジトリ名が一致しません。削除をキャンセルしました"
             echo
             echo "続行するには Enter を押してください..."
             read -r
