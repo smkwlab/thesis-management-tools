@@ -94,8 +94,47 @@ fi
 
 echo "✅ GitHub認証済み (ユーザー: $CURRENT_USER)"
 
+# ユーザータイプ判定関数
+detect_user_type() {
+    local current_user="$1"
+    
+    if [ "${DEBUG:-0}" = "1" ]; then
+        echo "🔍 ユーザータイプを判定中: $current_user"
+    fi
+    
+    # INDIVIDUAL_MODE環境変数による明示的指定
+    if [ "${INDIVIDUAL_MODE:-false}" = "true" ]; then
+        echo "individual_user"
+        return 0
+    fi
+    
+    # smkwlab組織メンバーシップを確認
+    if gh api "orgs/smkwlab/members/$current_user" >/dev/null 2>&1; then
+        echo "organization_member"
+    else
+        echo "individual_user"
+    fi
+}
+
+# ユーザータイプの判定
+USER_TYPE=$(detect_user_type "$CURRENT_USER")
+
+if [ "${DEBUG:-0}" = "1" ]; then
+    echo "🔍 判定結果: $USER_TYPE"
+fi
+
 # TARGET_ORG（対象組織）の設定
-TARGET_ORG="${TARGET_ORG:-smkwlab}"
+if [ "$USER_TYPE" = "individual_user" ]; then
+    # 個人ユーザーの場合、デフォルトを個人アカウントに設定
+    TARGET_ORG="${TARGET_ORG:-$CURRENT_USER}"
+    echo "👤 個人ユーザーモードで実行中"
+    echo "   作成先: $TARGET_ORG (個人アカウント)"
+else
+    # 組織ユーザーの場合、従来通り
+    TARGET_ORG="${TARGET_ORG:-smkwlab}"
+    echo "🏢 組織ユーザーモードで実行中"
+    echo "   作成先: $TARGET_ORG (組織)"
+fi
 
 # TARGET_ORG が指定されている場合、アカウントの整合性をチェック
 if [ -n "$TARGET_ORG" ] && [ "$TARGET_ORG" != "smkwlab" ]; then
@@ -181,15 +220,18 @@ echo "🚀 セットアップ実行中..."
 # 元のディレクトリに戻って実行
 cd "$ORIGINAL_DIR"
 
-# Docker実行（TTY対応、GitHub認証トークンをセキュアファイル経由で渡す）- 週報用のスクリプトを実行
+# Docker実行（TTY対応、GitHub認証トークンをセキュアファイル経由で渡す）
+# 動作モード情報を環境変数として渡す
+DOCKER_ENV_VARS="-e USER_TYPE=$USER_TYPE -e TARGET_ORG=$TARGET_ORG"
+
 if [ -n "$STUDENT_ID" ]; then
-    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-alpine "$STUDENT_ID"; then
+    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-alpine "$STUDENT_ID"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         echo "学籍番号: $STUDENT_ID"
         exit 1
     fi
 else
-    if ! docker run --rm -it -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-alpine; then
+    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-alpine; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         exit 1
     fi

@@ -63,7 +63,7 @@ configure_document_type() {
             DOC_DESCRIPTION="💻 情報科学演習リポジトリ"
             DOCKERFILE_NAME="Dockerfile-ise"
             DOCKER_IMAGE_NAME="ise-setup-alpine"
-            MAIN_SCRIPT="setup-ise.sh"
+            MAIN_SCRIPT="main-ise.sh"
             ;;
         *)
             echo "❌ サポートされていない文書タイプ: $doc_type"
@@ -326,34 +326,17 @@ case "$DETECTED_DOC_TYPE" in
         ;;
 esac
 
-# ISEの場合はセルフコンテインドなので引数処理が異なる
-if [ "$DETECTED_DOC_TYPE" = "ise" ]; then
-    # ISEスクリプトは直接実行（Docker内実行でない）
-    if [ -n "$STUDENT_ID" ]; then
-        if ! bash "$TEMP_DIR/create-repo/$MAIN_SCRIPT" "$STUDENT_ID"; then
-            echo "❌ セットアップスクリプトの実行に失敗しました"
-            echo "学籍番号: $STUDENT_ID"
-            exit 1
-        fi
-    else
-        if ! bash "$TEMP_DIR/create-repo/$MAIN_SCRIPT"; then
-            echo "❌ セットアップスクリプトの実行に失敗しました"
-            exit 1
-        fi
+# 統一されたDocker実行（全タイプ共通）
+if [ -n "$STUDENT_ID" ]; then
+    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME" "$STUDENT_ID"; then
+        echo "❌ セットアップスクリプトの実行に失敗しました"
+        echo "学籍番号: $STUDENT_ID"
+        exit 1
     fi
 else
-    # 通常のDocker実行
-    if [ -n "$STUDENT_ID" ]; then
-        if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME" "$STUDENT_ID"; then
-            echo "❌ セットアップスクリプトの実行に失敗しました"
-            echo "学籍番号: $STUDENT_ID"
-            exit 1
-        fi
-    else
-        if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME"; then
-            echo "❌ セットアップスクリプトの実行に失敗しました"
-            exit 1
-        fi
+    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME"; then
+        echo "❌ セットアップスクリプトの実行に失敗しました"
+        exit 1
     fi
 fi
 
