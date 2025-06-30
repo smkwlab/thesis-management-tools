@@ -399,6 +399,16 @@ fi
 # 変更をコミットしてプッシュ
 echo "📤 変更をコミット中..."
 
+# GitHub CLIの認証情報をgitに設定
+# これによりgit pushコマンドが認証プロンプトなしで実行可能になる
+echo "Git認証を設定中..."
+if ! gh auth setup-git; then
+    echo -e "${RED}✗ Git認証設定に失敗しました${NC}"
+    echo -e "${RED}GitHub CLIの認証が正しく設定されているか確認してください${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Git認証設定完了${NC}"
+
 # Gitユーザー設定（Docker環境用）
 git config user.email "setup-latex@smkwlab.github.io"
 git config user.name "LaTeX Setup Tool"
