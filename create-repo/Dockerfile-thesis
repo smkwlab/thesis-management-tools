@@ -21,12 +21,12 @@ RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
 WORKDIR /workspace
 
 # セットアップスクリプトをコピー
-COPY main.sh ./
+COPY main-thesis.sh ./
 COPY common-lib.sh ./
-RUN chmod +x main.sh common-lib.sh
+RUN chmod +x main-thesis.sh common-lib.sh
 
 # Docker環境では手動ブラウザアクセスを前提
 ENV DOCKER_ENV=true
 
 # エントリーポイント
-ENTRYPOINT ["./main.sh"]
+ENTRYPOINT ["./main-thesis.sh"]
