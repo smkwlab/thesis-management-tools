@@ -14,6 +14,12 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 
 # For weekly reports
 STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-wr.sh)"
+
+# For general LaTeX documents (research notes, reports)
+STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-latex.sh)"
+
+# With custom document name
+STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-latex.sh)"
 ```
 
 ### Branch Protection Setup (Faculty)
@@ -31,8 +37,13 @@ gh repo view smkwlab/k21rs001-sotsuron --json branchProtectionRules
 create-repo/
 ├── setup.sh              # Public entry point for thesis
 ├── setup-wr.sh           # Public entry point for weekly reports
+├── setup-latex.sh        # Public entry point for general LaTeX documents
 ├── main.sh               # Thesis creation script
-└── main-wr.sh            # Weekly report creation script
+├── main-wr.sh            # Weekly report creation script
+├── main-latex.sh         # General LaTeX document creation script
+├── Dockerfile            # Docker image for thesis
+├── Dockerfile-wr         # Docker image for weekly reports
+└── Dockerfile-latex      # Docker image for general LaTeX documents
 
 scripts/
 ├── setup-branch-protection.sh    # Branch protection for individual student

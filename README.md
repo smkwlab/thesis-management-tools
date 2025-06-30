@@ -26,9 +26,19 @@ GitHub を使った効率的な論文指導をサポートします。
 - macOS: Docker Desktop
 - GitHub CLI（推奨、認証を大幅に簡素化）
 
-**セットアップコマンド:**
+#### 卒業論文・修士論文用
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+```
+
+#### 週間報告用
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-wr.sh)"
+```
+
+#### 汎用LaTeX文書用（研究ノート、レポート等）
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-latex.sh)"
 ```
 
 **実行手順:**
