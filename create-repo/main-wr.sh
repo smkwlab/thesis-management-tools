@@ -1,286 +1,165 @@
 #!/bin/bash
-# 週間報告リポジトリセットアップスクリプト
+# 週報リポジトリセットアップスクリプト（最終リファクタリング版）
 
 set -e
 
-# 色付き出力
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BRIGHT_WHITE='\033[1;37m'
-NC='\033[0m'
+# 共通ライブラリの読み込み
+source ./common-lib.sh
 
-echo "📝 週間報告リポジトリセットアップツール"
-echo "=============================================="
+# 共通初期化
+init_script_common "週報リポジトリセットアップツール" "📝"
 
-# GitHub認証
-echo "GitHub認証を確認中..."
-
-# セキュアファイルからトークンを読み取り（フォールバック：環境変数）
-if [ -f "/tmp/gh_token" ]; then
-    echo -e "${GREEN}✓ ホストからセキュアトークンを取得しました${NC}"
-    export GH_TOKEN=$(cat /tmp/gh_token)
-    
-    # トークンの有効性を確認
-    if gh auth status &>/dev/null; then
-        echo -e "${GREEN}✓ GitHub認証済み（セキュアファイル認証）${NC}"
-    else
-        echo -e "${RED}エラー: 提供されたトークンが無効です${NC}"
-        exit 1
-    fi
-elif [ -n "$GH_TOKEN" ]; then
-    echo -e "${GREEN}✓ ホストから認証トークンを取得しました（環境変数）${NC}"
-    export GH_TOKEN
-    
-    # トークンの有効性を確認
-    if gh auth status &>/dev/null; then
-        echo -e "${GREEN}✓ GitHub認証済み（トークン認証）${NC}"
-    else
-        echo -e "${RED}エラー: 提供されたトークンが無効です${NC}"
-        exit 1
-    fi
-elif ! gh auth status &>/dev/null; then
-    echo -e "${YELLOW}GitHub認証が必要です${NC}"
-    echo ""
-    echo "=== ブラウザ認証手順 ==="
-    echo "1. ブラウザで https://github.com/login/device が開いているはずです"
-    echo -e "2. ${GREEN}Continue${NC} ボタンをクリック"
-    echo -e "3. 下から2行目の以下のような行の ${YELLOW}XXXX-XXXX${NC} をコピーしてブラウザに入力:"
-    echo -e "   ${YELLOW}!${NC} First copy your one-time code: ${BRIGHT_WHITE}XXXX-XXXX${NC}"
-    echo -e "4. ${GREEN}Authorize github${NC} ボタンをクリックする"
-    echo ""
-
-    if echo -e "Y\n" | gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key --scopes "repo,workflow,read:org,gist"; then
-        echo -e "${GREEN}✓ GitHub認証完了${NC}"
-    else
-        echo -e "${RED}エラー: GitHub認証に失敗しました${NC}"
-        exit 1
-    fi
+# 個別表示メッセージ
+if [ "$INDIVIDUAL_MODE" = true ]; then
+    echo -e "${BLUE}   - ブランチ保護: 無効（デフォルト）${NC}"
+    echo -e "${BLUE}   - Registry登録: 無効${NC}"
 else
-    echo -e "${GREEN}✓ GitHub認証済み${NC}"
+    echo -e "${GREEN}   - ブランチ保護: 無効（デフォルト）${NC}"
+    echo -e "${GREEN}   - Registry登録: 有効${NC}"
 fi
 
-# 組織/ユーザーの設定
-if [ -n "$TARGET_ORG" ]; then
-    # 環境変数で明示的に指定された場合
-    ORGANIZATION="$TARGET_ORG"
-    echo -e "${GREEN}✓ 指定された組織: $ORGANIZATION${NC}"
-elif [ -n "$GITHUB_REPOSITORY" ]; then
-    # GitHub Actions等で実行されている場合、リポジトリから組織を取得
-    ORGANIZATION=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f1)
-    echo -e "${GREEN}✓ 自動検出された組織: $ORGANIZATION${NC}"
-else
-    # デフォルトは smkwlab
-    ORGANIZATION="smkwlab"
-    echo -e "${YELLOW}✓ デフォルト組織を使用: $ORGANIZATION${NC}"
-fi
+# 組織設定（共通関数使用）
+ORGANIZATION=$(determine_organization)
 
-# テンプレートリポジトリの設定（週報用）
-if [ -n "$TEMPLATE_REPO" ]; then
-    TEMPLATE_REPOSITORY="$TEMPLATE_REPO"
-else
-    TEMPLATE_REPOSITORY="${ORGANIZATION}/wr-template"
-fi
+# テンプレートリポジトリの設定
+TEMPLATE_REPOSITORY="${ORGANIZATION}/wr-template"
 echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
 
-# 学籍番号の入力または引数から取得
-if [ -n "$1" ]; then
-    STUDENT_ID="$1"
-else
-    echo ""
-    echo "学籍番号を入力してください"
-    echo "  例: k21rs001, k21gjk01"
-    echo ""
-    read -p "学籍番号: " STUDENT_ID
-fi
+# 学籍番号の入力（共通関数使用）
+STUDENT_ID=$(read_student_id "$1")
 
-# 学籍番号の正規化（自動補正）
-normalize_student_id() {
-    local input="$1"
-    
-    # 空文字チェック
-    if [ -z "$input" ]; then
-        echo ""
-        return 1
-    fi
-    
-    # 小文字に変換
-    input=$(echo "$input" | tr '[:upper:]' '[:lower:]')
-    
-    # 先頭に k がない場合は追加
-    if [ "${input:0:1}" != "k" ]; then
-        input="k$input"
-    fi
-    
-    # 正規化結果を返す
-    echo "$input"
-    return 0
-}
+# 学籍番号の正規化と検証（共通関数使用）
+STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
+echo -e "${GREEN}✓ 学籍番号: $STUDENT_ID${NC}"
 
-# 学籍番号を正規化
-NORMALIZED_STUDENT_ID=$(normalize_student_id "$STUDENT_ID")
-
-if [ -z "$NORMALIZED_STUDENT_ID" ]; then
-    echo -e "${RED}エラー: 学籍番号が入力されていません${NC}"
-    exit 1
-fi
-
-# 入力値と正規化後が異なる場合は表示
-if [ "$STUDENT_ID" != "$NORMALIZED_STUDENT_ID" ]; then
-    echo -e "${YELLOW}✓ 学籍番号を正規化しました: $STUDENT_ID → $NORMALIZED_STUDENT_ID${NC}"
-fi
-
-# 正規化後の学籍番号を使用
-STUDENT_ID="$NORMALIZED_STUDENT_ID"
-
-# 学籍番号の形式チェック（週報は学年・専攻問わず）
-if [[ ! "$STUDENT_ID" =~ ^k[0-9]{2}(rs[0-9]{3}|jk[0-9]{3}|gjk[0-9]{2})$ ]]; then
-    echo -e "${RED}エラー: 学籍番号の形式が正しくありません${NC}"
-    echo "期待される形式:"
-    echo "  学部生: k[年度2桁]rs[番号3桁] (例: k21rs001)"
-    echo "  大学院生: k[年度2桁]gjk[番号2桁] (例: k21gjk01)"
-    echo "入力された値: $STUDENT_ID"
-    exit 1
-fi
-
+# リポジトリ名の生成
 REPO_NAME="${STUDENT_ID}-wr"
-FULL_REPO_NAME="${ORGANIZATION}/${REPO_NAME}"
 
-# GitHubユーザー名の取得
-echo "GitHub認証情報を確認中..."
-GITHUB_USER=$(gh api user --jq .login)
-echo -e "${GREEN}✓ GitHubユーザー: $GITHUB_USER${NC}"
+# 組織アクセス確認（共通関数使用）
+check_organization_access "$ORGANIZATION"
 
-# 組織への権限確認
-echo "組織への権限を確認中..."
-if gh api orgs/"$ORGANIZATION"/members/"$GITHUB_USER" &>/dev/null; then
-    echo -e "${GREEN}✓ 組織 $ORGANIZATION のメンバーです${NC}"
-elif [ "$ORGANIZATION" = "$GITHUB_USER" ]; then
-    echo -e "${GREEN}✓ 個人アカウントにリポジトリを作成します${NC}"
-else
-    echo -e "${RED}エラー: 組織 $ORGANIZATION への権限がありません${NC}"
-    echo "対処法:"
-    echo "1. 組織の管理者に招待を依頼してください"
-    echo "2. または個人アカウントに作成: docker run -e TARGET_ORG=$GITHUB_USER ..."
+# リポジトリパス決定（共通関数使用）
+REPO_PATH=$(determine_repository_path "$ORGANIZATION" "$REPO_NAME")
+
+# リポジトリの存在確認
+if gh repo view "$REPO_PATH" >/dev/null 2>&1; then
+    echo -e "${RED}❌ リポジトリ $REPO_PATH は既に存在します${NC}"
     exit 1
 fi
 
-# リポジトリ作成
-echo "リポジトリ ${FULL_REPO_NAME} を作成中..."
-if gh repo create "$FULL_REPO_NAME" \
-    --template "$TEMPLATE_REPOSITORY" \
-    --private \
-    --clone \
-    --description "${STUDENT_ID}の週間報告"; then
-    echo -e "${GREEN}✓ リポジトリ作成完了${NC}"
-else
-    echo -e "${RED}リポジトリ作成に失敗しました${NC}"
-    exit 1
-fi
+# 作成確認（共通関数使用）
+confirm_creation "$REPO_PATH" || exit 0
+
+# リポジトリ作成（共通関数使用）
+echo ""
+echo "📁 リポジトリを作成中..."
+create_repository "$REPO_PATH" "$TEMPLATE_REPOSITORY" "public" "true" || exit 1
 
 cd "$REPO_NAME"
 
-# Git設定
-echo "Git設定を確認中..."
-GITHUB_EMAIL=$(gh api user --jq .email)
-GITHUB_NAME=$(gh api user --jq .name)
+# README.mdのカスタマイズ
+echo "📝 README.mdをカスタマイズ中..."
 
-if [ "$GITHUB_EMAIL" = "null" ] || [ -z "$GITHUB_EMAIL" ]; then
-    GITHUB_EMAIL="${GITHUB_USER}@users.noreply.github.com"
-fi
-if [ "$GITHUB_NAME" = "null" ] || [ -z "$GITHUB_NAME" ]; then
-    GITHUB_NAME="$GITHUB_USER"
-fi
+cat > README.md << EOF
+# ${STUDENT_ID} 週報
 
-git config user.email "$GITHUB_EMAIL"
-git config user.name "$GITHUB_NAME"
-echo -e "${GREEN}✓ Git設定完了: $GITHUB_NAME <$GITHUB_EMAIL>${NC}"
+九州産業大学 理工学部 情報科学科  
+学籍番号: ${STUDENT_ID}
 
-# devcontainer セットアップ
-echo "LaTeX環境をセットアップ中..."
-if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)"; then
-    echo -e "${GREEN}✓ LaTeX環境のセットアップ完了${NC}"
-    
-    # aldc一時ファイルの削除
-    echo "一時ファイルを削除中..."
-    if find . -name "*-aldc" -type f -delete; then
-        echo -e "${GREEN}✓ 一時ファイル削除完了${NC}"
-    else
-        echo -e "${YELLOW}⚠ 一時ファイル削除で警告が発生しましたが、処理を続行します${NC}"
-    fi
-    
-    # LaTeX環境セットアップ完了をコミット
-    git add -A && git commit -m "Add LaTeX development environment with devcontainer" >/dev/null 2>&1
-else
-    echo -e "${YELLOW}⚠ LaTeX環境のセットアップに失敗しました${NC}"
-fi
+## 📅 週報一覧
 
-# GitHub CLIの認証情報をgitに設定
-echo "Git認証を設定中..."
-if ! gh auth setup-git; then
-    echo -e "${RED}✗ Git認証設定に失敗しました${NC}"
-    echo -e "${RED}GitHub CLIの認証が正しく設定されているか確認してください${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✓ Git認証設定完了${NC}"
+### $(date +%Y)年度
 
-# 初期プッシュ（週報は単純な main ブランチ運用）
-echo "初期プッシュを実行中..."
-git push -u origin main >/dev/null 2>&1
+| 週 | 期間 | タイトル | リンク |
+|----|------|----------|--------|
+| 第1週 | MM/DD - MM/DD | タイトルを入力 | [week01.md](reports/week01.md) |
+| 第2週 | MM/DD - MM/DD | タイトルを入力 | [week02.md](reports/week02.md) |
 
-# リポジトリ一覧への自動登録（Issue作成）
-echo "リポジトリ一覧への登録を依頼中..."
+## 🚀 使い方
 
-# GitHub CLI認証確認
-if ! gh auth status >/dev/null 2>&1; then
-    echo -e "${YELLOW}⚠ GitHub認証が無効です。リポジトリ一覧への登録をスキップします${NC}"
-    echo -e "${YELLOW}  対処法: 'gh auth login' コマンドで認証を設定してください${NC}"
-    echo -e "${YELLOW}  手動登録が必要な場合: https://github.com/smkwlab/thesis-management-tools/issues${NC}"
-else
-    # REPO_NAMEの検証
-    if [ -z "${REPO_NAME}" ]; then
-        echo -e "${RED}✗ エラー: リポジトリ名が空です${NC}"
-    else
-        # Issue作成（バッククォートをエスケープ、エラー出力をキャプチャ）
-        ERROR_LOG=$(mktemp)
-        if gh issue create \
-            --repo smkwlab/thesis-management-tools \
-            --title "📋 リポジトリ登録依頼: smkwlab/${REPO_NAME}" \
-            --body "週報リポジトリ \\\`${REPO_NAME}\\\` のリポジトリ一覧への登録を依頼します。
+### 1. 新しい週報の作成
+1. \`reports/\` ディレクトリ内の \`weekXX.md\` をコピー
+2. 週番号に応じてファイル名を変更（例: \`week03.md\`）
+3. テンプレートに従って内容を記入
 
-**リポジトリ情報:**
-- 学生ID: \\\`${STUDENT_ID}\\\`
-- リポジトリ名: \\\`${REPO_NAME}\\\`
-- リポジトリタイプ: weekly report (wr)
-- 作成日時: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+### 2. 週報の記入方法
+- 各セクションに具体的な内容を記入
+- Markdownフォーマットで記述
+- 画像は \`images/\` ディレクトリに配置
 
-自動生成されたIssueです。" 2>"${ERROR_LOG}"; then
-            echo -e "${GREEN}✓ リポジトリ一覧への登録依頼を送信しました${NC}"
-            echo -e "${GREEN}  GitHub Actionsワークフローによって自動的に処理されます${NC}"
-        else
-            echo -e "${YELLOW}⚠ リポジトリ一覧への登録依頼に失敗しました（リポジトリは正常に作成済み）${NC}"
-            ERROR_MSG=$(cat "${ERROR_LOG}")
-            if [[ "${ERROR_MSG}" == *"permission"* ]] || [[ "${ERROR_MSG}" == *"auth"* ]]; then
-                echo -e "${YELLOW}  エラー: Issue作成権限がない可能性があります${NC}"
-            elif [[ "${ERROR_MSG}" == *"network"* ]] || [[ "${ERROR_MSG}" == *"connection"* ]]; then
-                echo -e "${YELLOW}  エラー: ネットワーク接続の問題です${NC}"
-            else
-                echo -e "${YELLOW}  エラー詳細: ${ERROR_MSG}${NC}"
-            fi
-            echo -e "${YELLOW}  手動登録: https://github.com/smkwlab/thesis-management-tools/issues/new${NC}"
-        fi
-        rm -f "${ERROR_LOG}"
-    fi
-fi
+### 3. 提出
+1. 変更をコミット
+2. GitHubにプッシュ
+3. 担当教員に報告
+
+## 📂 ディレクトリ構成
+
+\`\`\`
+${STUDENT_ID}-wr/
+├── README.md           # このファイル
+├── reports/           # 週報ファイル
+│   ├── week01.md
+│   ├── week02.md
+│   └── ...
+└── images/            # 画像ファイル
+    └── ...
+\`\`\`
+
+## 📝 週報テンプレート
+
+各週報は以下の構成で記述してください：
+
+1. **今週の活動内容**
+   - 具体的な作業内容
+   - 達成した成果
+
+2. **来週の予定**
+   - 計画している作業
+   - 目標
+
+3. **課題・質問**
+   - 困っていること
+   - 相談したいこと
+
+## 🔗 関連リンク
+
+- [下川研究室](https://shimokawa-lab.kyusan-u.ac.jp/)
+- [九州産業大学](https://www.kyusan-u.ac.jp/)
+
+---
+最終更新: $(date '+%Y-%m-%d')
+EOF
+
+echo -e "${GREEN}✓ README.mdをカスタマイズしました${NC}"
+
+# Git設定（共通関数使用）
+setup_git_auth || exit 1
+setup_git_user "setup-wr@smkwlab.github.io" "Weekly Report Setup Tool"
+
+# 変更をコミットしてプッシュ（共通関数使用）
+echo "📤 変更をコミット中..."
+commit_and_push "Customize README for ${STUDENT_ID}
+
+- Set student ID: ${STUDENT_ID}
+- Update repository structure
+- Add weekly report template information
+" || exit 1
+
+# Registry Manager連携（組織ユーザーのみ）
+[ "$INDIVIDUAL_MODE" = false ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null && create_repository_issue "$REPO_NAME" "$STUDENT_ID" "wr" "$ORGANIZATION"
 
 # 完了メッセージ
 echo ""
-echo -e "${GREEN}✅ セットアップ完了！${NC}"
+echo "===============================================" 
+echo -e "${GREEN}✅ セットアップが完了しました！${NC}"
 echo ""
-echo "リポジトリURL:"
-echo "  https://github.com/${FULL_REPO_NAME}"
+echo "リポジトリ: https://github.com/$REPO_PATH"
+echo "ローカル: ./${REPO_NAME}"
 echo ""
-echo "週間報告の作成方法:"
-echo "  1. VS Code でリポジトリを開く"
-echo "  2. 20yy-mm-dd.tex をコピーして日付入りファイルを作成"
-echo "  3. 内容を編集してコミット・プッシュ"
+echo "次のステップ:"
+echo "1. reports/week01.md を編集して最初の週報を作成"
+echo "2. git add, commit, pushで変更を保存"
+echo "3. 毎週新しい週報ファイルを追加"
+echo ""
+echo "ブランチ保護: 無効（mainブランチで直接作業可能）"
+echo "=============================================="
