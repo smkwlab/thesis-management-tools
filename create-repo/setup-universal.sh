@@ -1,6 +1,6 @@
 #!/bin/bash
-# 週間報告リポジトリ作成スクリプト
-# 使用例: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-wr.sh)"
+# 統合リポジトリ作成スクリプト (Universal Setup Script)
+# 使用例: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-universal.sh)"
 
 set -e
 
@@ -10,8 +10,75 @@ if [ "${DEBUG:-0}" = "1" ]; then
     echo "🔍 デバッグモード有効"
 fi
 
+# ================================
+# 文書タイプ設定
+# ================================
+
+# 文書タイプの明示的指定（必須）
+DOC_TYPE="${DOC_TYPE}"
+
 # 引数または環境変数から学籍番号を取得
 STUDENT_ID="${1:-$STUDENT_ID}"
+
+# 文書タイプの検証
+if [ -z "$DOC_TYPE" ]; then
+    echo "❌ DOC_TYPE環境変数が指定されていません"
+    echo ""
+    echo "使用例："
+    echo "  DOC_TYPE=thesis $0"
+    echo "  DOC_TYPE=wr $0"
+    echo "  DOC_TYPE=latex $0"
+    echo "  DOC_TYPE=ise $0"
+    echo ""
+    exit 1
+fi
+
+# 文書タイプの設定
+DETECTED_DOC_TYPE="$DOC_TYPE"
+
+# 設定マッピング
+configure_document_type() {
+    local doc_type="$1"
+    
+    case "$doc_type" in
+        thesis)
+            DOC_DESCRIPTION="📚 論文リポジトリ"
+            DOCKERFILE_NAME="Dockerfile"
+            DOCKER_IMAGE_NAME="thesis-setup-alpine"
+            MAIN_SCRIPT="main.sh"
+            ;;
+        wr)
+            DOC_DESCRIPTION="📝 週間報告リポジトリ"
+            DOCKERFILE_NAME="Dockerfile-wr"
+            DOCKER_IMAGE_NAME="wr-setup-alpine"
+            MAIN_SCRIPT="main-wr.sh"
+            ;;
+        latex)
+            DOC_DESCRIPTION="📝 汎用LaTeXリポジトリ"
+            DOCKERFILE_NAME="Dockerfile-latex"
+            DOCKER_IMAGE_NAME="latex-setup-alpine"
+            MAIN_SCRIPT="main-latex.sh"
+            ;;
+        ise)
+            DOC_DESCRIPTION="💻 情報科学演習リポジトリ"
+            DOCKERFILE_NAME="Dockerfile-ise"
+            DOCKER_IMAGE_NAME="ise-setup-alpine"
+            MAIN_SCRIPT="main-ise.sh"
+            ;;
+        *)
+            echo "❌ サポートされていない文書タイプ: $doc_type"
+            echo "対応タイプ: thesis, wr, latex, ise"
+            exit 1
+            ;;
+    esac
+}
+
+# 設定の適用
+configure_document_type "$DETECTED_DOC_TYPE"
+
+# ================================
+# 共通変数・関数定義
+# ================================
 
 # 一時ディレクトリ・ファイル変数（グローバルスコープ）
 TEMP_DIR=""
@@ -28,9 +95,9 @@ cleanup() {
         rm -f "$TOKEN_FILE"
     fi
     # Dockerイメージも削除
-    if docker images -q wr-setup-alpine >/dev/null 2>&1; then
+    if docker images -q "$DOCKER_IMAGE_NAME" >/dev/null 2>&1; then
         echo "🗑️  Dockerイメージをクリーンアップ中..."
-        docker rmi wr-setup-alpine >/dev/null 2>&1 || true
+        docker rmi "$DOCKER_IMAGE_NAME" >/dev/null 2>&1 || true
     fi
 }
 
@@ -39,10 +106,20 @@ trap cleanup EXIT
 trap cleanup INT
 trap cleanup TERM
 
+# ================================
+# メイン処理開始
+# ================================
+
 echo "==============================================="
-echo "📝 週間報告リポジトリ作成ツール"
+echo "$DOC_DESCRIPTION 作成ツール (Universal)"
 echo "🐳 Dockerベース"
 echo "==============================================="
+echo "📋 検出された文書タイプ: $DETECTED_DOC_TYPE"
+
+# 指定された文書タイプの表示
+echo "🎯 文書タイプ: $DOC_TYPE"
+
+echo ""
 
 # Docker の確認
 if ! command -v docker >/dev/null 2>&1; then
@@ -185,6 +262,7 @@ echo "🔧 セットアップ開始..."
 # 一時ディレクトリでリポジトリをクローン
 TEMP_DIR=$(mktemp -d)
 ORIGINAL_DIR=$(pwd)
+
 echo "📥 リポジトリを取得中..."
 
 if ! git clone https://github.com/smkwlab/thesis-management-tools.git "$TEMP_DIR" 2>/dev/null; then
@@ -195,7 +273,7 @@ fi
 cd "$TEMP_DIR"
 
 # ブランチ指定がある場合は切り替え
-BRANCH="${WR_BRANCH:-main}"
+BRANCH="${UNIVERSAL_BRANCH:-main}"
 if ! git checkout "$BRANCH" 2>/dev/null; then
     echo "⚠️ ブランチ $BRANCH が見つかりません。mainブランチを使用します。"
     git checkout main 2>/dev/null || true
@@ -206,10 +284,13 @@ cd create-repo
 echo "🐳 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
     # デバッグモードでは詳細出力を表示
-    docker build --progress=plain -f Dockerfile-wr -t wr-setup-alpine .
+    if ! docker build --progress=plain -f "$DOCKERFILE_NAME" -t "$DOCKER_IMAGE_NAME" .; then
+        echo "❌ Dockerイメージのビルドに失敗しました"
+        exit 1
+    fi
 else
     # 通常モードでも進行状況を表示
-    if ! docker build --progress=auto -f Dockerfile-wr -t wr-setup-alpine .; then
+    if ! docker build --progress=auto -f "$DOCKERFILE_NAME" -t "$DOCKER_IMAGE_NAME" .; then
         echo "❌ Dockerイメージのビルドに失敗しました"
         exit 1
     fi
@@ -221,17 +302,42 @@ echo "🚀 セットアップ実行中..."
 cd "$ORIGINAL_DIR"
 
 # Docker実行（TTY対応、GitHub認証トークンをセキュアファイル経由で渡す）
-# 動作モード情報を環境変数として渡す
+# 動作モード情報と環境変数を渡す
 DOCKER_ENV_VARS="-e USER_TYPE=$USER_TYPE -e TARGET_ORG=$TARGET_ORG"
 
+# 文書タイプ固有の環境変数を渡す
+case "$DETECTED_DOC_TYPE" in
+    latex)
+        # ドキュメント名が環境変数で指定されている場合は渡す
+        if [ -n "$DOCUMENT_NAME" ]; then
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e DOCUMENT_NAME=$DOCUMENT_NAME"
+        fi
+        # 作者名が環境変数で指定されている場合は渡す
+        if [ -n "$AUTHOR_NAME" ]; then
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e AUTHOR_NAME=$AUTHOR_NAME"
+        fi
+        # ブランチ保護設定が環境変数で指定されている場合は渡す
+        if [ -n "$ENABLE_PROTECTION" ]; then
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ENABLE_PROTECTION=$ENABLE_PROTECTION"
+        fi
+        ;;
+    ise)
+        # ISE固有の環境変数処理
+        if [ -n "$ASSIGNMENT_TYPE" ]; then
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ASSIGNMENT_TYPE=$ASSIGNMENT_TYPE"
+        fi
+        ;;
+esac
+
+# 統一されたDocker実行（全タイプ共通）
 if [ -n "$STUDENT_ID" ]; then
-    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-alpine "$STUDENT_ID"; then
+    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME" "$STUDENT_ID"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         echo "学籍番号: $STUDENT_ID"
         exit 1
     fi
 else
-    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" wr-setup-alpine; then
+    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         exit 1
     fi
@@ -239,4 +345,13 @@ fi
 
 # 成功メッセージ（クリーンアップは trap で自動実行）
 echo ""
-echo "✅ セットアップが完了しました！"
+echo "✅ $DOC_DESCRIPTION のセットアップが完了しました！"
+echo "📋 文書タイプ: $DETECTED_DOC_TYPE"
+echo ""
+echo "💡 使用方法："
+echo "DOC_TYPE=thesis $0    # 論文リポジトリ作成"
+echo "DOC_TYPE=wr $0       # 週間報告リポジトリ作成"
+echo "DOC_TYPE=latex $0    # 汎用LaTeXリポジトリ作成"
+echo "DOC_TYPE=ise $0      # 情報科学演習レポート作成"
+echo ""
+echo "📖 詳細な使用方法は各テンプレートのREADMEを参照してください"
