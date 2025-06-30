@@ -24,7 +24,8 @@ WORKDIR /workspace
 
 # セットアップスクリプトをコピー
 COPY main-ise.sh ./
-RUN chmod +x main-ise.sh
+COPY common-lib.sh ./
+RUN chmod +x main-ise.sh common-lib.sh
 
 # Docker環境では手動ブラウザアクセスを前提
 ENV DOCKER_ENV=true
