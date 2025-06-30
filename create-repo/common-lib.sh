@@ -174,6 +174,87 @@ determine_operation_mode() {
     fi
 }
 
+# 組織設定の決定
+determine_organization() {
+    local default_org="${1:-smkwlab}"
+    
+    if [ -n "$TARGET_ORG" ]; then
+        echo "$TARGET_ORG"
+        echo -e "${GREEN}✓ 指定された組織: $TARGET_ORG${NC}" >&2
+    elif [ -n "$GITHUB_REPOSITORY" ]; then
+        local org=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f1)
+        echo "$org"
+        echo -e "${GREEN}✓ 自動検出された組織: $org${NC}" >&2
+    else
+        echo "$default_org"
+        echo -e "${YELLOW}✓ デフォルト組織を使用: $default_org${NC}" >&2
+    fi
+}
+
+# 学籍番号の入力
+read_student_id() {
+    local input_id="$1"
+    local examples="${2:-k21rs001, k21gjk01}"
+    
+    if [ -n "$input_id" ]; then
+        echo "$input_id"
+    else
+        echo "" >&2
+        echo "学籍番号を入力してください" >&2
+        echo "  例: $examples" >&2
+        echo "" >&2
+        read -p "学籍番号: " student_id
+        echo "$student_id"
+    fi
+}
+
+# リポジトリ作成（統一インターフェース）
+create_repository() {
+    local repo_path="$1"
+    local template_repo="$2"
+    local visibility="${3:-private}"
+    local clone_flag="${4:-true}"
+    
+    local create_args="$repo_path --template=$template_repo"
+    
+    if [ "$visibility" = "public" ]; then
+        create_args="$create_args --public"
+    else
+        create_args="$create_args --private"
+    fi
+    
+    if [ "$clone_flag" = "true" ]; then
+        create_args="$create_args --clone"
+    fi
+    
+    if gh repo create $create_args; then
+        echo -e "${GREEN}✓ リポジトリを作成しました: https://github.com/$repo_path${NC}" >&2
+        return 0
+    else
+        echo -e "${RED}エラー: リポジトリの作成に失敗しました${NC}" >&2
+        echo "- 既に同名のリポジトリが存在する可能性があります" >&2
+        echo "- 組織への権限が不足している可能性があります" >&2
+        return 1
+    fi
+}
+
+# Git設定とコミット・プッシュ
+commit_and_push() {
+    local commit_message="$1"
+    local branch="${2:-main}"
+    
+    git add .
+    git commit -m "$commit_message"
+    
+    if git push origin "$branch"; then
+        echo -e "${GREEN}✓ 変更をプッシュしました${NC}" >&2
+        return 0
+    else
+        echo -e "${RED}エラー: プッシュに失敗しました${NC}" >&2
+        return 1
+    fi
+}
+
 # リポジトリ作成Issue生成
 create_repository_issue() {
     local repo_name="$1"

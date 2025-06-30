@@ -1,0 +1,5 @@
+FROM alpine:3.22.0
+WORKDIR /workspace
+COPY common-lib.sh main-refactored.sh ./
+RUN chmod +x common-lib.sh main-refactored.sh
+RUN source ./common-lib.sh && echo "✓ Library works in Docker"
