@@ -9,16 +9,7 @@ source ./common-lib.sh
 # 共通初期化
 init_script_common "論文リポジトリセットアップツール" "🎓"
 
-# 個別表示メッセージ
-if [ "$INDIVIDUAL_MODE" = true ]; then
-    echo -e "${BLUE}   - ブランチ保護: 無効${NC}"
-    echo -e "${BLUE}   - Registry登録: 無効${NC}"
-    echo -e "${BLUE}   - Issue作成: 無効${NC}"
-else
-    echo -e "${GREEN}   - ブランチ保護: 有効${NC}"
-    echo -e "${GREEN}   - Registry登録: 有効${NC}"
-    echo -e "${GREEN}   - Issue作成: 有効${NC}"
-fi
+# 機能設定情報は内部処理のみ（表示不要）
 
 # 組織設定（共通関数使用）
 ORGANIZATION=$(determine_organization)
@@ -93,14 +84,14 @@ fi
 
 # ブランチ設定
 echo "ブランチを設定中..."
-git add .
-git diff-index --quiet HEAD -- || git commit -m "Initialize repository with template cleanup" || true
+git add . >/dev/null 2>&1
+git diff-index --quiet HEAD -- || git commit -m "Initialize repository with template cleanup" >/dev/null 2>&1 || true
 
 if ! git rev-parse --verify review-branch >/dev/null 2>&1; then
-    git checkout -b review-branch
-    git push -u origin review-branch
+    git checkout -b review-branch >/dev/null 2>&1
+    git push -u origin review-branch >/dev/null 2>&1
 fi
-git checkout main
+git checkout main >/dev/null 2>&1
 
 # Issue作成（組織モードのみ）
 [ "$INDIVIDUAL_MODE" = false ] && create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$THESIS_TYPE" "$ORGANIZATION"
