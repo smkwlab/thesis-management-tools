@@ -399,6 +399,10 @@ fi
 # 変更をコミットしてプッシュ
 echo "📤 変更をコミット中..."
 
+# Gitユーザー設定（Docker環境用）
+git config user.email "setup-latex@smkwlab.github.io"
+git config user.name "LaTeX Setup Tool"
+
 git add .
 git commit -m "Initial customization for ${DOCUMENT_NAME}
 
