@@ -93,14 +93,14 @@ fi
 
 # ブランチ設定
 echo "ブランチを設定中..."
-git add .
-git diff-index --quiet HEAD -- || git commit -m "Initialize repository with template cleanup" || true
+git add . >/dev/null 2>&1
+git diff-index --quiet HEAD -- || git commit -m "Initialize repository with template cleanup" >/dev/null 2>&1 || true
 
 if ! git rev-parse --verify review-branch >/dev/null 2>&1; then
-    git checkout -b review-branch
-    git push -u origin review-branch
+    git checkout -b review-branch >/dev/null 2>&1
+    git push -u origin review-branch >/dev/null 2>&1
 fi
-git checkout main
+git checkout main >/dev/null 2>&1
 
 # Issue作成（組織モードのみ）
 [ "$INDIVIDUAL_MODE" = false ] && create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$THESIS_TYPE" "$ORGANIZATION"

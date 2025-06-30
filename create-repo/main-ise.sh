@@ -94,7 +94,7 @@ setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
 echo "🌿 Pull Request学習用ブランチ構成を作成中..."
 
 # review-branch の作成（sotsuron-template風）
-git checkout -b review-branch
+git checkout -b review-branch >/dev/null 2>&1
 cat > REVIEW_BRANCH.md << 'EOF'
 ## Review Branch
 
@@ -110,13 +110,13 @@ cat > REVIEW_BRANCH.md << 'EOF'
 詳細は [README.md](README.md) をご参照ください。
 EOF
 
-git add REVIEW_BRANCH.md
-git commit -m "Add review branch explanation for ISE learning"
-git push origin review-branch
+git add REVIEW_BRANCH.md >/dev/null 2>&1
+git commit -m "Add review branch explanation for ISE learning" >/dev/null 2>&1
+git push origin review-branch >/dev/null 2>&1
 
 # 初期提出用ブランチ（0th-draft）の作成
-git checkout review-branch
-git checkout -b 0th-draft
+git checkout review-branch >/dev/null 2>&1
+git checkout -b 0th-draft >/dev/null 2>&1
 
 # README.md をカスタマイズ
 echo "📝 README.md をカスタマイズ中..."
@@ -139,8 +139,8 @@ ${REPORT_PERIOD}の情報科学演習レポート（Pull Request学習用）
 
 ### 1. 作業用ブランチの作成
 \`\`\`bash
-git checkout review-branch
-git checkout -b 1st-draft
+git checkout review-branch >/dev/null 2>&1
+git checkout -b 1st-draft >/dev/null 2>&1
 \`\`\`
 
 ### 2. レポート作成
@@ -188,7 +188,7 @@ commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}
 " "0th-draft" || exit 1
 
 # review-branchに戻る
-git checkout review-branch
+git checkout review-branch >/dev/null 2>&1
 
 echo ""
 echo "=============================================="

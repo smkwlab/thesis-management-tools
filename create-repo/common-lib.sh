@@ -366,10 +366,10 @@ commit_and_push() {
     local commit_message="$1"
     local branch="${2:-main}"
     
-    git add .
-    git commit -m "$commit_message"
+    git add . >/dev/null 2>&1
+    git commit -m "$commit_message" >/dev/null 2>&1
     
-    if git push origin "$branch"; then
+    if git push origin "$branch" >/dev/null 2>&1; then
         log_info "変更をプッシュしました"
         return 0
     else
