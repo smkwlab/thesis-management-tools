@@ -125,6 +125,9 @@ EOF
 
 echo -e "${GREEN}✓ README.mdをカスタマイズしました${NC}"
 
+# LaTeX環境のセットアップ（共通関数使用）
+setup_latex_environment
+
 # Git設定（共通関数使用）
 setup_git_auth || exit 1
 setup_git_user "setup-wr@smkwlab.github.io" "Weekly Report Setup Tool"

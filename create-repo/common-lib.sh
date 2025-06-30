@@ -445,3 +445,21 @@ cd thesis-management-tools/scripts
 *学生ID: ${student_id} | リポジトリ: ${repo_name} | 作成: $(date '+%Y-%m-%d %H:%M') JST*
 EOF
 }
+
+#
+# LaTeX環境セットアップ関数
+#
+setup_latex_environment() {
+    log_info "LaTeX環境をセットアップ中..."
+    
+    # curlでaldcスクリプトを実行
+    if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)" 2>/dev/null; then
+        log_info "LaTeX環境のセットアップ完了"
+        return 0
+    else
+        log_warn "LaTeX環境は手動設定が必要"
+        log_info "手動セットアップ手順:"
+        log_info "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)\""
+        return 1
+    fi
+}
