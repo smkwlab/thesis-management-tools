@@ -284,7 +284,10 @@ cd create-repo
 echo "🐳 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
     # デバッグモードでは詳細出力を表示
-    docker build --progress=plain -f "$DOCKERFILE_NAME" -t "$DOCKER_IMAGE_NAME" .
+    if ! docker build --progress=plain -f "$DOCKERFILE_NAME" -t "$DOCKER_IMAGE_NAME" .; then
+        echo "❌ Dockerイメージのビルドに失敗しました"
+        exit 1
+    fi
 else
     # 通常モードでも進行状況を表示
     if ! docker build --progress=auto -f "$DOCKERFILE_NAME" -t "$DOCKER_IMAGE_NAME" .; then
@@ -346,7 +349,9 @@ echo "✅ $DOC_DESCRIPTION のセットアップが完了しました！"
 echo "📋 文書タイプ: $DETECTED_DOC_TYPE"
 echo ""
 echo "💡 使用方法："
-echo "DOC_TYPE=thesis $0"
-echo "DOC_TYPE=wr $0"
-echo "DOC_TYPE=latex $0"
-echo "DOC_TYPE=ise $0"
+echo "DOC_TYPE=thesis $0    # 論文リポジトリ作成"
+echo "DOC_TYPE=wr $0       # 週間報告リポジトリ作成"
+echo "DOC_TYPE=latex $0    # 汎用LaTeXリポジトリ作成"
+echo "DOC_TYPE=ise $0      # 情報科学演習レポート作成"
+echo ""
+echo "📖 詳細な使用方法は各テンプレートのREADMEを参照してください"
