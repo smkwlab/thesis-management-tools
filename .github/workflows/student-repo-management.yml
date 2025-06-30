@@ -64,243 +64,64 @@ jobs:
             echo "TOKEN_TYPE=GITHUB_DEFAULT" >> "$GITHUB_ENV"
           fi
 
-      - name: Extract student info from issues
-        env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          echo "📊 未処理Issueから学生情報を抽出中..."
-          bash scripts/extract-student-info-from-issues.sh
-
-      - name: Setup branch protection
+      - name: Process repository request
         env:
           GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          echo "🔒 ブランチ保護設定を実行中..."
-          echo "Token type: $TOKEN_TYPE"
-
           if [ "${{ github.event_name }}" = "issues" ]; then
-            # Issue作成時：該当学生の処理を実行
-            student_id=$(echo "$ISSUE_BODY" | \
-                         grep -oE 'k[0-9]{2}(rs|jk|gjk)[0-9]+' | \
-                         head -1 || true)
-
-            # リポジトリタイプの判定
-            repo_type=""
-            issue_title="${{ github.event.issue.title }}"
-            if [[ "$issue_title" == *"-wr"* ]]; then
-              repo_type="wr"
-            elif [[ "$issue_title" == *"-sotsuron"* ]]; then
-              repo_type="sotsuron"
-            elif [[ "$issue_title" == *"-thesis"* ]]; then
-              repo_type="thesis"
-            fi
-
-            echo "Extracted student ID from issue: ${student_id:-'(none found)'}"
-            echo "Detected repository type: ${repo_type:-'(unknown)'}"
-
-            if [ -n "$student_id" ] && [ -n "$repo_type" ]; then
-              echo "🎯 Issue作成による処理開始: $student_id ($repo_type)"
-
-              # 権限チェック：GITHUB_TOKENでは制限される可能性を警告
-              if [ "$TOKEN_TYPE" = "GITHUB_DEFAULT" ]; then
-                echo "⚠️ 警告: GITHUB_TOKENを使用中。"
-                echo "他リポジトリへのアクセスに制限がある可能性があります"
-              fi
-
-              # リポジトリタイプ別の処理
-              if [ "$repo_type" = "wr" ]; then
-                echo "📝 週報リポジトリ: ブランチ保護をスキップして登録のみ実行"
-                echo "PROTECTION_SUCCESS=true" >> "$GITHUB_ENV"
+            # 単一Issue処理
+            echo "🎯 単一Issue処理モード"
+            echo "Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}"
+            
+            # process-pending-issues.shを使用してIssue処理
+            # 制限を1件に設定して該当Issueのみ処理
+            if bash scripts/process-pending-issues.sh --limit 1; then
+              echo "✅ Issue処理完了"
+              echo "PROTECTION_SUCCESS=true" >> "$GITHUB_ENV"
+              
+              # 学生ID抽出（環境変数設定用）
+              student_id=$(echo "$ISSUE_BODY" | grep -oE 'k[0-9]{2}(rs|jk|gjk)[0-9]+' | head -1 || true)
+              if [ -n "$student_id" ]; then
                 echo "STUDENT_ID=$student_id" >> "$GITHUB_ENV"
-                echo "REPO_TYPE=$repo_type" >> "$GITHUB_ENV"
-                echo "SKIP_PROTECTION=true" >> "$GITHUB_ENV"
-              else
-                echo "🔒 論文リポジトリ: ブランチ保護設定を実行"
-                # エラーハンドリング強化
-                if bash scripts/setup-branch-protection.sh \
-                        "$student_id" 2>&1; then
-                  echo "✅ ブランチ保護設定完了: $student_id"
-                  echo "PROTECTION_SUCCESS=true" >> "$GITHUB_ENV"
-                  echo "STUDENT_ID=$student_id" >> "$GITHUB_ENV"
-                  echo "REPO_TYPE=$repo_type" >> "$GITHUB_ENV"
-                else
-                  exit_code=$?
-                  echo "❌ ブランチ保護設定失敗: $student_id" \
-                       "(exit code: $exit_code)"
-                  echo "トークンタイプ: $TOKEN_TYPE"
-                  echo "使用中トークン: ${GH_TOKEN:0:8}..."
-                  echo "PROTECTION_SUCCESS=false" >> "$GITHUB_ENV"
-                  echo "ERROR_CODE=$exit_code" >> "$GITHUB_ENV"
-                fi
+              fi
+              
+              # リポジトリタイプ判定
+              issue_title="${{ github.event.issue.title }}"
+              if [[ "$issue_title" == *"-wr"* ]]; then
+                echo "REPO_TYPE=wr" >> "$GITHUB_ENV"
+              elif [[ "$issue_title" == *"-sotsuron"* ]]; then
+                echo "REPO_TYPE=sotsuron" >> "$GITHUB_ENV" 
+              elif [[ "$issue_title" == *"-thesis"* ]]; then
+                echo "REPO_TYPE=thesis" >> "$GITHUB_ENV"
               fi
             else
-              echo "⚠️ 学生IDを抽出できませんでした"
-              echo "Issue本文: ${ISSUE_BODY:-'(empty)'}"
+              echo "❌ Issue処理失敗"
               echo "PROTECTION_SUCCESS=false" >> "$GITHUB_ENV"
             fi
           else
-            # 手動実行時：一括処理
-            echo "📋 一括ブランチ保護設定を実行中..."
-            if bash scripts/bulk-setup-protection.sh 2>&1; then
+            # 一括処理モード
+            echo "📋 一括処理モード"
+            if bash scripts/process-pending-issues.sh; then
               echo "✅ 一括処理完了"
               echo "PROTECTION_SUCCESS=true" >> "$GITHUB_ENV"
             else
-              exit_code=$?
-              echo "❌ 一括処理失敗 (exit code: $exit_code)"
+              echo "❌ 一括処理失敗"
               echo "PROTECTION_SUCCESS=false" >> "$GITHUB_ENV"
-              echo "ERROR_CODE=$exit_code" >> "$GITHUB_ENV"
             fi
           fi
 
-      - name: Update student registry
-        env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          echo "📝 学生レジストリを更新中..."
-          bash scripts/update-student-registry.sh
-
-      - name: Update thesis student registry
-        if: env.PROTECTION_SUCCESS == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
-        run: |
-          echo "📋 thesis-student-registry を更新中..."
-
-          # thesis-student-registryの存在確認
-          if [[ -d "thesis-student-registry" ]]; then
-            echo "✅ thesis-student-registry found"
-
-            # 環境変数から学生情報を取得
-            processed_student="${{ env.STUDENT_ID }}"
-            processed_repo_type="${{ env.REPO_TYPE }}"
-
-            if [[ -n "$processed_student" ]] && [[ -n "$processed_repo_type" ]]; then
-              echo "🎯 Processing student: $processed_student (type: $processed_repo_type)"
-
-              repo_name="${processed_student}-${processed_repo_type}"
-              echo "🔍 Checking repository: smkwlab/$repo_name"
-
-              # リポジトリの存在確認
-              if gh_output=$(gh repo view "smkwlab/$repo_name" 2>&1); then
-                echo "📦 Found repository: $repo_name"
-
-                # thesis-student-registryを更新
-                cd thesis-student-registry
-                chmod +x update-repository-registry.sh
-
-                # ステータス決定（週報は自動完了、論文系はブランチ保護後に完了）
-                if [[ "$processed_repo_type" == "wr" ]]; then
-                  status="completed"
-                else
-                  status="completed"  # ここに到達する時点でブランチ保護も完了済み
-                fi
-
-                script_args=("$repo_name" "$processed_student" "$processed_repo_type" "$status")
-                if ./update-repository-registry.sh "${script_args[@]}" 2>&1; then
-                  echo "✅ Updated registry for: $repo_name"
-                else
-                  echo "⚠️ Failed to update registry for: $repo_name"
-                fi
-                cd ..
-              else
-                echo "❌ Repository not found or access denied: $repo_name"
-                echo "   Error: $gh_output"
-              fi
-            else
-              echo "⚠️ Student ID or repo type not available from environment"
-              echo "STUDENT_ID: ${processed_student:-'(empty)'}"
-              echo "REPO_TYPE: ${processed_repo_type:-'(empty)'}"
-            fi
-          else
-            echo "⚠️ thesis-student-registry not found"
-            echo "This is normal if repositories are in different locations"
-          fi
-
-      - name: Commit registry updates
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add data/
-          if git diff --staged --quiet; then
-            echo "📊 変更なし: レジストリは最新状態です"
-          else
-            git commit -m "Auto-update student registry and protection status
-
-            - Extracted student info from issues
-            - Updated branch protection status
-            - Maintained yearly student classification"
-            git push
-            echo "📊 学生レジストリを更新しました"
-          fi
-
-      - name: Commit thesis student registry updates
+      - name: Summary
         if: env.PROTECTION_SUCCESS == 'true'
         run: |
-          # thesis-student-registryの変更をコミット
-          if [[ -d "thesis-student-registry/.git" ]]; then
-            cd thesis-student-registry
-
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add data/students/repositories.json data/students/ || true
-
-            if git diff --staged --quiet; then
-              echo "📋 変更なし: thesis-student-registry は最新状態です"
-            else
-              # 現在処理中の学生IDを取得
-              processed_student="${{ env.STUDENT_ID }}"
-              if [[ -z "$processed_student" ]]; then
-                # フォールバック: completed-protection.txtから取得
-                processed_student=$(tail -n 1 \
-                  ../data/protection-status/completed-protection.txt \
-                  2>/dev/null || echo "unknown")
-              fi
-
-              commit_msg="Auto-update repository registry for student: \
-              $processed_student
-
-              - Added/updated repository information after branch protection \
-              completion
-              - Synchronized with thesis-management-tools workflow
-              - Student: $processed_student
-              - Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-              git commit -m "$commit_msg"
-
-              git push
-              echo "📋 thesis-student-registry を更新しました: $processed_student"
-            fi
-          else
-            echo "📋 thesis-student-registry not available for commit"
-          fi
-
-      - name: Close completed issue
-        if: github.event_name == 'issues' && env.PROTECTION_SUCCESS == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-        run: |
-          echo "🎯 ブランチ保護設定完了によるIssue自動クローズ"
-
-          # コメント本文を作成
-          comment_body="✅ ブランチ保護設定が自動完了しました
-
-          設定内容:
-          - リポジトリ: $ISSUE_TITLE
-          - 学生ID: ${{ env.STUDENT_ID }}
-          - 設定完了時刻: $(date '+%Y-%m-%d %H:%M:%S UTC')
-
-          保護されたブランチ:
-          - main ブランチ
-          - review-branch ブランチ
-
-          保護ルール:
-          - 1つ以上の承認レビューが必要
-          - 新しいコミット時に古いレビューを無効化
-          - フォースプッシュとブランチ削除を禁止
-
-          論文執筆を開始できます！"
-
-          gh issue comment "$ISSUE_NUMBER" --body "$comment_body"
-          gh issue close "$ISSUE_NUMBER" --reason completed
+          echo "✅ 処理完了サマリー"
+          echo "処理されたIssue: #${{ github.event.issue.number }}"
+          echo "学生ID: ${{ env.STUDENT_ID }}"
+          echo "リポジトリタイプ: ${{ env.REPO_TYPE }}"
+          echo "完了時刻: $(date '+%Y-%m-%d %H:%M:%S UTC')"
+          echo
+          echo "📋 process-pending-issues.sh が以下の処理を完了:"
+          echo "  - リポジトリ存在確認"
+          echo "  - ブランチ保護設定 (論文リポジトリのみ)"
+          echo "  - thesis-student-registry 更新"
+          echo "  - Issue クローズ"
