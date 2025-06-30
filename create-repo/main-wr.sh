@@ -9,14 +9,7 @@ source ./common-lib.sh
 # 共通初期化
 init_script_common "週報リポジトリセットアップツール" "📝"
 
-# 個別表示メッセージ
-if [ "$INDIVIDUAL_MODE" = true ]; then
-    echo -e "${BLUE}   - ブランチ保護: 無効（デフォルト）${NC}"
-    echo -e "${BLUE}   - Registry登録: 無効${NC}"
-else
-    echo -e "${GREEN}   - ブランチ保護: 無効（デフォルト）${NC}"
-    echo -e "${GREEN}   - Registry登録: 有効${NC}"
-fi
+# 機能設定情報は内部処理のみ（表示不要）
 
 # 組織設定（共通関数使用）
 ORGANIZATION=$(determine_organization)
