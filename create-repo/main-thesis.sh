@@ -74,13 +74,8 @@ setup_git_user "thesis-setup@smkwlab.github.io" "Thesis Setup Tool"
 echo "テンプレートファイルを整理中..."
 rm -f CLAUDE.md 2>/dev/null || true
 
-# LaTeX環境のセットアップ
-echo "LaTeX環境をセットアップ中..."
-if command -v aldc &> /dev/null && aldc --force-update; then
-    echo -e "${GREEN}✓ LaTeX環境のセットアップ完了${NC}"
-else
-    echo -e "${YELLOW}⚠️ LaTeX環境は手動設定が必要${NC}"
-fi
+# LaTeX環境のセットアップ（共通関数使用）
+setup_latex_environment
 
 # ブランチ設定
 echo "ブランチを設定中..."
