@@ -73,25 +73,25 @@ jobs:
             # 単一Issue処理
             echo "🎯 単一Issue処理モード"
             echo "Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}"
-            
+
             # process-pending-issues.shを使用してIssue処理
             # 制限を1件に設定して該当Issueのみ処理
             if bash scripts/process-pending-issues.sh --limit 1; then
               echo "✅ Issue処理完了"
               echo "PROTECTION_SUCCESS=true" >> "$GITHUB_ENV"
-              
+
               # 学生ID抽出（環境変数設定用）
               student_id=$(echo "$ISSUE_BODY" | grep -oE 'k[0-9]{2}(rs|jk|gjk)[0-9]+' | head -1 || true)
               if [ -n "$student_id" ]; then
                 echo "STUDENT_ID=$student_id" >> "$GITHUB_ENV"
               fi
-              
+
               # リポジトリタイプ判定
               issue_title="${{ github.event.issue.title }}"
               if [[ "$issue_title" == *"-wr"* ]]; then
                 echo "REPO_TYPE=wr" >> "$GITHUB_ENV"
               elif [[ "$issue_title" == *"-sotsuron"* ]]; then
-                echo "REPO_TYPE=sotsuron" >> "$GITHUB_ENV" 
+                echo "REPO_TYPE=sotsuron" >> "$GITHUB_ENV"
               elif [[ "$issue_title" == *"-thesis"* ]]; then
                 echo "REPO_TYPE=thesis" >> "$GITHUB_ENV"
               fi
