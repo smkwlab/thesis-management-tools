@@ -15,6 +15,36 @@ export NC='\033[0m'
 # 共通関数
 # ================================
 
+# スクリプト共通初期化（最終共通化）
+init_script_common() {
+    local script_name="$1"
+    local script_emoji="$2"
+    
+    echo "$script_emoji $script_name"
+    echo "=============================================="
+    
+    # GitHub認証（Docker内用）
+    check_github_auth_docker || exit 1
+    
+    # 動作モードの判定
+    OPERATION_MODE=$(determine_operation_mode)
+    INDIVIDUAL_MODE=false
+    if [ "$OPERATION_MODE" = "individual" ]; then
+        INDIVIDUAL_MODE=true
+    fi
+    
+    # 現在のユーザーアカウントを取得
+    if ! CURRENT_USER=$(gh api user --jq .login 2>/dev/null); then
+        echo -e "${RED}❌ GitHub APIアクセスに失敗しました${NC}"
+        echo "認証トークンを更新してください："
+        echo "  gh auth refresh"
+        exit 1
+    fi
+    
+    # グローバル変数として設定
+    export OPERATION_MODE INDIVIDUAL_MODE CURRENT_USER
+}
+
 # 学籍番号の正規化
 normalize_student_id() {
     local student_id="$1"
@@ -252,6 +282,27 @@ commit_and_push() {
     else
         echo -e "${RED}エラー: プッシュに失敗しました${NC}" >&2
         return 1
+    fi
+}
+
+# 組織メンバーシップチェック（条件付き）
+check_organization_access() {
+    local organization="$1"
+    
+    if [ "$INDIVIDUAL_MODE" = false ]; then
+        check_organization_membership "$organization" "$CURRENT_USER" || exit 1
+    fi
+}
+
+# リポジトリパス決定（統一処理）
+determine_repository_path() {
+    local organization="$1"
+    local repo_name="$2"
+    
+    if [ "$INDIVIDUAL_MODE" = false ]; then
+        echo "${organization}/${repo_name}"
+    else
+        echo "${CURRENT_USER}/${repo_name}"
     fi
 }
 
