@@ -389,7 +389,7 @@ create_repository_issue() {
     local repo_type="${3:-sotsuron}"
     local organization="${4:-$DEFAULT_ORG}"
     
-    log_debug "📋 ブランチ保護設定依頼Issueを作成中..."
+    log_info "ブランチ保護設定中..."
     
     local issue_body
     issue_body=$(generate_issue_body "$organization" "$repo_name" "$student_id")
@@ -400,9 +400,8 @@ create_repository_issue() {
         --title "📋 リポジトリ登録依頼: ${organization}/${repo_name}" \
         --body "$issue_body" 2>&1 | grep -oE '[0-9]+$'); then
         
-        log_info "ブランチ保護設定依頼Issue作成完了"
-        echo "   Issue #${issue_number}: https://github.com/${organization}/thesis-management-tools/issues/${issue_number}"
-        log_info "ℹ️  教員が上記Issueを確認してブランチ保護設定を実行します"
+        # Issue作成成功時は何も出力しない（簡潔にする）
+        true
     else
         log_warn "Issue作成に失敗しました（続行します）"
     fi
