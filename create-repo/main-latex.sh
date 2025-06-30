@@ -331,7 +331,7 @@ uplatex main.tex
 dvipdfmx main.dvi
 
 # または一括処理（設定済みの場合）
-latexmk -pdfdvi main.tex
+latexmk main.tex
 \`\`\`
 
 ## 📋 書き方のコツ
