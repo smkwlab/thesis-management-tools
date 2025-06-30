@@ -113,6 +113,13 @@ if [ -z "$STUDENT_ID" ]; then
     exit 1
 fi
 
+# 学籍番号の正規化（kプリフィックス自動追加）
+if echo "$STUDENT_ID" | grep -qE '^[0-9]{2}(rs|jk|gjk)[0-9]+$'; then
+    # 先頭に k がない場合、自動で k を追加
+    STUDENT_ID="k${STUDENT_ID}"
+    echo -e "${YELLOW}✓ 学籍番号を正規化しました: ${STUDENT_ID#k} → $STUDENT_ID${NC}"
+fi
+
 # 学籍番号形式の検証
 if ! echo "$STUDENT_ID" | grep -qE '^k[0-9]{2}(rs|jk|gjk)[0-9]+$'; then
     echo -e "${RED}❌ 学籍番号の形式が正しくありません: $STUDENT_ID${NC}"
@@ -236,7 +243,14 @@ git config user.email "setup-ise@smkwlab.github.io"
 git config user.name "ISE Setup Tool"
 
 # リポジトリをクローン
-git clone "https://github.com/$ORGANIZATION/$REPO_NAME.git"
+echo "📦 リポジトリをクローン中..."
+if ! git clone "https://github.com/$ORGANIZATION/$REPO_NAME.git"; then
+    echo -e "${RED}❌ リポジトリのクローンに失敗しました${NC}"
+    echo "リポジトリ: https://github.com/$ORGANIZATION/$REPO_NAME"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ リポジトリクローン完了${NC}"
 cd "$REPO_NAME"
 
 echo "🌿 Pull Request学習用ブランチ構成を作成中..."

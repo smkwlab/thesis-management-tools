@@ -22,7 +22,8 @@ WORKDIR /workspace
 
 # セットアップスクリプトをコピー
 COPY main.sh ./
-RUN chmod +x main.sh
+COPY common-lib.sh ./
+RUN chmod +x main.sh common-lib.sh
 
 # Docker環境では手動ブラウザアクセスを前提
 ENV DOCKER_ENV=true
