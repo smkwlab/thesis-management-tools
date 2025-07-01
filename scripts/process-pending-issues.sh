@@ -883,19 +883,16 @@ show_issue_details() {
     case "$CURRENT_REPO_TYPE" in
         wr|latex)
             echo "  1. thesis-student-registry への登録"
-            echo "  2. active.txt への追加"
-            echo "  3. Issue クローズ"
+            echo "  2. Issue クローズ"
             ;;
         ise|sotsuron|thesis)
             echo "  1. ブランチ保護設定 (main, review-branch)"
             echo "  2. thesis-student-registry への登録"
-            echo "  3. active.txt への追加"
-            echo "  4. Issue クローズ"
+            echo "  3. Issue クローズ"
             ;;
         *)
             echo "  1. thesis-student-registry への登録"
-            echo "  2. active.txt への追加"
-            echo "  3. Issue クローズ"
+            echo "  2. Issue クローズ"
             ;;
     esac
     echo
@@ -1195,16 +1192,8 @@ process_weekly_report_with_feedback() {
         return 1
     fi
     
-    # 2. active.txt 更新
-    echo "  active.txt への追加中..."
-    if add_to_active_repos "$CURRENT_REPO_NAME"; then
-        echo "  ✅ active.txt への追加完了"
-    else
-        echo "  ❌ active.txt への追加失敗"
-        return 1
-    fi
     
-    # 3. Issue クローズ
+    # 2. Issue クローズ
     echo "  Issue クローズ中..."
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 週報リポジトリの登録が完了しました
 
@@ -1250,12 +1239,6 @@ process_thesis_with_feedback() {
     
     # 3. active.txt 更新
     echo "  active.txt への追加中..."
-    if add_to_active_repos "$CURRENT_REPO_NAME"; then
-        echo "  ✅ active.txt への追加完了"
-    else
-        echo "  ❌ active.txt への追加失敗"
-        return 1
-    fi
     
     # 4. completed-protection.txt 更新
     echo "  protection status への追加中..."
@@ -1266,7 +1249,7 @@ process_thesis_with_feedback() {
         return 1
     fi
     
-    # 5. Issue クローズ
+    # 2. Issue クローズ
     echo "  Issue クローズ中..."
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 論文リポジトリの設定が完了しました
 
@@ -1294,8 +1277,6 @@ process_thesis_with_feedback() {
     echo "📋 実行された操作:"
     echo "  • ブランチ保護設定 (main, review-branch)"
     echo "  • thesis-student-registry への登録"
-    echo "  • active.txt への追加"
-    echo "  • protection status への追加"
     echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
     echo ""
     
@@ -1329,22 +1310,9 @@ process_ise_with_feedback() {
     
     # 3. active.txt 更新
     echo "  active.txt への追加中..."
-    if add_to_active_repos "$CURRENT_REPO_NAME"; then
-        echo "  ✅ active.txt への追加完了"
-    else
-        echo "  ❌ active.txt への追加失敗"
-        return 1
-    fi
     
-    # 4. completed-protection.txt 更新
-    echo "  protection status への追加中..."
-    if add_to_completed_protection "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID"; then
-        echo "  ✅ protection status への追加完了"
-    else
-        echo "  ❌ protection status への追加失敗"
-    fi
     
-    # 5. Issue クローズ
+    # 2. Issue クローズ
     echo "  Issue クローズ中..."
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 情報科学演習レポートの設定が完了しました
 
@@ -1376,8 +1344,6 @@ process_ise_with_feedback() {
     echo "📋 実行された操作:"
     echo "  • ブランチ保護設定 (main)"
     echo "  • thesis-student-registry への登録"
-    echo "  • active.txt への追加"
-    echo "  • protection status への追加"
     echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
     echo ""
     
@@ -1400,16 +1366,8 @@ process_latex_with_feedback() {
         return 1
     fi
     
-    # 2. active.txt 更新
-    echo "  active.txt への追加中..."
-    if add_to_active_repos "$CURRENT_REPO_NAME"; then
-        echo "  ✅ active.txt への追加完了"
-    else
-        echo "  ❌ active.txt への追加失敗"
-        return 1
-    fi
     
-    # 3. Issue クローズ
+    # 2. Issue クローズ
     echo "  Issue クローズ中..."
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 汎用LaTeXリポジトリの登録が完了しました
 
@@ -1438,7 +1396,6 @@ process_latex_with_feedback() {
     echo ""
     echo "📋 実行された操作:"
     echo "  • thesis-student-registry への登録"
-    echo "  • active.txt への追加"
     echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
     echo ""
     
@@ -1503,13 +1460,8 @@ process_weekly_report_issue() {
         return 1
     fi
     
-    # 2. active.txt への追加
-    if ! add_to_active_repos "$CURRENT_REPO_NAME"; then
-        log_error "active.txt への追加に失敗: $CURRENT_REPO_NAME"
-        return 1
-    fi
     
-    # 3. Issue クローズ
+    # 2. Issue クローズ
     if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 週報リポジトリの登録が完了しました
 
 ## 登録内容
@@ -1547,19 +1499,8 @@ process_thesis_issue() {
         return 1
     fi
     
-    # 3. active.txt への追加
-    if ! add_to_active_repos "$CURRENT_REPO_NAME"; then
-        log_error "active.txt への追加に失敗: $CURRENT_REPO_NAME"
-        return 1
-    fi
     
-    # 4. completed-protection.txt への追加
-    if ! add_to_completed_protection "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID"; then
-        log_error "completed-protection.txt への追加に失敗: $CURRENT_REPO_NAME"
-        return 1
-    fi
-    
-    # 5. Issue クローズ
+    # 2. Issue クローズ
     if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 論文リポジトリの設定が完了しました
 
 ## 設定内容
@@ -1711,22 +1652,6 @@ Processed via automated issue processor."
 #
 # リポジトリ登録（thesis-student-registry統合後）
 #
-add_to_active_repos() {
-    local repo_name="$1"
-    
-    log_debug "リポジトリ情報登録: $repo_name"
-    
-    if [ "$DRY_RUN_MODE" = true ]; then
-        log_info "[DRY-RUN] リポジトリ情報登録: $repo_name"
-        return 0
-    fi
-    
-    # thesis-student-registry への登録は registry-manager が担当
-    log_debug "データ管理は thesis-student-registry に統合済み"
-    log_debug "registry-manager でリポジトリ情報を管理してください"
-    
-    return 0
-}
 
 #
 # ブランチ保護設定（Issue処理用）
@@ -1817,23 +1742,6 @@ EOF
 #
 # 保護設定完了記録（thesis-student-registry統合後）
 #
-add_to_completed_protection() {
-    local repo_name="$1"
-    local student_id="$2"
-    
-    log_debug "保護設定完了記録: $repo_name (学生ID: $student_id)"
-    
-    if [ "$DRY_RUN_MODE" = true ]; then
-        log_info "[DRY-RUN] 保護設定完了記録: $repo_name"
-        return 0
-    fi
-    
-    # thesis-student-registry での管理に移行
-    log_debug "データ管理は thesis-student-registry に統合済み"
-    log_debug "保護状態は thesis-monitor または registry-manager で管理"
-    
-    return 0
-}
 
 #
 # Issueクローズ
