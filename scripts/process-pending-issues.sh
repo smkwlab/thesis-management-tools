@@ -1237,19 +1237,7 @@ process_thesis_with_feedback() {
         return 1
     fi
     
-    # 3. active.txt 更新
-    echo "  active.txt への追加中..."
-    
-    # 4. completed-protection.txt 更新
-    echo "  protection status への追加中..."
-    if add_to_completed_protection "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID"; then
-        echo "  ✅ protection status への追加完了"
-    else
-        echo "  ❌ protection status への追加失敗"
-        return 1
-    fi
-    
-    # 2. Issue クローズ
+    # 3. Issue クローズ
     echo "  Issue クローズ中..."
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 論文リポジトリの設定が完了しました
 
@@ -1308,11 +1296,7 @@ process_ise_with_feedback() {
         return 1
     fi
     
-    # 3. active.txt 更新
-    echo "  active.txt への追加中..."
-    
-    
-    # 2. Issue クローズ
+    # 3. Issue クローズ
     echo "  Issue クローズ中..."
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 情報科学演習レポートの設定が完了しました
 
