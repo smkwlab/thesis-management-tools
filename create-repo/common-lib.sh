@@ -413,7 +413,7 @@ generate_issue_body() {
     local organization="$1"
     local repo_name="$2"
     local student_id="$3"
-    local repo_type="${4:-sotsuron}"
+    local repo_type="${4:-sotsuron}"  # デフォルトは後方互換性のため sotsuron を維持
     
     cat << EOF
 ## リポジトリ登録依頼

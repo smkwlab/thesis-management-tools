@@ -483,8 +483,10 @@ extract_issue_info() {
     elif [[ "$CURRENT_STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]+ ]]; then
         CURRENT_REPO_TYPE="thesis"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDパターンから修論タイプを推測"
-    # パターン5: その他のパターンは latex と推測（setup-latex.sh の汎用性のため）
-    elif [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ ]]; then
+    # パターン5: その他のパターンは latex と推測
+    # setup-latex.sh は様々な命名規則のリポジトリに対応するため、
+    # 明示的なタイプ情報がない場合は LaTeX リポジトリとして扱う
+    elif [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ && ! "$CURRENT_REPO_NAME" == *"-latex" ]]; then
         CURRENT_REPO_TYPE="latex"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 未知パターンをlatexタイプとして推測: $CURRENT_REPO_NAME"
     else
