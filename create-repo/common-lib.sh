@@ -392,7 +392,7 @@ create_repository_issue() {
     log_info "Registry Manager登録中..."
     
     local issue_body
-    issue_body=$(generate_issue_body "$organization" "$repo_name" "$student_id")
+    issue_body=$(generate_issue_body "$organization" "$repo_name" "$student_id" "$repo_type")
     
     local issue_number
     if issue_number=$(gh issue create \
@@ -413,6 +413,7 @@ generate_issue_body() {
     local organization="$1"
     local repo_name="$2"
     local student_id="$3"
+    local repo_type="${4:-sotsuron}"
     
     cat << EOF
 ## リポジトリ登録依頼
@@ -420,6 +421,7 @@ generate_issue_body() {
 ### リポジトリ情報
 - **リポジトリ**: [${organization}/${repo_name}](https://github.com/${organization}/${repo_name})
 - **学生ID**: ${student_id}
+- **リポジトリタイプ**: ${repo_type}
 - **作成日時**: $(date '+%Y-%m-%d %H:%M') JST
 
 ### 処理内容

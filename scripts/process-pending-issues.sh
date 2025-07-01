@@ -437,41 +437,56 @@ extract_issue_info() {
         return 2  # 情報抽出エラーとして区別
     fi
     
-    # リポジトリタイプ判定（複数要素から総合判断）
+    # リポジトリタイプ判定（優先順位: Issue本文 > リポジトリ名 > 学生IDパターン）
     CURRENT_REPO_TYPE=""
     
-    # パターン1: リポジトリ名から判定
-    if [[ "$CURRENT_REPO_NAME" == *"-wr" ]]; then
-        CURRENT_REPO_TYPE="wr"
-    elif [[ "$CURRENT_REPO_NAME" == *"-ise-report"* ]]; then
-        CURRENT_REPO_TYPE="ise"
-    elif [[ "$CURRENT_REPO_NAME" == *"-latex" ]]; then
-        CURRENT_REPO_TYPE="latex"
-    elif [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ && ! "$CURRENT_REPO_NAME" =~ -(wr|sotsuron|thesis|ise-report) ]]; then
-        # 未知のパターンは latex タイプとして扱う（setup-latex.sh で作成されるため）
-        CURRENT_REPO_TYPE="latex"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 未知パターンをlatexタイプとして判定: $CURRENT_REPO_NAME"
-    elif [[ "$CURRENT_REPO_NAME" == *"-sotsuron" ]]; then
-        CURRENT_REPO_TYPE="sotsuron"
-    elif [[ "$CURRENT_REPO_NAME" == *"-thesis" ]]; then
-        CURRENT_REPO_TYPE="thesis"
-    # パターン2: Issue本文から判定
+    # パターン1: Issue本文から直接抽出（最も信頼性が高い）
+    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ.*:.*([a-z]+) ]]; then
+        CURRENT_REPO_TYPE="${BASH_REMATCH[1]}"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から直接タイプを抽出: $CURRENT_REPO_TYPE"
+    # パターン2: Issue本文のキーワードから判定
     elif [[ "$CURRENT_ISSUE_BODY" =~ 週報|weekly ]]; then
         CURRENT_REPO_TYPE="wr"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から週報タイプを判定"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから週報タイプを判定"
+    elif [[ "$CURRENT_ISSUE_BODY" =~ 情報科学演習|ise.report ]]; then
+        CURRENT_REPO_TYPE="ise"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードからISEタイプを判定"
+    elif [[ "$CURRENT_ISSUE_BODY" =~ 汎用LaTeX|latex.template ]]; then
+        CURRENT_REPO_TYPE="latex"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードからlatexタイプを判定"
     elif [[ "$CURRENT_ISSUE_BODY" =~ 卒業論文|undergraduate|sotsuron ]]; then
         CURRENT_REPO_TYPE="sotsuron"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から卒論タイプを判定"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから卒論タイプを判定"
     elif [[ "$CURRENT_ISSUE_BODY" =~ 修士論文|graduate|thesis ]]; then
         CURRENT_REPO_TYPE="thesis"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から修論タイプを判定"
-    # パターン3: 学生IDパターンから推測
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから修論タイプを判定"
+    # パターン3: リポジトリ名から判定（フォールバック）
+    elif [[ "$CURRENT_REPO_NAME" == *"-wr" ]]; then
+        CURRENT_REPO_TYPE="wr"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名から週報タイプを判定"
+    elif [[ "$CURRENT_REPO_NAME" == *"-ise-report"* ]]; then
+        CURRENT_REPO_TYPE="ise"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名からISEタイプを判定"
+    elif [[ "$CURRENT_REPO_NAME" == *"-sotsuron" ]]; then
+        CURRENT_REPO_TYPE="sotsuron"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名から卒論タイプを判定"
+    elif [[ "$CURRENT_REPO_NAME" == *"-thesis" ]]; then
+        CURRENT_REPO_TYPE="thesis"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名から修論タイプを判定"
+    elif [[ "$CURRENT_REPO_NAME" == *"-latex" ]]; then
+        CURRENT_REPO_TYPE="latex"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名からlatexタイプを判定"
+    # パターン4: 学生IDパターンから推測（最後の手段）
     elif [[ "$CURRENT_STUDENT_ID" =~ ^k[0-9]{2}rs[0-9]+ ]]; then
         CURRENT_REPO_TYPE="sotsuron"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDパターンから卒論タイプを推測"
     elif [[ "$CURRENT_STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]+ ]]; then
         CURRENT_REPO_TYPE="thesis"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDパターンから修論タイプを推測"
+    # パターン5: その他のパターンは latex と推測（setup-latex.sh の汎用性のため）
+    elif [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ ]]; then
+        CURRENT_REPO_TYPE="latex"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 未知パターンをlatexタイプとして推測: $CURRENT_REPO_NAME"
     else
         CURRENT_REPO_TYPE="unknown"
         log_error "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリタイプを判定できませんでした"
