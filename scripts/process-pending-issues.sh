@@ -402,15 +402,15 @@ extract_issue_info() {
     # リポジトリ名抽出（複数パターン対応）
     CURRENT_REPO_NAME=""
     
-    # パターン1: smkwlab/k##xxx-yyy 形式
-    if [[ "$CURRENT_ISSUE_TITLE" =~ smkwlab/([k][0-9]{2}[a-z0-9]+-[a-z]+) ]]; then
+    # パターン1: smkwlab/k##xxx-yyy 形式（数字を含む名前に対応）
+    if [[ "$CURRENT_ISSUE_TITLE" =~ smkwlab/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+) ]]; then
         CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
     # パターン2: Issue本文からリポジトリ名を抽出
-    elif [[ "$CURRENT_ISSUE_BODY" =~ smkwlab/([k][0-9]{2}[a-z0-9]+-[a-z]+) ]]; then
+    elif [[ "$CURRENT_ISSUE_BODY" =~ smkwlab/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+) ]]; then
         CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 本文からリポジトリ名を抽出: $CURRENT_REPO_NAME"
     # パターン3: より柔軟なパターン（バックティック囲み等）
-    elif [[ "$CURRENT_ISSUE_TITLE$CURRENT_ISSUE_BODY" =~ \`([k][0-9]{2}[a-z0-9]+-[a-z]+)\` ]]; then
+    elif [[ "$CURRENT_ISSUE_TITLE$CURRENT_ISSUE_BODY" =~ \`([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+)\` ]]; then
         CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: バックティック囲みからリポジトリ名を抽出: $CURRENT_REPO_NAME"
     else
@@ -441,7 +441,7 @@ extract_issue_info() {
     CURRENT_REPO_TYPE=""
     
     # パターン1: Issue本文から直接抽出（最も信頼性が高い）
-    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ.*:.*([a-z]+) ]]; then
+    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[[:space:]]*:[[:space:]]*([a-zA-Z0-9]+) ]]; then
         CURRENT_REPO_TYPE="${BASH_REMATCH[1]}"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から直接タイプを抽出: $CURRENT_REPO_TYPE"
     # パターン2: Issue本文のキーワードから判定
