@@ -441,7 +441,7 @@ extract_issue_info() {
     CURRENT_REPO_TYPE=""
     
     # パターン1: Issue本文から直接抽出（最も信頼性が高い）
-    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[[:space:]]*:[[:space:]]*([a-z]+) ]]; then
+    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[[:space:]]*:[[:space:]]*([a-zA-Z0-9]+) ]]; then
         CURRENT_REPO_TYPE="${BASH_REMATCH[1]}"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から直接タイプを抽出: $CURRENT_REPO_TYPE"
     # パターン2: Issue本文のキーワードから判定
