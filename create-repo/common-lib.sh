@@ -459,7 +459,7 @@ setup_latex_environment() {
     else
         log_warn "LaTeX環境は手動設定が必要"
         log_info "手動セットアップ手順:"
-        log_info "  ALDC_QUIET=1 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)\""
+        log_info "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)\""
         return 1
     fi
 }
