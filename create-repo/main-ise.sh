@@ -190,7 +190,7 @@ commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}
 # review-branchに戻る
 git checkout review-branch >/dev/null 2>&1
 
-# Registry Manager連携（組織ユーザーのみ）
+# Registry Manager連携（組織ユーザーのみ、ブランチ保護も含む）
 if [ "$INDIVIDUAL_MODE" = false ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
     if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "ise" "$ORGANIZATION"; then
         echo -e "${YELLOW}⚠️ Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。${NC}"

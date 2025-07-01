@@ -118,8 +118,11 @@ EXAMPLES:
     # インタラクティブモード
     $0 --interactive
 
-    # 週報リポジトリのみ処理
-    $0 --type wr
+    # 特定タイプのみ処理
+    $0 --type wr       # 週報リポジトリ
+    $0 --type ise      # 情報科学演習レポート
+    $0 --type latex    # 汎用LaTeXリポジトリ
+    $0 --type thesis   # 論文リポジトリ
 
     # ドライラン
     $0 --dry-run
@@ -355,6 +358,12 @@ fetch_pending_issues() {
             wr)
                 issues_json=$(echo "$issues_json" | jq '[.[] | select(.title | contains("-wr"))]')
                 ;;
+            ise)
+                issues_json=$(echo "$issues_json" | jq '[.[] | select(.title | contains("-ise-report"))]')
+                ;;
+            latex)
+                issues_json=$(echo "$issues_json" | jq '[.[] | select(.title | contains("-latex"))]')
+                ;;
             sotsuron)
                 issues_json=$(echo "$issues_json" | jq '[.[] | select(.title | contains("-sotsuron"))]')
                 ;;
@@ -434,6 +443,10 @@ extract_issue_info() {
     # パターン1: リポジトリ名から判定
     if [[ "$CURRENT_REPO_NAME" == *"-wr" ]]; then
         CURRENT_REPO_TYPE="wr"
+    elif [[ "$CURRENT_REPO_NAME" == *"-ise-report"* ]]; then
+        CURRENT_REPO_TYPE="ise"
+    elif [[ "$CURRENT_REPO_NAME" == *"-latex" ]]; then
+        CURRENT_REPO_TYPE="latex"
     elif [[ "$CURRENT_REPO_NAME" == *"-sotsuron" ]]; then
         CURRENT_REPO_TYPE="sotsuron"
     elif [[ "$CURRENT_REPO_NAME" == *"-thesis" ]]; then
@@ -808,6 +821,12 @@ show_issue_summary() {
         wr)
             echo "  種別: 週報リポジトリ"
             ;;
+        ise)
+            echo "  種別: 情報科学演習レポート"
+            ;;
+        latex)
+            echo "  種別: 汎用LaTeXリポジトリ"
+            ;;
         sotsuron)
             echo "  種別: 論文リポジトリ（卒業論文）"
             ;;
@@ -861,16 +880,21 @@ show_issue_details() {
     echo
     
     echo "実行される処理:"
-    if [ "$CURRENT_REPO_TYPE" = "wr" ]; then
-        echo "  1. thesis-student-registry への登録"
-        echo "  2. active.txt への追加"
-        echo "  3. Issue クローズ"
-    else
-        echo "  1. ブランチ保護設定 (main, review-branch)"
-        echo "  2. thesis-student-registry への登録"
-        echo "  3. active.txt への追加"
-        echo "  4. Issue クローズ"
-    fi
+    case "$CURRENT_REPO_TYPE" in
+        wr|latex)
+            echo "  1. thesis-student-registry への登録"
+            echo "  2. Issue クローズ"
+            ;;
+        ise|sotsuron|thesis)
+            echo "  1. ブランチ保護設定 (main, review-branch)"
+            echo "  2. thesis-student-registry への登録"
+            echo "  3. Issue クローズ"
+            ;;
+        *)
+            echo "  1. thesis-student-registry への登録"
+            echo "  2. Issue クローズ"
+            ;;
+    esac
     echo
 }
 
@@ -891,29 +915,64 @@ execute_issue_processing() {
         return 3  # スキップとして扱う
     fi
     
-    if [ "$CURRENT_REPO_TYPE" = "wr" ]; then
-        echo "→ 週報リポジトリの登録処理を実行中..."
-        if process_weekly_report_with_feedback; then
-            echo "✅ 処理が完了しました"
-        else
-            echo "❌ 処理に失敗しました"
+    case "$CURRENT_REPO_TYPE" in
+        wr)
+            echo "→ 週報リポジトリの登録処理を実行中..."
+            if process_weekly_report_with_feedback; then
+                echo "✅ 処理が完了しました"
+            else
+                echo "❌ 処理に失敗しました"
+                echo
+                echo "続行するには Enter を押してください..."
+                read -r
+                return 1
+            fi
+            ;;
+        ise)
+            echo "→ 情報科学演習レポートの処理を実行中..."
+            if process_ise_with_feedback; then
+                echo "✅ 処理が完了しました"
+            else
+                echo "❌ 処理に失敗しました"
+                echo
+                echo "続行するには Enter を押してください..."
+                read -r
+                return 1
+            fi
+            ;;
+        latex)
+            echo "→ 汎用LaTeXリポジトリの登録処理を実行中..."
+            if process_latex_with_feedback; then
+                echo "✅ 処理が完了しました"
+            else
+                echo "❌ 処理に失敗しました"
+                echo
+                echo "続行するには Enter を押してください..."
+                read -r
+                return 1
+            fi
+            ;;
+        sotsuron|thesis)
+            echo "→ 論文リポジトリの処理を実行中..."
+            if process_thesis_with_feedback; then
+                echo "✅ 処理が完了しました"
+            else
+                echo "❌ 処理に失敗しました"
+                echo
+                echo "続行するには Enter を押してください..."
+                read -r
+                return 1
+            fi
+            ;;
+        *)
+            echo "→ 不明なリポジトリタイプの処理 ($CURRENT_REPO_TYPE)..."
+            echo "❌ サポートされていないリポジトリタイプです"
             echo
             echo "続行するには Enter を押してください..."
             read -r
             return 1
-        fi
-    else
-        echo "→ 論文リポジトリの処理を実行中..."
-        if process_thesis_with_feedback; then
-            echo "✅ 処理が完了しました"
-        else
-            echo "❌ 処理に失敗しました"
-            echo
-            echo "続行するには Enter を押してください..."
-            read -r
-            return 1
-        fi
-    fi
+            ;;
+    esac
     
     echo
     echo -n "続行しますか? [Enter] で次へ、[q] で終了: "
@@ -1133,16 +1192,8 @@ process_weekly_report_with_feedback() {
         return 1
     fi
     
-    # 2. active.txt 更新
-    echo "  active.txt への追加中..."
-    if add_to_active_repos "$CURRENT_REPO_NAME"; then
-        echo "  ✅ active.txt への追加完了"
-    else
-        echo "  ❌ active.txt への追加失敗"
-        return 1
-    fi
     
-    # 3. Issue クローズ
+    # 2. Issue クローズ
     echo "  Issue クローズ中..."
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 週報リポジトリの登録が完了しました
 
@@ -1186,25 +1237,7 @@ process_thesis_with_feedback() {
         return 1
     fi
     
-    # 3. active.txt 更新
-    echo "  active.txt への追加中..."
-    if add_to_active_repos "$CURRENT_REPO_NAME"; then
-        echo "  ✅ active.txt への追加完了"
-    else
-        echo "  ❌ active.txt への追加失敗"
-        return 1
-    fi
-    
-    # 4. completed-protection.txt 更新
-    echo "  protection status への追加中..."
-    if add_to_completed_protection "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID"; then
-        echo "  ✅ protection status への追加完了"
-    else
-        echo "  ❌ protection status への追加失敗"
-        return 1
-    fi
-    
-    # 5. Issue クローズ
+    # 3. Issue クローズ
     echo "  Issue クローズ中..."
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 論文リポジトリの設定が完了しました
 
@@ -1232,8 +1265,121 @@ process_thesis_with_feedback() {
     echo "📋 実行された操作:"
     echo "  • ブランチ保護設定 (main, review-branch)"
     echo "  • thesis-student-registry への登録"
-    echo "  • active.txt への追加"
-    echo "  • protection status への追加"
+    echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
+    echo ""
+    
+    return 0
+}
+
+#
+# 情報科学演習レポート処理（詳細フィードバック付き）
+#
+process_ise_with_feedback() {
+    echo "  📝 情報科学演習レポートの処理を開始..."
+    echo ""
+    
+    # 1. ブランチ保護設定（PR学習目的）
+    echo "  ブランチ保護設定を適用中..."
+    if setup_branch_protection_for_issue "$CURRENT_REPO_NAME"; then
+        echo "  ✅ ブランチ保護設定完了"
+    else
+        echo "  ❌ ブランチ保護設定失敗"
+        return 1
+    fi
+    
+    # 2. thesis-student-registry 更新
+    echo "  thesis-student-registry への登録中..."
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+        echo "  ✅ thesis-student-registry への登録完了"
+    else
+        echo "  ❌ thesis-student-registry への登録失敗"
+        return 1
+    fi
+    
+    # 3. Issue クローズ
+    echo "  Issue クローズ中..."
+    if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 情報科学演習レポートの設定が完了しました
+
+## 設定内容
+- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **学生ID**: $CURRENT_STUDENT_ID
+- **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+## ブランチ保護設定
+- **main ブランチ**: 1つ以上の承認レビューが必要（PR学習目的）
+- **新しいコミット時**: 古いレビューを無効化
+- **フォースプッシュ**: 禁止
+- **ブランチ削除**: 禁止
+
+## Pull Request学習について
+1. 作業用ブランチ（1st-draft など）を作成
+2. index.html を編集してレポート作成
+3. Pull Request を作成して提出
+4. レビューフィードバックを確認・対応
+
+リポジトリ設定: https://github.com/smkwlab/$CURRENT_REPO_NAME/settings/branches"; then
+        echo "  ✅ Issue #${CURRENT_ISSUE_NUMBER} をクローズしました"
+    else
+        echo "  ❌ Issue クローズに失敗しました"
+        return 1
+    fi
+    
+    echo ""
+    echo "📋 実行された操作:"
+    echo "  • ブランチ保護設定 (main)"
+    echo "  • thesis-student-registry への登録"
+    echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
+    echo ""
+    
+    return 0
+}
+
+#
+# 汎用LaTeXリポジトリ処理（詳細フィードバック付き）
+#
+process_latex_with_feedback() {
+    echo "  📄 汎用LaTeXリポジトリの登録処理を開始..."
+    echo ""
+    
+    # 1. thesis-student-registry 更新（ブランチ保護なし）
+    echo "  thesis-student-registry への登録中..."
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+        echo "  ✅ thesis-student-registry への登録完了"
+    else
+        echo "  ❌ thesis-student-registry への登録失敗"
+        return 1
+    fi
+    
+    
+    # 2. Issue クローズ
+    echo "  Issue クローズ中..."
+    if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 汎用LaTeXリポジトリの登録が完了しました
+
+## 設定内容
+- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **学生ID**: $CURRENT_STUDENT_ID
+- **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+## リポジトリ設定
+- **ブランチ保護**: なし（柔軟な利用を優先）
+- **作業方法**: main ブランチで直接作業可能
+- **用途**: 研究ノート、レポート、実験記録など
+
+## 使用方法
+1. main.tex を編集して文書を作成
+2. git add, commit, push で変更を保存
+3. GitHub Actions で自動的に PDF が生成されます
+
+リポジトリURL: https://github.com/smkwlab/$CURRENT_REPO_NAME"; then
+        echo "  ✅ Issue #${CURRENT_ISSUE_NUMBER} をクローズしました"
+    else
+        echo "  ❌ Issue クローズに失敗しました"
+        return 1
+    fi
+    
+    echo ""
+    echo "📋 実行された操作:"
+    echo "  • thesis-student-registry への登録"
     echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
     echo ""
     
@@ -1298,13 +1444,8 @@ process_weekly_report_issue() {
         return 1
     fi
     
-    # 2. active.txt への追加
-    if ! add_to_active_repos "$CURRENT_REPO_NAME"; then
-        log_error "active.txt への追加に失敗: $CURRENT_REPO_NAME"
-        return 1
-    fi
     
-    # 3. Issue クローズ
+    # 2. Issue クローズ
     if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 週報リポジトリの登録が完了しました
 
 ## 登録内容
@@ -1342,19 +1483,8 @@ process_thesis_issue() {
         return 1
     fi
     
-    # 3. active.txt への追加
-    if ! add_to_active_repos "$CURRENT_REPO_NAME"; then
-        log_error "active.txt への追加に失敗: $CURRENT_REPO_NAME"
-        return 1
-    fi
     
-    # 4. completed-protection.txt への追加
-    if ! add_to_completed_protection "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID"; then
-        log_error "completed-protection.txt への追加に失敗: $CURRENT_REPO_NAME"
-        return 1
-    fi
-    
-    # 5. Issue クローズ
+    # 2. Issue クローズ
     if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 論文リポジトリの設定が完了しました
 
 ## 設定内容
@@ -1506,22 +1636,6 @@ Processed via automated issue processor."
 #
 # リポジトリ登録（thesis-student-registry統合後）
 #
-add_to_active_repos() {
-    local repo_name="$1"
-    
-    log_debug "リポジトリ情報登録: $repo_name"
-    
-    if [ "$DRY_RUN_MODE" = true ]; then
-        log_info "[DRY-RUN] リポジトリ情報登録: $repo_name"
-        return 0
-    fi
-    
-    # thesis-student-registry への登録は registry-manager が担当
-    log_debug "データ管理は thesis-student-registry に統合済み"
-    log_debug "registry-manager でリポジトリ情報を管理してください"
-    
-    return 0
-}
 
 #
 # ブランチ保護設定（Issue処理用）
@@ -1612,23 +1726,6 @@ EOF
 #
 # 保護設定完了記録（thesis-student-registry統合後）
 #
-add_to_completed_protection() {
-    local repo_name="$1"
-    local student_id="$2"
-    
-    log_debug "保護設定完了記録: $repo_name (学生ID: $student_id)"
-    
-    if [ "$DRY_RUN_MODE" = true ]; then
-        log_info "[DRY-RUN] 保護設定完了記録: $repo_name"
-        return 0
-    fi
-    
-    # thesis-student-registry での管理に移行
-    log_debug "データ管理は thesis-student-registry に統合済み"
-    log_debug "保護状態は thesis-monitor または registry-manager で管理"
-    
-    return 0
-}
 
 #
 # Issueクローズ
