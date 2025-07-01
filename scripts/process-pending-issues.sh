@@ -445,8 +445,12 @@ extract_issue_info() {
         CURRENT_REPO_TYPE="wr"
     elif [[ "$CURRENT_REPO_NAME" == *"-ise-report"* ]]; then
         CURRENT_REPO_TYPE="ise"
-    elif [[ "$CURRENT_REPO_NAME" == *"-latex" ]] || [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ && ! "$CURRENT_REPO_NAME" =~ -(wr|sotsuron|thesis|ise-report) ]]; then
+    elif [[ "$CURRENT_REPO_NAME" == *"-latex" ]]; then
         CURRENT_REPO_TYPE="latex"
+    elif [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ && ! "$CURRENT_REPO_NAME" =~ -(wr|sotsuron|thesis|ise-report) ]]; then
+        # 未知のパターンは latex タイプとして扱う（setup-latex.sh で作成されるため）
+        CURRENT_REPO_TYPE="latex"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 未知パターンをlatexタイプとして判定: $CURRENT_REPO_NAME"
     elif [[ "$CURRENT_REPO_NAME" == *"-sotsuron" ]]; then
         CURRENT_REPO_TYPE="sotsuron"
     elif [[ "$CURRENT_REPO_NAME" == *"-thesis" ]]; then
