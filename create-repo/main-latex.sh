@@ -279,10 +279,9 @@ commit_and_push "Initial customization for ${DOCUMENT_NAME}
 
 # Registry Manager連携（組織ユーザーのみ）
 if [ "$INDIVIDUAL_MODE" = false ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
-    echo "📊 Registry Managerに登録中..."
-    echo -e "${YELLOW}⚠️ Registry Manager登録は手動で実行してください：${NC}"
-    echo -e "   cd thesis-student-registry"
-    echo -e "   ./registry_manager/registry-manager add ${REPO_NAME} ${STUDENT_ID} latex active general"
+    if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "latex" "$ORGANIZATION"; then
+        echo -e "${YELLOW}⚠️ Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。${NC}"
+    fi
 fi
 
 # 完了メッセージ
@@ -298,5 +297,4 @@ echo "1. main.texを編集して文書を作成"
 echo "2. git add, commit, pushで変更を保存"
 echo "3. GitHub Actionsで自動的にPDFが生成されます"
 echo ""
-echo "ブランチ保護: ${ENABLE_PROTECTION}"
 echo "=============================================="

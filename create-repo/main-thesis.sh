@@ -89,7 +89,11 @@ fi
 git checkout main >/dev/null 2>&1
 
 # Issue作成（組織モードのみ）
-[ "$INDIVIDUAL_MODE" = false ] && create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$THESIS_TYPE" "$ORGANIZATION"
+if [ "$INDIVIDUAL_MODE" = false ]; then
+    if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$THESIS_TYPE" "$ORGANIZATION"; then
+        echo -e "${YELLOW}⚠️ Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。${NC}"
+    fi
+fi
 
 # 完了メッセージ
 echo ""

@@ -401,9 +401,10 @@ create_repository_issue() {
         --body "$issue_body" 2>&1 | grep -oE '[0-9]+$'); then
         
         # Issue作成成功時は何も出力しない（簡潔にする）
-        true
+        return 0
     else
         log_warn "Issue作成に失敗しました（続行します）"
+        return 1
     fi
 }
 
@@ -452,8 +453,8 @@ EOF
 setup_latex_environment() {
     log_info "LaTeX環境をセットアップ中..."
     
-    # curlでaldcスクリプトを実行
-    if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)" 2>/dev/null; then
+    # curlでaldcスクリプトを実行（メッセージ抑制）
+    if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)" 2>/dev/null; then
         log_info "LaTeX環境のセットアップ完了"
         return 0
     else
