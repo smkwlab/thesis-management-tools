@@ -157,8 +157,8 @@ parse_options() {
                 ;;
             --type)
                 FILTER_TYPE="$2"
-                if [[ ! "$FILTER_TYPE" =~ ^(wr|sotsuron|thesis)$ ]]; then
-                    log_error "無効なタイプ: $FILTER_TYPE (有効: wr, sotsuron, thesis)"
+                if [[ ! "$FILTER_TYPE" =~ ^(wr|sotsuron|thesis|ise|latex)$ ]]; then
+                    log_error "無効なタイプ: $FILTER_TYPE (有効: wr, sotsuron, thesis, ise, latex)"
                     exit 1
                 fi
                 shift 2
@@ -445,7 +445,7 @@ extract_issue_info() {
         CURRENT_REPO_TYPE="wr"
     elif [[ "$CURRENT_REPO_NAME" == *"-ise-report"* ]]; then
         CURRENT_REPO_TYPE="ise"
-    elif [[ "$CURRENT_REPO_NAME" == *"-latex" ]]; then
+    elif [[ "$CURRENT_REPO_NAME" == *"-latex" ]] || [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ && ! "$CURRENT_REPO_NAME" =~ -(wr|sotsuron|thesis|ise-report) ]]; then
         CURRENT_REPO_TYPE="latex"
     elif [[ "$CURRENT_REPO_NAME" == *"-sotsuron" ]]; then
         CURRENT_REPO_TYPE="sotsuron"
