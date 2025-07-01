@@ -235,27 +235,8 @@ EOF
 
 echo -e "${GREEN}✓ README.mdを生成しました${NC}"
 
-# ブランチ保護設定（オプトイン）
-if [ "$ENABLE_PROTECTION" = "true" ]; then
-    echo "🔒 ブランチ保護を設定中..."
-    DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
-    
-    if gh api --method PUT -H "Accept: application/vnd.github+json" \
-        "/repos/${ORGANIZATION}/${REPO_NAME}/branches/${DEFAULT_BRANCH}/protection" \
-        -f required_status_checks='{"strict":true,"contexts":[]}' \
-        -f enforce_admins=false \
-        -f required_pull_request_reviews='{"dismiss_stale_reviews":true,"require_code_owner_reviews":false}' \
-        -f restrictions=null \
-        -f allow_force_pushes=false \
-        -f allow_deletions=false \
-        -f required_conversation_resolution=true \
-        -f lock_branch=false \
-        -f allow_fork_syncing=true &>/dev/null; then
-        echo -e "${GREEN}✓ ブランチ保護を有効化しました${NC}"
-    else
-        echo -e "${YELLOW}⚠️ ブランチ保護の設定に失敗しました（続行します）${NC}"
-    fi
-else
+# ブランチ保護設定メッセージ（オプトイン）
+if [ "$ENABLE_PROTECTION" != "true" ]; then
     echo -e "${BLUE}📝 汎用テンプレートのため、ブランチ保護は設定しません${NC}"
     echo -e "${BLUE}   mainブランチで直接作業できます${NC}"
 fi
