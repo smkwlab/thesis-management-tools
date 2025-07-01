@@ -401,9 +401,10 @@ create_repository_issue() {
         --body "$issue_body" 2>&1 | grep -oE '[0-9]+$'); then
         
         # Issue作成成功時は何も出力しない（簡潔にする）
-        true
+        return 0
     else
         log_warn "Issue作成に失敗しました（続行します）"
+        return 1
     fi
 }
 
