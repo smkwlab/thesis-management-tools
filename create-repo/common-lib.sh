@@ -386,7 +386,7 @@ commit_and_push() {
 create_repository_issue() {
     local repo_name="$1"
     local student_id="$2"
-    local repo_type="${3:-sotsuron}"
+    local repo_type="${3:-latex}"
     local organization="${4:-$DEFAULT_ORG}"
     
     log_info "Registry Manager登録中..."
@@ -413,7 +413,7 @@ generate_issue_body() {
     local organization="$1"
     local repo_name="$2"
     local student_id="$3"
-    local repo_type="${4:-sotsuron}"  # デフォルトは後方互換性のため sotsuron を維持
+    local repo_type="${4:-latex}"  # デフォルトは最も汎用的な latex タイプ
     
     cat << EOF
 ## リポジトリ登録依頼
