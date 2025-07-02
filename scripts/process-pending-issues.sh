@@ -1680,7 +1680,7 @@ EOF
     
     # JSONを更新（既存エントリを明示的に削除してから新規追加）
     local updated_json
-    if ! updated_json=$(echo "$current_json" | jq --arg repo_name "$repo_name" --argjson new_entry "$new_entry" 'del(.[$repo_name]) | . + {($repo_name): $new_entry}'); then
+    if ! updated_json=$(echo "$current_json" | jq --indent 2 --arg repo_name "$repo_name" --argjson new_entry "$new_entry" 'del(.[$repo_name]) | . + {($repo_name): $new_entry}'); then
         log_error "JSON更新処理に失敗: $repo_name"
         return 1
     fi
