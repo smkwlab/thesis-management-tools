@@ -46,7 +46,7 @@ confirm_creation "$REPO_PATH" || exit 0
 # リポジトリ作成（共通関数使用）
 echo ""
 echo "📁 リポジトリを作成中..."
-create_repository "$REPO_PATH" "$TEMPLATE_REPOSITORY" "public" "true" || exit 1
+create_repository "$REPO_PATH" "$TEMPLATE_REPOSITORY" "private" "true" || exit 1
 
 cd "$REPO_NAME"
 
