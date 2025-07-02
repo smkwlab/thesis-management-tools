@@ -28,18 +28,22 @@ STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
 determine_thesis_type() {
     local student_id="$1"
     
-    if echo "$student_id" | grep -qE '^k[0-9]{2}rs[0-9]+$'; then
-        echo "sotsuron"
-    elif echo "$student_id" | grep -qE '^k[0-9]{2}(jk|gjk)[0-9]+$'; then
+    # kxxの次の文字がgの場合は修士論文、それ以外は卒業論文
+    if echo "$student_id" | grep -qE '^k[0-9]{2}g'; then
         echo "shuuron"
     else
-        echo -e "${RED}エラー: 学籍番号の形式を認識できません: $student_id${NC}" >&2
-        return 1
+        echo "sotsuron"
     fi
 }
 
 THESIS_TYPE=$(determine_thesis_type "$STUDENT_ID") || exit 1
-REPO_NAME="${STUDENT_ID}-${THESIS_TYPE}"
+
+# リポジトリ名の決定
+if [ "$THESIS_TYPE" = "shuuron" ]; then
+    REPO_NAME="${STUDENT_ID}-master"
+else
+    REPO_NAME="${STUDENT_ID}-sotsuron"
+fi
 
 echo -e "${GREEN}✓ GitHubユーザー: $CURRENT_USER${NC}"
 [ "$THESIS_TYPE" = "sotsuron" ] && echo -e "${GREEN}✓ 卒業論文リポジトリとして設定します${NC}" || echo -e "${GREEN}✓ 修士論文リポジトリとして設定します${NC}"
