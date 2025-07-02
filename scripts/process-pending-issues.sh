@@ -1446,6 +1446,12 @@ process_single_issue() {
         sotsuron|thesis)
             process_thesis_issue
             ;;
+        ise)
+            process_ise_issue
+            ;;
+        latex)
+            process_latex_issue
+            ;;
         *)
             log_error "不明なリポジトリタイプ: $CURRENT_REPO_TYPE"
             return 1
@@ -1530,6 +1536,84 @@ https://github.com/smkwlab/$CURRENT_REPO_NAME/blob/main/WRITING-GUIDE.md"; then
     fi
     
     log_success "論文リポジトリ処理完了: $CURRENT_REPO_NAME"
+    return 0
+}
+
+#
+# ISEリポジトリ処理
+#
+process_ise_issue() {
+    log_info "ISEリポジトリ処理: $CURRENT_REPO_NAME"
+    
+    # 1. thesis-student-registry への登録
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "ise" "active"; then
+        log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
+        return 1
+    fi
+    
+    # 2. ブランチ保護設定
+    if ! ./setup-branch-protection.sh "$CURRENT_STUDENT_ID"; then
+        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME"
+        return 1
+    fi
+    
+    # 3. Issue クローズ
+    if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ ISEリポジトリの登録とブランチ保護設定が完了しました
+
+## 処理内容
+- **リポジトリ登録**: [smkwlab/$CURRENT_REPO_NAME](https://github.com/smkwlab/$CURRENT_REPO_NAME) ✓
+- **ブランチ保護設定**: 完了 ✓
+- **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+## ブランチ保護設定
+- **main ブランチ**: 1つ以上の承認レビューが必要
+- **review-branch**: 1つ以上の承認レビューが必要
+- **新しいコミット時**: 古いレビューを無効化
+- **フォースプッシュ**: 禁止
+- **ブランチ削除**: 禁止
+
+## 確認
+リポジトリ設定: https://github.com/smkwlab/$CURRENT_REPO_NAME/settings/branches
+
+Pull Requestベースの学習を開始してください。"; then
+        log_error "Issue クローズに失敗: #$CURRENT_ISSUE_NUMBER"
+        return 1
+    fi
+    
+    log_success "ISEリポジトリ処理完了: $CURRENT_REPO_NAME"
+    return 0
+}
+
+#
+# LaTeXリポジトリ処理
+#
+process_latex_issue() {
+    log_info "LaTeXリポジトリ処理: $CURRENT_REPO_NAME"
+    
+    # 1. thesis-student-registry への登録のみ（ブランチ保護なし）
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "latex" "completed"; then
+        log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
+        return 1
+    fi
+    
+    # 2. Issue クローズ
+    if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ LaTeXリポジトリの登録が完了しました
+
+## 処理内容
+- **リポジトリ登録**: [smkwlab/$CURRENT_REPO_NAME](https://github.com/smkwlab/$CURRENT_REPO_NAME) ✓
+- **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+## 汎用LaTeXリポジトリについて
+- mainブランチで直接作業が可能です
+- Pull Requestベースのレビューは任意です
+- 自動PDF生成機能が利用可能です
+
+このIssueは自動的にクローズされました。"; then
+        log_error "Issue クローズに失敗: #$CURRENT_ISSUE_NUMBER"
+        return 1
+    fi
+    
+    log_success "LaTeXリポジトリ処理完了: $CURRENT_REPO_NAME"
     return 0
 }
 
