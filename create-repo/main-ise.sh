@@ -82,8 +82,7 @@ echo "   学籍番号: $STUDENT_ID"
 echo "   リポジトリ名: $REPO_NAME"
 echo "   レポート番号: $ISE_REPORT_NUM"
 
-ISE_DESCRIPTION="Information Science Exercise Report #$ISE_REPORT_NUM for $STUDENT_ID - Pull Request Learning"
-create_repository "${ORGANIZATION}/${REPO_NAME}" "$TEMPLATE_REPOSITORY" "private" "true" "$ISE_DESCRIPTION" || exit 1
+create_repository "${ORGANIZATION}/${REPO_NAME}" "$TEMPLATE_REPOSITORY" "private" "true" || exit 1
 
 cd "$REPO_NAME"
 
