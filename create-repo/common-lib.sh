@@ -322,18 +322,22 @@ create_repository() {
     local clone_flag="${4:-true}"
     local description="${5:-}"
     
-    local create_args="$repo_path --template=$template_repo"
+    local create_args=("$repo_path" "--template=$template_repo")
     
     # 可視性設定
-    create_args="$create_args $([ "$visibility" = "public" ] && echo "--public" || echo "--private")"
+    if [ "$visibility" = "public" ]; then
+        create_args+=("--public")
+    else
+        create_args+=("--private")
+    fi
     
     # Description設定
-    [ -n "$description" ] && create_args="$create_args --description=\"$description\""
+    [ -n "$description" ] && create_args+=("--description" "$description")
     
     # クローン設定
-    [ "$clone_flag" = "true" ] && create_args="$create_args --clone"
+    [ "$clone_flag" = "true" ] && create_args+=("--clone")
     
-    if gh repo create $create_args; then
+    if gh repo create "${create_args[@]}"; then
         log_info "リポジトリを作成しました: https://github.com/$repo_path"
         return 0
     else
