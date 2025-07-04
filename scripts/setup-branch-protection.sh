@@ -3,7 +3,9 @@
 # Individual Branch Protection Setup Script
 #
 # 個別学生のブランチ保護設定
-# Usage: ./setup-branch-protection.sh <student_id>
+# Usage: ./setup-branch-protection.sh <student_id> [repository_name]
+#   student_id: 学生ID (k##rs###, k##gjk##など)
+#   repository_name: リポジトリ名 (省略時は学生IDから自動判定)
 #
 
 set -e
@@ -199,6 +201,7 @@ close_related_issue() {
 # ブランチ保護設定
 setup_protection() {
     local student_id="$1"
+    local repo_name="$2"
     
     # 学生ID検証
     if ! [[ "$student_id" =~ ^k[0-9]{2}(rs[0-9]{3}|jk[0-9]{3}|gjk[0-9]{2})$ ]]; then
@@ -207,16 +210,18 @@ setup_protection() {
         return 1
     fi
     
-    # 論文タイプの判定
-    if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
-        thesis_type="sotsuron"
-    elif [[ "$student_id" =~ ^k[0-9]{2}jk[0-9]{3}$ ]]; then
-        thesis_type="sotsuron"
-    elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
-        thesis_type="thesis"
+    # リポジトリ名が指定されていない場合は従来の自動判定を使用
+    if [ -z "$repo_name" ]; then
+        # 論文タイプの判定
+        if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
+            thesis_type="sotsuron"
+        elif [[ "$student_id" =~ ^k[0-9]{2}jk[0-9]{3}$ ]]; then
+            thesis_type="sotsuron"
+        elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
+            thesis_type="thesis"
+        fi
+        repo_name="${student_id}-${thesis_type}"
     fi
-    
-    local repo_name="${student_id}-${thesis_type}"
     
     log "Setting up branch protection for: smkwlab/$repo_name"
     
@@ -335,14 +340,16 @@ show_help() {
     cat <<EOF
 Individual Branch Protection Setup Script
 
-Usage: $0 <student_id>
+Usage: $0 <student_id> [repository_name]
 
 Arguments:
-  student_id    Student ID (k##rs### for undergraduate, k##gjk## for graduate)
+  student_id       Student ID (k##rs### for undergraduate, k##gjk## for graduate)
+  repository_name  Repository name (optional, auto-detected from student_id if not provided)
 
 Examples:
-  $0 k21rs001   # Setup protection for k21rs001-sotsuron
-  $0 k21gjk01   # Setup protection for k21gjk01-thesis
+  $0 k21rs001                    # Setup protection for k21rs001-sotsuron
+  $0 k21gjk01                    # Setup protection for k21gjk01-thesis
+  $0 k02jk059 k02jk059-ise-report1  # Setup protection for specific repository
 
 Protection Rules Applied:
   - Requires 1 approving review before merge
@@ -360,6 +367,7 @@ EOF
 # メイン処理
 main() {
     local student_id="$1"
+    local repo_name="$2"
     
     if [ -z "$student_id" ]; then
         error "Student ID is required"
@@ -380,7 +388,7 @@ main() {
         exit 1
     fi
     
-    setup_protection "$student_id"
+    setup_protection "$student_id" "$repo_name"
 }
 
 # コマンドライン処理

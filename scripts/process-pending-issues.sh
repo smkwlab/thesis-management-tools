@@ -1242,7 +1242,7 @@ process_thesis_with_feedback() {
     
     # 1. ブランチ保護設定
     echo "  ブランチ保護設定を適用中..."
-    if setup_branch_protection_for_issue "$CURRENT_REPO_NAME"; then
+    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
         echo "  ✅ ブランチ保護設定完了"
     else
         echo "  ❌ ブランチ保護設定失敗"
@@ -1301,7 +1301,7 @@ process_ise_with_feedback() {
     
     # 1. ブランチ保護設定（PR学習目的）
     echo "  ブランチ保護設定を適用中..."
-    if setup_branch_protection_for_issue "$CURRENT_REPO_NAME"; then
+    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
         echo "  ✅ ブランチ保護設定完了"
     else
         echo "  ❌ ブランチ保護設定失敗"
@@ -1499,7 +1499,7 @@ process_thesis_issue() {
     log_info "論文リポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. ブランチ保護設定
-    if ! setup_branch_protection_for_issue "$CURRENT_REPO_NAME"; then
+    if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
         log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1552,7 +1552,7 @@ process_ise_issue() {
     fi
     
     # 2. ブランチ保護設定
-    if ! ./setup-branch-protection.sh "$CURRENT_STUDENT_ID"; then
+    if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
         log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1742,91 +1742,6 @@ Processed via automated issue processor."
 # リポジトリ登録（thesis-student-registry統合後）
 #
 
-#
-# ブランチ保護設定（Issue処理用）
-#
-setup_branch_protection_for_issue() {
-    local repo_name="$1"
-    
-    log_debug "ブランチ保護設定開始: $repo_name"
-    
-    if [ "$DRY_RUN_MODE" = true ]; then
-        log_info "[DRY-RUN] ブランチ保護設定: $repo_name"
-        return 0
-    fi
-    
-    # ブランチ保護設定（将来的に外部ファイル化を検討）
-    local protection_config
-    protection_config=$(cat <<'EOF'
-{
-    "required_status_checks": {
-        "strict": false,
-        "contexts": []
-    },
-    "required_pull_request_reviews": {
-        "required_approving_review_count": 1,
-        "dismiss_stale_reviews": true,
-        "require_code_owner_reviews": false,
-        "dismissal_restrictions": {
-            "users": [],
-            "teams": []
-        }
-    },
-    "enforce_admins": false,
-    "restrictions": null,
-    "allow_force_pushes": false,
-    "allow_deletions": false
-}
-EOF
-)
-    
-    # ブランチ存在確認とリスト作成
-    local branches_to_protect=("main")
-    
-    if ! gh api "repos/smkwlab/$repo_name/branches/main" >/dev/null 2>&1; then
-        log_error "main ブランチが見つかりません: smkwlab/$repo_name"
-        return 1
-    fi
-    
-    # review-branchの存在確認
-    if gh api "repos/smkwlab/$repo_name/branches/review-branch" >/dev/null 2>&1; then
-        branches_to_protect+=("review-branch")
-        log_debug "review-branchが見つかりました: $repo_name"
-    fi
-    
-    # 各ブランチに保護設定を適用
-    local success_count=0
-    local total_branches=${#branches_to_protect[@]}
-    
-    for branch in "${branches_to_protect[@]}"; do
-        log_debug "ブランチ保護設定適用中: $branch"
-        
-        # 既存の保護設定確認（冪等性保証）
-        if gh api "repos/smkwlab/$repo_name/branches/$branch/protection" >/dev/null 2>&1; then
-            log_debug "ブランチ '$branch' は既に保護設定済み: $repo_name"
-            success_count=$((success_count + 1))
-            continue
-        fi
-        
-        # 保護設定適用
-        if echo "$protection_config" | gh api "repos/smkwlab/$repo_name/branches/$branch/protection" \
-            --method PUT \
-            --input - >/dev/null 2>&1; then
-            log_debug "ブランチ保護設定成功: $branch ($repo_name)"
-            success_count=$((success_count + 1))
-        else
-            log_error "ブランチ保護設定失敗: $branch ($repo_name)"
-        fi
-    done
-    
-    if [ "$success_count" -eq "$total_branches" ]; then
-        log_debug "すべてのブランチ保護設定完了: $repo_name"
-        return 0
-    else
-        log_error "一部のブランチ保護設定に失敗: $repo_name ($success_count/$total_branches)"
-        return 1
-    fi
-}
 
 #
 # 保護設定完了記録（thesis-student-registry統合後）
