@@ -26,24 +26,54 @@ STUDENT_ID=$(read_student_id "$1")
 STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
 echo -e "${GREEN}✓ 学籍番号: $STUDENT_ID${NC}"
 
-# ISE レポート番号の決定とリポジトリ存在チェック
+# ISE レポート番号の決定とリポジトリ存在チェック（日時ベース）
 determine_ise_report_number() {
     local student_id="$1"
-    local report_num=1
+    local report_num
     
-    # 1回目のリポジトリが存在するかチェック
-    if gh repo view "${ORGANIZATION}/${student_id}-ise-report1" >/dev/null 2>&1; then
-        report_num=2
-        
-        # 2回目のリポジトリが存在するかチェック
-        if gh repo view "${ORGANIZATION}/${student_id}-ise-report2" >/dev/null 2>&1; then
-            echo -e "${RED}❌ 情報科学演習レポートは最大2つまでです${NC}" >&2
-            echo "   前期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report1" >&2
-            echo "   後期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report2" >&2
-            echo "" >&2
-            echo "削除が必要な場合は、担当教員にご相談ください。" >&2
+    # 環境変数による手動制御をチェック
+    if [ -n "$ISE_REPORT_NUM" ] && [ "$ISE_REPORT_NUM" != "auto" ]; then
+        if [ "$ISE_REPORT_NUM" = "1" ] || [ "$ISE_REPORT_NUM" = "2" ]; then
+            echo -e "${BLUE}🔧 手動指定: ISE_REPORT_NUM=$ISE_REPORT_NUM${NC}" >&2
+            echo "$ISE_REPORT_NUM"
+            return
+        else
+            echo -e "${RED}❌ ISE_REPORT_NUM は 1, 2, または auto を指定してください (現在: $ISE_REPORT_NUM)${NC}" >&2
             exit 1
         fi
+    fi
+    
+    # 現在の月から前期/後期を判定
+    local current_month=$(date +%m)
+    local preferred_num fallback_num
+    
+    if (( current_month >= 4 && current_month <= 9 )); then
+        # 4月〜9月: 前期 → ise-report1を優先
+        preferred_num=1
+        fallback_num=2
+        echo -e "${BLUE}📅 前期期間 (${current_month}月): ise-report1 を優先${NC}" >&2
+    else
+        # 10月〜3月: 後期 → ise-report2を優先
+        preferred_num=2
+        fallback_num=1
+        echo -e "${BLUE}📅 後期期間 (${current_month}月): ise-report2 を優先${NC}" >&2
+    fi
+    
+    # 優先番号が使用可能かチェック
+    if ! gh repo view "${ORGANIZATION}/${student_id}-ise-report${preferred_num}" >/dev/null 2>&1; then
+        report_num=$preferred_num
+        echo -e "${GREEN}✓ ${student_id}-ise-report${preferred_num} は利用可能${NC}" >&2
+    elif ! gh repo view "${ORGANIZATION}/${student_id}-ise-report${fallback_num}" >/dev/null 2>&1; then
+        report_num=$fallback_num
+        echo -e "${YELLOW}⚠️ ${student_id}-ise-report${preferred_num} は既存、${student_id}-ise-report${fallback_num} を使用${NC}" >&2
+    else
+        echo -e "${RED}❌ 情報科学演習レポートは最大2つまでです${NC}" >&2
+        echo "   前期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report1" >&2
+        echo "   後期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report2" >&2
+        echo "" >&2
+        echo "削除が必要な場合は、担当教員にご相談ください。" >&2
+        echo "または環境変数で手動指定: ISE_REPORT_NUM=1 または ISE_REPORT_NUM=2" >&2
+        exit 1
     fi
     
     echo "$report_num"

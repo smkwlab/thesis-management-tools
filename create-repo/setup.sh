@@ -326,6 +326,9 @@ case "$DETECTED_DOC_TYPE" in
         if [ -n "$ASSIGNMENT_TYPE" ]; then
             DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ASSIGNMENT_TYPE=$ASSIGNMENT_TYPE"
         fi
+        if [ -n "$ISE_REPORT_NUM" ]; then
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ISE_REPORT_NUM=$ISE_REPORT_NUM"
+        fi
         ;;
 esac
 
