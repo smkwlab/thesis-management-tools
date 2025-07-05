@@ -38,16 +38,20 @@ determine_ise_report_number() {
             echo "$ISE_REPORT_NUM"
             return
         else
-            echo -e "${RED}❌ ISE_REPORT_NUM は 1, 2, または auto を指定してください (現在: $ISE_REPORT_NUM)${NC}" >&2
+            echo -e "${RED}❌ ISE_REPORT_NUM は 1 または 2 を指定してください (現在: $ISE_REPORT_NUM)${NC}" >&2
             exit 1
         fi
     fi
+    
+    # 学期定数の定義
+    local EARLY_TERM_START_MONTH=4
+    local EARLY_TERM_END_MONTH=9
     
     # 現在の月から前期/後期を判定
     local current_month=$(date +%m)
     local preferred_num fallback_num
     
-    if (( current_month >= 4 && current_month <= 9 )); then
+    if (( current_month >= EARLY_TERM_START_MONTH && current_month <= EARLY_TERM_END_MONTH )); then
         # 4月〜9月: 前期 → ise-report1を優先
         preferred_num=1
         fallback_num=2
