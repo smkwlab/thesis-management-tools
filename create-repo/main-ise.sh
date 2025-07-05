@@ -35,7 +35,11 @@ determine_ise_report_number() {
     if [ -n "$ISE_REPORT_NUM" ] && [ "$ISE_REPORT_NUM" != "auto" ]; then
         if [ "$ISE_REPORT_NUM" = "1" ] || [ "$ISE_REPORT_NUM" = "2" ]; then
             # 手動指定の場合は指定されたリポジトリのみチェック（1回のAPI呼び出し）
-            if gh repo view "${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM}" >/dev/null 2>&1; then
+            # GitHubのリダイレクトに対応するため、実際のリポジトリ名も確認
+            local target_repo="${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM}"
+            local actual_name=$(gh api "repos/${target_repo}" --jq .name 2>/dev/null || echo "")
+            
+            if [ -n "$actual_name" ] && [ "$actual_name" = "${student_id}-ise-report${ISE_REPORT_NUM}" ]; then
                 echo -e "${RED}❌ リポジトリ ${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM} は既に存在します${NC}" >&2
                 echo "   https://github.com/${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM}" >&2
                 exit 1
@@ -70,12 +74,21 @@ determine_ise_report_number() {
     fi
     
     # 優先リポジトリを最初にチェック（最適化: 利用可能なら1回で完了）
-    if ! gh repo view "${ORGANIZATION}/${student_id}-ise-report${preferred_num}" >/dev/null 2>&1; then
+    # GitHubのリダイレクトに対応するため、実際のリポジトリ名も確認
+    local preferred_repo="${ORGANIZATION}/${student_id}-ise-report${preferred_num}"
+    local actual_name=$(gh api "repos/${preferred_repo}" --jq .name 2>/dev/null || echo "")
+    
+    if [ -z "$actual_name" ] || [ "$actual_name" != "${student_id}-ise-report${preferred_num}" ]; then
+        # リポジトリが存在しないか、リネームされている
         report_num=$preferred_num
         echo -e "${GREEN}✓ ${student_id}-ise-report${preferred_num} は利用可能${NC}" >&2
     else
         # 優先リポジトリが存在する場合のみフォールバックをチェック
-        if ! gh repo view "${ORGANIZATION}/${student_id}-ise-report${fallback_num}" >/dev/null 2>&1; then
+        local fallback_repo="${ORGANIZATION}/${student_id}-ise-report${fallback_num}"
+        local fallback_actual=$(gh api "repos/${fallback_repo}" --jq .name 2>/dev/null || echo "")
+        
+        if [ -z "$fallback_actual" ] || [ "$fallback_actual" != "${student_id}-ise-report${fallback_num}" ]; then
+            # フォールバックリポジトリが存在しないか、リネームされている
             report_num=$fallback_num
             echo -e "${YELLOW}⚠️ ${student_id}-ise-report${preferred_num} は既存、${student_id}-ise-report${fallback_num} を使用${NC}" >&2
         else
