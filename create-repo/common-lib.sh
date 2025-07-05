@@ -231,6 +231,12 @@ read_student_id() {
     echo "  例: $examples" >&2
     echo "" >&2
     read -p "学籍番号: " student_id
+    
+    # 無入力の場合、GitHubユーザー名を自動使用（サイレント）
+    if [ -z "$student_id" ]; then
+        student_id=$(gh api user --jq .login 2>/dev/null || echo "")
+    fi
+    
     echo "$student_id"
 }
 
