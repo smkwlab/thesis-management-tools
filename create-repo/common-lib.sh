@@ -231,6 +231,26 @@ read_student_id() {
     echo "  例: $examples" >&2
     echo "" >&2
     read -p "学籍番号: " student_id
+    
+    # 無入力の場合、GitHubユーザー名を自動使用
+    if [ -z "$student_id" ]; then
+        # GitHub CLIの存在確認とユーザー名取得
+        if command -v gh >/dev/null 2>&1; then
+            local github_username=$(gh api user --jq .login 2>/dev/null || echo "")
+            if [ -n "$github_username" ]; then
+                # GitHubユーザー名を使用することを通知（開発者向け機能として控えめに）
+                echo -e "${BLUE}→ GitHub ユーザー名を使用: $github_username${NC}" >&2
+                student_id="$github_username"
+            else
+                # GitHub CLIは存在するが認証されていない場合
+                log_debug "GitHub ユーザー名の取得に失敗しました"
+            fi
+        else
+            # GitHub CLIがインストールされていない場合
+            log_debug "GitHub CLIがインストールされていません"
+        fi
+    fi
+    
     echo "$student_id"
 }
 
