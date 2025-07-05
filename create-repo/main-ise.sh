@@ -63,21 +63,58 @@ determine_ise_report_number() {
         echo -e "${BLUE}📅 後期期間 (${current_month}月): ise-report2 を優先${NC}" >&2
     fi
     
-    # 優先番号が使用可能かチェック
-    if ! gh repo view "${ORGANIZATION}/${student_id}-ise-report${preferred_num}" >/dev/null 2>&1; then
-        report_num=$preferred_num
-        echo -e "${GREEN}✓ ${student_id}-ise-report${preferred_num} は利用可能${NC}" >&2
-    elif ! gh repo view "${ORGANIZATION}/${student_id}-ise-report${fallback_num}" >/dev/null 2>&1; then
-        report_num=$fallback_num
-        echo -e "${YELLOW}⚠️ ${student_id}-ise-report${preferred_num} は既存、${student_id}-ise-report${fallback_num} を使用${NC}" >&2
+    # 両方のリポジトリ存在状態を一度に確認してキャッシュ
+    local repo1_exists=false
+    local repo2_exists=false
+    
+    if gh repo view "${ORGANIZATION}/${student_id}-ise-report1" >/dev/null 2>&1; then
+        repo1_exists=true
+    fi
+    
+    if gh repo view "${ORGANIZATION}/${student_id}-ise-report2" >/dev/null 2>&1; then
+        repo2_exists=true
+    fi
+    
+    # キャッシュした結果を使って判定
+    if [ "$preferred_num" = "1" ]; then
+        if [ "$repo1_exists" = false ]; then
+            report_num=1
+            echo -e "${GREEN}✓ ${student_id}-ise-report1 は利用可能${NC}" >&2
+        elif [ "$repo2_exists" = false ]; then
+            report_num=2
+            echo -e "${YELLOW}⚠️ ${student_id}-ise-report1 は既存、${student_id}-ise-report2 を使用${NC}" >&2
+        else
+            echo -e "${RED}❌ 情報科学演習レポートは最大2つまでです${NC}" >&2
+            echo "   前期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report1" >&2
+            echo "   後期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report2" >&2
+            echo "" >&2
+            echo "削除が必要な場合は、担当教員にご相談ください。" >&2
+            echo "または環境変数で手動指定: ISE_REPORT_NUM=1 または ISE_REPORT_NUM=2" >&2
+            exit 1
+        fi
+    else # preferred_num = 2
+        if [ "$repo2_exists" = false ]; then
+            report_num=2
+            echo -e "${GREEN}✓ ${student_id}-ise-report2 は利用可能${NC}" >&2
+        elif [ "$repo1_exists" = false ]; then
+            report_num=1
+            echo -e "${YELLOW}⚠️ ${student_id}-ise-report2 は既存、${student_id}-ise-report1 を使用${NC}" >&2
+        else
+            echo -e "${RED}❌ 情報科学演習レポートは最大2つまでです${NC}" >&2
+            echo "   前期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report1" >&2
+            echo "   後期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report2" >&2
+            echo "" >&2
+            echo "削除が必要な場合は、担当教員にご相談ください。" >&2
+            echo "または環境変数で手動指定: ISE_REPORT_NUM=1 または ISE_REPORT_NUM=2" >&2
+            exit 1
+        fi
+    fi
+    
+    # 選択されたリポジトリの存在状態をグローバル変数にキャッシュ（最終確認で使用）
+    if [ "$report_num" = "1" ]; then
+        REPO_EXISTS_CACHE=$repo1_exists
     else
-        echo -e "${RED}❌ 情報科学演習レポートは最大2つまでです${NC}" >&2
-        echo "   前期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report1" >&2
-        echo "   後期用: https://github.com/${ORGANIZATION}/${student_id}-ise-report2" >&2
-        echo "" >&2
-        echo "削除が必要な場合は、担当教員にご相談ください。" >&2
-        echo "または環境変数で手動指定: ISE_REPORT_NUM=1 または ISE_REPORT_NUM=2" >&2
-        exit 1
+        REPO_EXISTS_CACHE=$repo2_exists
     fi
     
     echo "$report_num"
@@ -94,8 +131,8 @@ else
     echo "📝 作成対象: ${REPO_NAME} (2回目のISEレポート)"
 fi
 
-# リポジトリが既に存在しないことを最終確認
-if gh repo view "${ORGANIZATION}/${REPO_NAME}" >/dev/null 2>&1; then
+# リポジトリが既に存在しないことを最終確認（キャッシュ結果を使用）
+if [ "$REPO_EXISTS_CACHE" = true ]; then
     echo -e "${RED}❌ リポジトリ ${ORGANIZATION}/${REPO_NAME} は既に存在します${NC}"
     echo "   https://github.com/${ORGANIZATION}/${REPO_NAME}"
     exit 1
