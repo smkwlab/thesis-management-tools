@@ -35,9 +35,27 @@ determine_ise_report_number() {
     if [ -n "$ISE_REPORT_NUM" ] && [ "$ISE_REPORT_NUM" != "auto" ]; then
         if [ "$ISE_REPORT_NUM" = "1" ] || [ "$ISE_REPORT_NUM" = "2" ]; then
             # 手動指定の場合は指定されたリポジトリのみチェック（1回のAPI呼び出し）
-            if gh repo view "${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM}" >/dev/null 2>&1; then
-                echo -e "${RED}❌ リポジトリ ${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM} は既に存在します${NC}" >&2
-                echo "   https://github.com/${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM}" >&2
+            # GitHubのリダイレクトに対応するため、実際のリポジトリ名も確認
+            local target_repo="${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM}"
+            local api_result=$(gh api "repos/${target_repo}" --jq .name 2>&1)
+            local api_status=$?
+            
+            if [ $api_status -eq 0 ]; then
+                # API呼び出し成功
+                if [ "$api_result" = "${student_id}-ise-report${ISE_REPORT_NUM}" ]; then
+                    echo -e "${RED}❌ リポジトリ ${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM} は既に存在します${NC}" >&2
+                    echo "   https://github.com/${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM}" >&2
+                    exit 1
+                fi
+                # リネームされている場合は作成可能
+            elif echo "$api_result" | grep -q "HTTP 404" 2>/dev/null; then
+                # リポジトリが存在しない（正常）
+                :
+            else
+                # その他のAPIエラー
+                echo -e "${YELLOW}⚠️ GitHub APIへのアクセスに問題が発生しました${NC}" >&2
+                echo "   詳細: $api_result" >&2
+                echo "   しばらく待ってから再実行するか、ネットワーク接続を確認してください" >&2
                 exit 1
             fi
             echo -e "${BLUE}🔧 手動指定: ISE_REPORT_NUM=$ISE_REPORT_NUM${NC}" >&2
@@ -70,12 +88,47 @@ determine_ise_report_number() {
     fi
     
     # 優先リポジトリを最初にチェック（最適化: 利用可能なら1回で完了）
-    if ! gh repo view "${ORGANIZATION}/${student_id}-ise-report${preferred_num}" >/dev/null 2>&1; then
+    # GitHubのリダイレクトに対応するため、実際のリポジトリ名も確認
+    local preferred_repo="${ORGANIZATION}/${student_id}-ise-report${preferred_num}"
+    local api_result=$(gh api "repos/${preferred_repo}" --jq .name 2>&1)
+    local api_status=$?
+    
+    if [ $api_status -ne 0 ]; then
+        if echo "$api_result" | grep -q "HTTP 404" 2>/dev/null; then
+            # リポジトリが存在しない（正常）
+            report_num=$preferred_num
+            echo -e "${GREEN}✓ ${student_id}-ise-report${preferred_num} は利用可能${NC}" >&2
+        else
+            # APIエラー
+            echo -e "${YELLOW}⚠️ GitHub APIへのアクセスに問題が発生しました${NC}" >&2
+            echo "   詳細: $api_result" >&2
+            echo "   しばらく待ってから再実行するか、ネットワーク接続を確認してください" >&2
+            exit 1
+        fi
+    elif [ "$api_result" != "${student_id}-ise-report${preferred_num}" ]; then
+        # リネームされている
         report_num=$preferred_num
         echo -e "${GREEN}✓ ${student_id}-ise-report${preferred_num} は利用可能${NC}" >&2
     else
         # 優先リポジトリが存在する場合のみフォールバックをチェック
-        if ! gh repo view "${ORGANIZATION}/${student_id}-ise-report${fallback_num}" >/dev/null 2>&1; then
+        local fallback_repo="${ORGANIZATION}/${student_id}-ise-report${fallback_num}"
+        local fallback_result=$(gh api "repos/${fallback_repo}" --jq .name 2>&1)
+        local fallback_status=$?
+        
+        if [ $fallback_status -ne 0 ]; then
+            if echo "$fallback_result" | grep -q "HTTP 404" 2>/dev/null; then
+                # フォールバックリポジトリが存在しない
+                report_num=$fallback_num
+                echo -e "${YELLOW}⚠️ ${student_id}-ise-report${preferred_num} は既存、${student_id}-ise-report${fallback_num} を使用${NC}" >&2
+            else
+                # APIエラー
+                echo -e "${YELLOW}⚠️ GitHub APIへのアクセスに問題が発生しました${NC}" >&2
+                echo "   詳細: $fallback_result" >&2
+                echo "   しばらく待ってから再実行するか、ネットワーク接続を確認してください" >&2
+                exit 1
+            fi
+        elif [ "$fallback_result" != "${student_id}-ise-report${fallback_num}" ]; then
+            # フォールバックリポジトリがリネームされている
             report_num=$fallback_num
             echo -e "${YELLOW}⚠️ ${student_id}-ise-report${preferred_num} は既存、${student_id}-ise-report${fallback_num} を使用${NC}" >&2
         else
