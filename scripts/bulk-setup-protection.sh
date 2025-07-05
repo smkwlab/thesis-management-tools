@@ -55,10 +55,15 @@ setup_branch_protection_for_repo() {
     local api_response
     local protection_json='{
         "required_status_checks": null,
-        "enforce_admins": false,
+        "enforce_admins": true,
         "required_pull_request_reviews": {
             "required_approving_review_count": 1,
-            "dismiss_stale_reviews": true
+            "dismiss_stale_reviews": true,
+            "bypass_pull_request_allowances": {
+                "users": [],
+                "teams": [],
+                "apps": ["github-actions"]
+            }
         },
         "restrictions": null,
         "allow_force_pushes": false,

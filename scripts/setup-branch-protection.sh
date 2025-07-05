@@ -265,9 +265,14 @@ setup_protection() {
             "dismissal_restrictions": {
                 "users": [],
                 "teams": []
+            },
+            "bypass_pull_request_allowances": {
+                "users": [],
+                "teams": [],
+                "apps": ["github-actions"]
             }
         },
-        "enforce_admins": false,
+        "enforce_admins": true,
         "restrictions": null,
         "allow_force_pushes": false,
         "allow_deletions": false
