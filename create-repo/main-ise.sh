@@ -110,13 +110,6 @@ determine_ise_report_number() {
         fi
     fi
     
-    # 選択されたリポジトリの存在状態をグローバル変数にキャッシュ（最終確認で使用）
-    if [ "$report_num" = "1" ]; then
-        REPO_EXISTS_CACHE=$repo1_exists
-    else
-        REPO_EXISTS_CACHE=$repo2_exists
-    fi
-    
     echo "$report_num"
 }
 
@@ -129,13 +122,6 @@ if [ "$ISE_REPORT_NUM" = "1" ]; then
 else
     echo "✅ ${STUDENT_ID}-ise-report1 が存在"
     echo "📝 作成対象: ${REPO_NAME} (2回目のISEレポート)"
-fi
-
-# リポジトリが既に存在しないことを最終確認（キャッシュ結果を使用）
-if [ "$REPO_EXISTS_CACHE" = true ]; then
-    echo -e "${RED}❌ リポジトリ ${ORGANIZATION}/${REPO_NAME} は既に存在します${NC}"
-    echo "   https://github.com/${ORGANIZATION}/${REPO_NAME}"
-    exit 1
 fi
 
 # 組織アクセス確認（共通関数使用）
