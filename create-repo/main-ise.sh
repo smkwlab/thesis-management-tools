@@ -181,17 +181,8 @@ setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
 
 echo "🌿 Pull Request学習用ブランチ構成を作成中..."
 
-# STEP 1: initial ブランチを作成してセットアップ
-echo "📝 initial ブランチを作成中..."
-
-# テンプレートの index.html を一時退避
-cp index.html index.html.template >/dev/null 2>&1
-
-# index.html を空にする（PR で全行コメント可能にするため）
-> index.html
-
-# main から initial ブランチを作成
-git checkout -b initial >/dev/null 2>&1
+# STEP 1: main ブランチでファイルをセットアップ
+echo "📝 main ブランチでセットアップファイルを作成中..."
 
 # 1-1: README.md をカスタマイズ
 REPORT_TITLE="情報科学演習 レポート #${ISE_REPORT_NUM}"
@@ -264,30 +255,46 @@ cat > REVIEW_BRANCH.md << 'EOF'
 詳細は [README.md](README.md) をご参照ください。
 EOF
 
-# 1-3: initial ブランチを完成状態でコミット・プッシュ（空の index.html で）
-git add index.html README.md REVIEW_BRANCH.md >/dev/null 2>&1
-git commit -m "Setup initial branch with empty index.html for full-line PR reviews
+# 1-3: main ブランチでセットアップファイルをコミット
+git add README.md REVIEW_BRANCH.md >/dev/null 2>&1
+git commit -m "Initial setup for ISE Report #${ISE_REPORT_NUM}
 
-- Empty index.html for student content creation
-- Customized README.md for ${STUDENT_ID}
-- REVIEW_BRANCH.md explanation for Pull Request learning" >/dev/null 2>&1
-git push origin initial >/dev/null 2>&1
+- Setup Pull Request learning environment
+- Create review-branch and 0th-draft
+- Report: ${REPORT_TITLE} (${REPORT_PERIOD})" >/dev/null 2>&1
 
-echo -e "${GREEN}✓ initial ブランチ完成状態セットアップ完了${NC}"
+echo -e "${GREEN}✓ main ブランチセットアップ完了${NC}"
 
-# STEP 2: テンプレートの index.html を復元
-echo "📝 テンプレートの index.html を復元中..."
-cp index.html.template index.html >/dev/null 2>&1
-rm index.html.template >/dev/null 2>&1
+# STEP 2: 0th-draft ブランチの作成（main から分岐）
+echo "📝 0th-draft ブランチを作成中..."
+git checkout -b 0th-draft >/dev/null 2>&1
 
-# STEP 3: review-branch の作成（テンプレートの index.html を継承）
+# STEP 3: review-branch の作成（main から分岐）
+echo "📝 review-branch ブランチを作成中..."
+git checkout main >/dev/null 2>&1
 git checkout -b review-branch >/dev/null 2>&1
 git push origin review-branch >/dev/null 2>&1
 
 echo -e "${GREEN}✓ review-branch 作成完了${NC}"
 
-# STEP 4: 初期提出用ブランチ（0th-draft）の作成
-git checkout -b 0th-draft >/dev/null 2>&1
+# STEP 4: initial ブランチを作成（index.html のみ空にする）
+echo "📝 initial ブランチを作成中..."
+
+# index.html を空にする（PR で全行コメント可能にするため）
+> index.html
+
+# main から initial ブランチを作成
+git checkout -b initial >/dev/null 2>&1
+git add index.html >/dev/null 2>&1
+git commit -m "Setup initial branch with empty index.html for full-line PR reviews
+
+- Empty index.html for student content creation" >/dev/null 2>&1
+git push origin initial >/dev/null 2>&1
+
+echo -e "${GREEN}✓ initial ブランチ作成完了${NC}"
+
+# STEP 5: 0th-draft ブランチに戻る
+git checkout 0th-draft >/dev/null 2>&1
 
 # 初期ドラフトをコミット・プッシュ（共通関数使用）
 echo "📤 初期ドラフトをコミット中..."
