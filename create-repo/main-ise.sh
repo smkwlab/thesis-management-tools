@@ -183,6 +183,28 @@ echo "🌿 Pull Request学習用ブランチ構成を作成中..."
 
 # review-branch の作成（sotsuron-template風）
 git checkout -b review-branch >/dev/null 2>&1
+
+# index.html を最小限の構造に変更（PR レビューで全行コメント可能にするため）
+cat > index.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.1/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.1/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link rel="stylesheet" href="style.css">
+
+<title>情報科学演習x レポート</title>
+</head>
+
+<body>
+<!-- ここからレポート内容を記述してください -->
+
+</body>
+</html>
+EOF
+
 cat > REVIEW_BRANCH.md << 'EOF'
 ## Review Branch
 
@@ -198,8 +220,8 @@ cat > REVIEW_BRANCH.md << 'EOF'
 詳細は [README.md](README.md) をご参照ください。
 EOF
 
-git add REVIEW_BRANCH.md >/dev/null 2>&1
-git commit -m "Add review branch explanation for ISE learning" >/dev/null 2>&1
+git add index.html REVIEW_BRANCH.md >/dev/null 2>&1
+git commit -m "Setup review branch with minimal index.html for full-line PR reviews" >/dev/null 2>&1
 git push origin review-branch >/dev/null 2>&1
 
 # 初期提出用ブランチ（0th-draft）の作成
