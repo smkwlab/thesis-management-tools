@@ -263,8 +263,12 @@ git commit -m "Initial setup for ISE Report #${ISE_REPORT_NUM}
 - Create review-branch and 0th-draft
 - Report: ${REPORT_TITLE} (${REPORT_PERIOD})" >/dev/null 2>&1
 
-git push origin main >/dev/null 2>&1
-echo -e "${GREEN}✓ main ブランチセットアップ完了${NC}"
+if git push origin main >/dev/null 2>&1; then
+    echo -e "${GREEN}✓ main ブランチセットアップ完了${NC}"
+else
+    echo -e "${RED}❌ main ブランチのプッシュに失敗しました${NC}"
+    exit 1
+fi
 
 # STEP 2: 0th-draft ブランチの作成（main から分岐）
 echo "📝 0th-draft ブランチを作成中..."
