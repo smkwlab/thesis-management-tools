@@ -288,8 +288,8 @@ echo "📝 initial ブランチを作成中..."
 # orphan ブランチとして initial を作成（履歴を継承しない）
 git checkout --orphan initial >/dev/null 2>&1
 
-# 全ファイルをステージングエリアから削除
-git rm -rf . >/dev/null 2>&1
+# index.html のみをステージングエリアから削除
+git rm index.html >/dev/null 2>&1
 
 # 空の index.html のみを作成
 > index.html
