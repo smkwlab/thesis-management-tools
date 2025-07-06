@@ -99,6 +99,35 @@ if [ "$INDIVIDUAL_MODE" = false ]; then
     fi
 fi
 
+# review-branch のブランチ保護設定
+echo "🔒 review-branch のブランチ保護を設定中..."
+if [ "$INDIVIDUAL_MODE" = false ]; then
+    # 組織リポジトリの場合はreview-branchも保護
+    local protection_config='{
+        "required_status_checks": null,
+        "required_pull_request_reviews": null,
+        "enforce_admins": false,
+        "restrictions": {
+            "users": [],
+            "teams": [],
+            "apps": ["github-actions"]
+        },
+        "allow_force_pushes": false,
+        "allow_deletions": false
+    }'
+    
+    if echo "$protection_config" | gh api "repos/${ORGANIZATION}/${REPO_NAME}/branches/review-branch/protection" \
+        --method PUT \
+        --input - >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ review-branch のブランチ保護設定完了${NC}"
+    else
+        echo -e "${YELLOW}⚠️ review-branch のブランチ保護設定に失敗しました${NC}"
+        echo -e "${YELLOW}   後で手動設定が必要な場合があります${NC}"
+    fi
+else
+    echo -e "${BLUE}   個人リポジトリのため、review-branch 保護はスキップ${NC}"
+fi
+
 # 完了メッセージ
 echo ""
 echo -e "${GREEN}✅ セットアップ完了！${NC}"
