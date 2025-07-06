@@ -282,18 +282,22 @@ git push origin review-branch >/dev/null 2>&1
 
 echo -e "${GREEN}✓ review-branch 作成完了${NC}"
 
-# STEP 4: initial ブランチを作成（index.html のみ空にする）
+# STEP 4: initial ブランチを独立したブランチとして作成
 echo "📝 initial ブランチを作成中..."
 
-# index.html を空にする（PR で全行コメント可能にするため）
-> index.html
+# orphan ブランチとして initial を作成（履歴を継承しない）
+git checkout --orphan initial >/dev/null 2>&1
 
-# main から initial ブランチを作成
-git checkout -b initial >/dev/null 2>&1
+# 全ファイルをステージングエリアから削除
+git rm -rf . >/dev/null 2>&1
+
+# 空の index.html のみを作成
+> index.html
 git add index.html >/dev/null 2>&1
 git commit -m "Setup initial branch with empty index.html for full-line PR reviews
 
-- Empty index.html for student content creation" >/dev/null 2>&1
+- Empty index.html for student content creation
+- Orphan branch with no history for proper diff comparison" >/dev/null 2>&1
 git push origin initial >/dev/null 2>&1
 
 echo -e "${GREEN}✓ initial ブランチ作成完了${NC}"
