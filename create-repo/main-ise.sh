@@ -274,15 +274,7 @@ fi
 echo "📝 0th-draft ブランチを作成中..."
 git checkout -b 0th-draft >/dev/null 2>&1
 
-# STEP 3: review-branch の作成（main から分岐）
-echo "📝 review-branch ブランチを作成中..."
-git checkout main >/dev/null 2>&1
-git checkout -b review-branch >/dev/null 2>&1
-git push origin review-branch >/dev/null 2>&1
-
-echo -e "${GREEN}✓ review-branch 作成完了${NC}"
-
-# STEP 4: initial ブランチを独立したブランチとして作成
+# STEP 3: initial ブランチを独立したブランチとして作成
 echo "📝 initial ブランチを作成中..."
 
 # orphan ブランチとして initial を作成（履歴を継承しない）
@@ -301,6 +293,26 @@ git commit -m "Setup initial branch with empty index.html for full-line PR revie
 git push origin initial >/dev/null 2>&1
 
 echo -e "${GREEN}✓ initial ブランチ作成完了${NC}"
+
+# STEP 4: review-branch の作成（initial から分岐後、main の内容をマージ）
+echo "📝 review-branch ブランチを作成中..."
+git checkout -b review-branch >/dev/null 2>&1
+
+# main ブランチの内容をマージして学生の作業内容を含める
+if ! git merge main --no-edit >/dev/null 2>&1; then
+    echo -e "${RED}❌ review-branch への main ブランチのマージでエラーが発生しました${NC}"
+    echo -e "${YELLOW}   ⚠️ 通常この段階ではコンフリクトは発生しません${NC}"
+    echo -e "${YELLOW}   もし発生した場合は、テンプレートの問題の可能性があります${NC}"
+    echo -e "${YELLOW}   管理者にお問い合わせください${NC}"
+    exit 1
+fi
+
+if ! git push origin review-branch >/dev/null 2>&1; then
+    echo -e "${RED}❌ review-branch のプッシュに失敗しました${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ review-branch 作成完了${NC}"
 
 # STEP 5: 0th-draft ブランチに戻る
 git checkout 0th-draft >/dev/null 2>&1
