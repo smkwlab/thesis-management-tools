@@ -299,7 +299,7 @@ echo "📝 review-branch ブランチを作成中..."
 git checkout -b review-branch >/dev/null 2>&1
 
 # main ブランチの内容をマージして学生の作業内容を含める
-if ! git merge main --no-edit >/dev/null 2>&1; then
+if ! git merge main --no-edit --allow-unrelated-histories >/dev/null 2>&1; then
     echo -e "${RED}❌ review-branch への main ブランチのマージでエラーが発生しました${NC}"
     echo -e "${YELLOW}   ⚠️ 通常この段階ではコンフリクトは発生しません${NC}"
     echo -e "${YELLOW}   もし発生した場合は、テンプレートの問題の可能性があります${NC}"
