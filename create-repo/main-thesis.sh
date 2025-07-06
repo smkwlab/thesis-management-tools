@@ -103,26 +103,22 @@ fi
 echo "🔒 review-branch のブランチ保護を設定中..."
 if [ "$INDIVIDUAL_MODE" = false ]; then
     # 組織リポジトリの場合はreview-branchも保護
-    local protection_config='{
-        "required_status_checks": null,
-        "required_pull_request_reviews": null,
-        "enforce_admins": false,
-        "restrictions": {
-            "users": [],
-            "teams": [],
-            "apps": ["github-actions"]
-        },
-        "allow_force_pushes": false,
-        "allow_deletions": false
-    }'
-    
-    if echo "$protection_config" | gh api "repos/${ORGANIZATION}/${REPO_NAME}/branches/review-branch/protection" \
-        --method PUT \
-        --input - >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ review-branch のブランチ保護設定完了${NC}"
+    # 保護設定をJSONファイルから読み込み
+    local protection_config_file="${SCRIPT_DIR}/protection-config.json"
+    if [ ! -f "$protection_config_file" ]; then
+        echo -e "${YELLOW}⚠️ 保護設定ファイルが見つかりません: $protection_config_file${NC}"
+        echo -e "${YELLOW}   review-branch のブランチ保護設定をスキップします${NC}"
     else
-        echo -e "${YELLOW}⚠️ review-branch のブランチ保護設定に失敗しました${NC}"
-        echo -e "${YELLOW}   後で手動設定が必要な場合があります${NC}"
+        local protection_config=$(cat "$protection_config_file")
+        
+        if echo "$protection_config" | gh api "repos/${ORGANIZATION}/${REPO_NAME}/branches/review-branch/protection" \
+            --method PUT \
+            --input - >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ review-branch のブランチ保護設定完了${NC}"
+        else
+            echo -e "${YELLOW}⚠️ review-branch のブランチ保護設定に失敗しました${NC}"
+            echo -e "${YELLOW}   後で手動設定が必要な場合があります${NC}"
+        fi
     fi
 else
     echo -e "${BLUE}   個人リポジトリのため、review-branch 保護はスキップ${NC}"

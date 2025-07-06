@@ -1,0 +1,12 @@
+{
+    "required_status_checks": null,
+    "required_pull_request_reviews": null,
+    "enforce_admins": false,
+    "restrictions": {
+        "users": [],
+        "teams": [],
+        "apps": ["github-actions"]
+    },
+    "allow_force_pushes": false,
+    "allow_deletions": false
+}
