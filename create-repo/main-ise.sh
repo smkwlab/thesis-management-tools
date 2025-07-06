@@ -181,31 +181,19 @@ setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
 
 echo "🌿 Pull Request学習用ブランチ構成を作成中..."
 
-# STEP 1: initial ブランチですべてのファイルを完成状態にする
-echo "📝 initial ブランチでファイルセットアップ中..."
+# STEP 1: initial ブランチを作成してセットアップ
+echo "📝 initial ブランチを作成中..."
 
-# 1-1: index.html を空にする（PR で全行コメント可能にするため）
-cat > index.html << 'EOF'
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.1/styles/github.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.1/highlight.min.js"></script>
-<script>hljs.highlightAll();</script>
-<link rel="stylesheet" href="style.css">
+# テンプレートの index.html を一時退避
+cp index.html index.html.template >/dev/null 2>&1
 
-<title>情報科学演習x レポート</title>
-</head>
+# index.html を空にする（PR で全行コメント可能にするため）
+> index.html
 
-<body>
-<!-- ここからレポート内容を記述してください -->
+# main から initial ブランチを作成
+git checkout -b initial >/dev/null 2>&1
 
-</body>
-</html>
-EOF
-
-# 1-2: README.md をカスタマイズ
+# 1-1: README.md をカスタマイズ
 REPORT_TITLE="情報科学演習 レポート #${ISE_REPORT_NUM}"
 REPORT_PERIOD=$([ "$ISE_REPORT_NUM" = "1" ] && echo "前期" || echo "後期")
 
@@ -260,7 +248,7 @@ ${STUDENT_ID}-ise-report${ISE_REPORT_NUM}/
 **セットアップ**: $(date '+%Y-%m-%d %H:%M:%S') JST
 EOF
 
-# 1-3: REVIEW_BRANCH.md を作成
+# 1-2: REVIEW_BRANCH.md を作成
 cat > REVIEW_BRANCH.md << 'EOF'
 ## Review Branch
 
@@ -276,24 +264,29 @@ cat > REVIEW_BRANCH.md << 'EOF'
 詳細は [README.md](README.md) をご参照ください。
 EOF
 
-# 1-4: initial ブランチを完成状態でコミット・プッシュ
+# 1-3: initial ブランチを完成状態でコミット・プッシュ（空の index.html で）
 git add index.html README.md REVIEW_BRANCH.md >/dev/null 2>&1
-git commit -m "Setup initial branch with minimal index.html for full-line PR reviews
+git commit -m "Setup initial branch with empty index.html for full-line PR reviews
 
-- Minimal index.html structure for student content creation
+- Empty index.html for student content creation
 - Customized README.md for ${STUDENT_ID}
 - REVIEW_BRANCH.md explanation for Pull Request learning" >/dev/null 2>&1
-git push origin main >/dev/null 2>&1
+git push origin initial >/dev/null 2>&1
 
 echo -e "${GREEN}✓ initial ブランチ完成状態セットアップ完了${NC}"
 
-# STEP 2: review-branch の作成（完成状態から継承）
+# STEP 2: テンプレートの index.html を復元
+echo "📝 テンプレートの index.html を復元中..."
+cp index.html.template index.html >/dev/null 2>&1
+rm index.html.template >/dev/null 2>&1
+
+# STEP 3: review-branch の作成（テンプレートの index.html を継承）
 git checkout -b review-branch >/dev/null 2>&1
 git push origin review-branch >/dev/null 2>&1
 
 echo -e "${GREEN}✓ review-branch 作成完了${NC}"
 
-# STEP 3: 初期提出用ブランチ（0th-draft）の作成
+# STEP 4: 初期提出用ブランチ（0th-draft）の作成
 git checkout -b 0th-draft >/dev/null 2>&1
 
 # 初期ドラフトをコミット・プッシュ（共通関数使用）
