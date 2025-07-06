@@ -181,10 +181,8 @@ setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
 
 echo "🌿 Pull Request学習用ブランチ構成を作成中..."
 
-# review-branch の作成（sotsuron-template風）
-git checkout -b review-branch >/dev/null 2>&1
-
-# index.html を最小限の構造に変更（PR レビューで全行コメント可能にするため）
+# STEP 1: initial ブランチで index.html を空にする（PR で全行コメント可能にするため）
+echo "📝 initial ブランチで index.html を最小限に変更中..."
 cat > index.html << 'EOF'
 <!DOCTYPE html>
 <html>
@@ -205,6 +203,13 @@ cat > index.html << 'EOF'
 </html>
 EOF
 
+git add index.html >/dev/null 2>&1
+git commit -m "Setup minimal index.html for full-line PR reviews" >/dev/null 2>&1
+git push origin main >/dev/null 2>&1
+
+# STEP 2: review-branch の作成（空の index.html を継承）
+git checkout -b review-branch >/dev/null 2>&1
+
 cat > REVIEW_BRANCH.md << 'EOF'
 ## Review Branch
 
@@ -220,16 +225,27 @@ cat > REVIEW_BRANCH.md << 'EOF'
 詳細は [README.md](README.md) をご参照ください。
 EOF
 
-git add index.html REVIEW_BRANCH.md >/dev/null 2>&1
-git commit -m "Setup review branch with minimal index.html for full-line PR reviews" >/dev/null 2>&1
+git add REVIEW_BRANCH.md >/dev/null 2>&1
+git commit -m "Add review branch explanation for ISE learning" >/dev/null 2>&1
 git push origin review-branch >/dev/null 2>&1
 
-# 初期提出用ブランチ（0th-draft）の作成
+# STEP 3: 初期提出用ブランチ（0th-draft）の作成
 git checkout review-branch >/dev/null 2>&1
 git checkout -b 0th-draft >/dev/null 2>&1
 
-# README.md をカスタマイズ
-echo "📝 README.md をカスタマイズ中..."
+# 初期ドラフトをコミット・プッシュ（共通関数使用）
+echo "📤 初期ドラフトをコミット中..."
+commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}
+
+- Setup Pull Request learning environment
+- Create review-branch and 0th-draft
+- Report: 情報科学演習 レポート #${ISE_REPORT_NUM}
+" "0th-draft" || exit 1
+
+# STEP 4: initial ブランチに戻って README.md をカスタマイズ
+echo "📝 initial ブランチで README.md をカスタマイズ中..."
+git checkout main >/dev/null 2>&1
+
 REPORT_TITLE="情報科学演習 レポート #${ISE_REPORT_NUM}"
 REPORT_PERIOD=$([ "$ISE_REPORT_NUM" = "1" ] && echo "前期" || echo "後期")
 
@@ -285,17 +301,11 @@ ${STUDENT_ID}-ise-report${ISE_REPORT_NUM}/
 **セットアップ**: $(date '+%Y-%m-%d %H:%M:%S') JST
 EOF
 
+git add README.md >/dev/null 2>&1
+git commit -m "Add customized README for ${STUDENT_ID}" >/dev/null 2>&1
+git push origin main >/dev/null 2>&1
+
 echo -e "${GREEN}✓ README.md カスタマイズ完了${NC}"
-
-# 初期ドラフトをコミット・プッシュ（共通関数使用）
-echo "📤 初期ドラフトをコミット中..."
-commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}
-
-- Setup Pull Request learning environment
-- Create review-branch and 0th-draft
-- Customize README for ${STUDENT_ID}
-- Report: ${REPORT_TITLE} (${REPORT_PERIOD})
-" "0th-draft" || exit 1
 
 # review-branchに戻る
 git checkout review-branch >/dev/null 2>&1
