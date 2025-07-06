@@ -181,8 +181,11 @@ setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
 
 echo "🌿 Pull Request学習用ブランチ構成を作成中..."
 
-# STEP 1: initial ブランチですべてのファイルを完成状態にする
-echo "📝 initial ブランチでファイルセットアップ中..."
+# STEP 1: initial ブランチを作成してセットアップ
+echo "📝 initial ブランチを作成中..."
+
+# main から initial ブランチを作成
+git checkout -b initial >/dev/null 2>&1
 
 # 1-1: index.html を空にする（PR で全行コメント可能にするため）
 cat > index.html << 'EOF'
@@ -283,7 +286,7 @@ git commit -m "Setup initial branch with minimal index.html for full-line PR rev
 - Minimal index.html structure for student content creation
 - Customized README.md for ${STUDENT_ID}
 - REVIEW_BRANCH.md explanation for Pull Request learning" >/dev/null 2>&1
-git push origin main >/dev/null 2>&1
+git push origin initial >/dev/null 2>&1
 
 echo -e "${GREEN}✓ initial ブランチ完成状態セットアップ完了${NC}"
 
