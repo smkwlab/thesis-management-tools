@@ -181,8 +181,10 @@ setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
 
 echo "🌿 Pull Request学習用ブランチ構成を作成中..."
 
-# STEP 1: initial ブランチで index.html を空にする（PR で全行コメント可能にするため）
-echo "📝 initial ブランチで index.html を最小限に変更中..."
+# STEP 1: initial ブランチですべてのファイルを完成状態にする
+echo "📝 initial ブランチでファイルセットアップ中..."
+
+# 1-1: index.html を空にする（PR で全行コメント可能にするため）
 cat > index.html << 'EOF'
 <!DOCTYPE html>
 <html>
@@ -203,53 +205,10 @@ cat > index.html << 'EOF'
 </html>
 EOF
 
-git add index.html >/dev/null 2>&1
-git commit -m "Setup minimal index.html for full-line PR reviews" >/dev/null 2>&1
-git push origin main >/dev/null 2>&1
-
-# STEP 2: review-branch の作成（空の index.html を継承）
-git checkout -b review-branch >/dev/null 2>&1
-
-cat > REVIEW_BRANCH.md << 'EOF'
-## Review Branch
-
-このブランチは添削・レビュー用のベースブランチです。
-
-### Pull Request学習の流れ
-1. 作業用ブランチ（0th-draft, 1st-draft等）を作成
-2. index.html を編集してレポート作成  
-3. Pull Request を作成
-4. レビューフィードバックを確認・対応
-5. 必要に応じて新しいドラフトブランチで再提出
-
-詳細は [README.md](README.md) をご参照ください。
-EOF
-
-git add REVIEW_BRANCH.md >/dev/null 2>&1
-git commit -m "Add review branch explanation for ISE learning" >/dev/null 2>&1
-git push origin review-branch >/dev/null 2>&1
-
-# STEP 3: 初期提出用ブランチ（0th-draft）の作成
-git checkout review-branch >/dev/null 2>&1
-git checkout -b 0th-draft >/dev/null 2>&1
-
-# 初期ドラフトをコミット・プッシュ（共通関数使用）
-echo "📤 初期ドラフトをコミット中..."
-commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}
-
-- Setup Pull Request learning environment
-- Create review-branch and 0th-draft
-- Report: 情報科学演習 レポート #${ISE_REPORT_NUM}
-" "0th-draft" || exit 1
-
-# STEP 4: initial ブランチに戻って README.md をカスタマイズ
-echo "📝 initial ブランチで README.md をカスタマイズ中..."
-git checkout main >/dev/null 2>&1
-
+# 1-2: README.md をカスタマイズ
 REPORT_TITLE="情報科学演習 レポート #${ISE_REPORT_NUM}"
 REPORT_PERIOD=$([ "$ISE_REPORT_NUM" = "1" ] && echo "前期" || echo "後期")
 
-# README更新（簡略化）
 cat > README.md << EOF
 # ${STUDENT_ID} - ${REPORT_TITLE}
 
@@ -301,11 +260,50 @@ ${STUDENT_ID}-ise-report${ISE_REPORT_NUM}/
 **セットアップ**: $(date '+%Y-%m-%d %H:%M:%S') JST
 EOF
 
-git add README.md >/dev/null 2>&1
-git commit -m "Add customized README for ${STUDENT_ID}" >/dev/null 2>&1
+# 1-3: REVIEW_BRANCH.md を作成
+cat > REVIEW_BRANCH.md << 'EOF'
+## Review Branch
+
+このブランチは添削・レビュー用のベースブランチです。
+
+### Pull Request学習の流れ
+1. 作業用ブランチ（0th-draft, 1st-draft等）を作成
+2. index.html を編集してレポート作成  
+3. Pull Request を作成
+4. レビューフィードバックを確認・対応
+5. 必要に応じて新しいドラフトブランチで再提出
+
+詳細は [README.md](README.md) をご参照ください。
+EOF
+
+# 1-4: initial ブランチを完成状態でコミット・プッシュ
+git add index.html README.md REVIEW_BRANCH.md >/dev/null 2>&1
+git commit -m "Setup initial branch with minimal index.html for full-line PR reviews
+
+- Minimal index.html structure for student content creation
+- Customized README.md for ${STUDENT_ID}
+- REVIEW_BRANCH.md explanation for Pull Request learning" >/dev/null 2>&1
 git push origin main >/dev/null 2>&1
 
-echo -e "${GREEN}✓ README.md カスタマイズ完了${NC}"
+echo -e "${GREEN}✓ initial ブランチ完成状態セットアップ完了${NC}"
+
+# STEP 2: review-branch の作成（完成状態から継承）
+git checkout -b review-branch >/dev/null 2>&1
+git push origin review-branch >/dev/null 2>&1
+
+echo -e "${GREEN}✓ review-branch 作成完了${NC}"
+
+# STEP 3: 初期提出用ブランチ（0th-draft）の作成
+git checkout -b 0th-draft >/dev/null 2>&1
+
+# 初期ドラフトをコミット・プッシュ（共通関数使用）
+echo "📤 初期ドラフトをコミット中..."
+commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}
+
+- Setup Pull Request learning environment
+- Create review-branch and 0th-draft
+- Report: ${REPORT_TITLE} (${REPORT_PERIOD})
+" "0th-draft" || exit 1
 
 # review-branchに戻る
 git checkout review-branch >/dev/null 2>&1
