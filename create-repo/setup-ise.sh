@@ -225,6 +225,15 @@ cd "$ORIGINAL_DIR"
 # 動作モード情報を環境変数として渡す
 DOCKER_ENV_VARS="-e USER_TYPE=$USER_TYPE -e TARGET_ORG=$TARGET_ORG"
 
+# Git Bash環境下でのみGH_TOKENを環境変数として渡す
+if [[ -n "$MSYSTEM" ]] || [[ "$OSTYPE" == "msys" ]] || [[ -n "$MINGW_PREFIX" ]] || ([[ -n "$WINDIR" ]] && [[ "$SHELL" == *"bash"* ]]); then
+    # Git Bash環境下ではGH_TOKENを取得・設定
+    if [ -z "$GH_TOKEN" ]; then
+        GH_TOKEN=$(gh auth token 2>/dev/null)
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e GH_TOKEN=$GH_TOKEN"
+    fi
+fi
+
 # ISE固有の環境変数処理
 if [ -n "$ASSIGNMENT_TYPE" ]; then
     DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ASSIGNMENT_TYPE=$ASSIGNMENT_TYPE"

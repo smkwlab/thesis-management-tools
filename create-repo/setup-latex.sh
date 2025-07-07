@@ -240,6 +240,15 @@ if [ -n "$ENABLE_PROTECTION" ]; then
     DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ENABLE_PROTECTION=$ENABLE_PROTECTION"
 fi
 
+# Git Bash環境下でのみGH_TOKENを環境変数として渡す
+if [[ -n "$MSYSTEM" ]] || [[ "$OSTYPE" == "msys" ]] || [[ -n "$MINGW_PREFIX" ]] || ([[ -n "$WINDIR" ]] && [[ "$SHELL" == *"bash"* ]]); then
+    # Git Bash環境下ではGH_TOKENを取得・設定
+    if [ -z "$GH_TOKEN" ]; then
+        GH_TOKEN=$(gh auth token 2>/dev/null)
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e GH_TOKEN=$GH_TOKEN"
+    fi
+fi
+
 if [ -n "$STUDENT_ID" ]; then
     if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" latex-setup-alpine "$STUDENT_ID"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
