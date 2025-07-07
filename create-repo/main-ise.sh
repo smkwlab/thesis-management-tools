@@ -301,12 +301,12 @@ echo "🔒 review-branch のブランチ保護を設定中..."
 if [ "$INDIVIDUAL_MODE" = false ]; then
     # 組織リポジトリの場合はreview-branchも保護
     # 保護設定をJSONファイルから読み込み
-    local protection_config_file="${SCRIPT_DIR}/protection-config.json"
+    protection_config_file="${SCRIPT_DIR}/protection-config.json"
     if [ ! -f "$protection_config_file" ]; then
         echo -e "${YELLOW}⚠️ 保護設定ファイルが見つかりません: $protection_config_file${NC}"
         echo -e "${YELLOW}   review-branch のブランチ保護設定をスキップします${NC}"
     else
-        local protection_config=$(cat "$protection_config_file")
+        protection_config=$(cat "$protection_config_file")
         
         if echo "$protection_config" | gh api "repos/${ORGANIZATION}/${REPO_NAME}/branches/review-branch/protection" \
             --method PUT \
