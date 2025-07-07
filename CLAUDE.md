@@ -6,20 +6,20 @@ Administrative tools and workflows for thesis supervision at Kyushu Sangyo Unive
 
 ### Student Repository Creation
 ```bash
-# Create thesis repository (zero dependencies)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+# Universal Setup Script - All document types supported
+DOC_TYPE=thesis /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 
 # With student ID specified
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+DOC_TYPE=thesis STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 
-# For weekly reports
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-wr.sh)"
+# Document type specific usage
+DOC_TYPE=thesis /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"   # Thesis repository
+DOC_TYPE=wr /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"      # Weekly reports
+DOC_TYPE=latex /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"   # General LaTeX
+DOC_TYPE=ise /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"     # ISE reports
 
-# For general LaTeX documents (research notes, reports)
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-latex.sh)"
-
-# With custom document name
-STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-latex.sh)"
+# Advanced configuration with environment variables
+DOC_TYPE=latex STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
 ### Branch Protection Setup (Faculty)
@@ -35,15 +35,16 @@ gh repo view smkwlab/k21rs001-sotsuron --json branchProtectionRules
 
 ```
 create-repo/
-├── setup.sh              # Public entry point for thesis
-├── setup-wr.sh           # Public entry point for weekly reports
-├── setup-latex.sh        # Public entry point for general LaTeX documents
-├── main.sh               # Thesis creation script
+├── setup.sh              # Universal Setup Script - All document types
+├── main-thesis.sh        # Thesis creation script
 ├── main-wr.sh            # Weekly report creation script
 ├── main-latex.sh         # General LaTeX document creation script
-├── Dockerfile            # Docker image for thesis
+├── main-ise.sh           # ISE report creation script
+├── common-lib.sh         # Shared functions and utilities
+├── Dockerfile-thesis     # Docker image for thesis
 ├── Dockerfile-wr         # Docker image for weekly reports
-└── Dockerfile-latex      # Docker image for general LaTeX documents
+├── Dockerfile-latex      # Docker image for general LaTeX documents
+└── Dockerfile-ise        # Docker image for ISE reports
 
 scripts/
 ├── setup-branch-protection.sh    # Branch protection for individual student
@@ -62,16 +63,40 @@ scripts/
 
 All operations now use GitHub API for safe, atomic data management instead of local files.
 
+## Document Type Configuration
+
+Universal Setup Script uses `DOC_TYPE` environment variable to specify document type:
+
+### Supported Document Types
+- **thesis**: Undergraduate/Graduate thesis (sotsuron-template)
+- **wr**: Weekly reports (wr-template)
+- **latex**: General LaTeX documents (latex-template)
+- **ise**: Information Science Exercise reports (ise-report-template)
+
+### Environment Variable Options
+```bash
+# LaTeX document configuration
+DOCUMENT_NAME=research-note    # Custom document name
+AUTHOR_NAME="Taro Yamada"      # Author name
+ENABLE_PROTECTION=true         # Enable branch protection
+
+# ISE report configuration
+ASSIGNMENT_TYPE=exercise       # Assignment type
+ISE_REPORT_NUM=1              # Report number (1 or 2)
+```
+
 ## Student ID Patterns
 
 ```bash
-# Undergraduate: k##rs### → sotsuron-template
+# Undergraduate: k##rs### → DOC_TYPE=thesis
 k21rs001, k22rs123, k23rs999
 
-# Graduate: k##gjk## → sotsuron-template  
+# Graduate: k##gjk## → DOC_TYPE=thesis
 k21gjk01, k22gjk15, k23gjk99
 
-# Weekly reports: any pattern → wr-template
+# Weekly reports: any pattern → DOC_TYPE=wr
+# General LaTeX: any pattern → DOC_TYPE=latex
+# ISE reports: any pattern → DOC_TYPE=ise
 ```
 
 ## Common Tasks
