@@ -86,7 +86,7 @@ echo "ブランチを設定中..."
 git add . >/dev/null 2>&1
 git diff-index --quiet HEAD -- || git commit -m "Initialize repository with template cleanup" >/dev/null 2>&1 || true
 
-# STEP 3&4: レビューワークフロー全体をセットアップ（共通関数使用）
+# STEP 3-6: レビューワークフロー全体をセットアップ（共通関数使用）
 if [ "$THESIS_TYPE" = "shuuron" ]; then
     # 修士論文: thesis.tex + abstract.tex
     setup_review_workflow "thesis" "0th-draft" thesis.tex abstract.tex || exit 1
@@ -111,8 +111,17 @@ echo "🔒 review-branch のブランチ保護を設定中..."
 if [ "$INDIVIDUAL_MODE" = false ]; then
     # 組織リポジトリの場合はreview-branchも保護
     # 保護設定をJSONファイルから読み込み
-    # Docker内実行ではカレントディレクトリに配置されている
-    protection_config_file="./protection-config.json"
+    # Docker内実行では/workspaceに配置されている
+    # 堅牢なパス解決を実装
+    for possible_path in "./protection-config.json" "/workspace/protection-config.json" "$(dirname "$0")/protection-config.json"; do
+        if [ -f "$possible_path" ]; then
+            protection_config_file="$possible_path"
+            break
+        fi
+    done
+    
+    # ファイルが見つからない場合のデフォルト
+    protection_config_file="${protection_config_file:-./protection-config.json}"
     if [ ! -f "$protection_config_file" ]; then
         echo -e "${YELLOW}⚠️ 保護設定ファイルが見つかりません: $protection_config_file${NC}"
         echo -e "${YELLOW}   review-branch のブランチ保護設定をスキップします${NC}"

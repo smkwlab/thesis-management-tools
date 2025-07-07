@@ -620,19 +620,26 @@ setup_review_workflow() {
     
     log_info "🌿 レビューワークフローを開始します..."
     
-    # STEP 1: initial ブランチ作成
+    # STEP 1: 0th-draft ブランチの作成（main から分岐）
+    log_info "📝 0th-draft ブランチを作成中..."
+    if ! git checkout -b "$return_branch" >/dev/null 2>&1; then
+        log_error "$return_branch ブランチの作成に失敗しました"
+        return 1
+    fi
+    
+    # STEP 2: initial ブランチ作成
     if ! create_initial_branch "$context" $target_files; then
         log_error "initial ブランチの作成に失敗しました"
         return 1
     fi
     
-    # STEP 2: review-branch 作成
+    # STEP 3: review-branch 作成
     if ! create_review_branch "$context"; then
         log_error "review-branch の作成に失敗しました"
         return 1
     fi
     
-    # STEP 3: 指定されたブランチに戻る
+    # STEP 4: 0th-draft ブランチに戻る
     if ! git checkout "$return_branch" >/dev/null 2>&1; then
         log_warn "⚠️ $return_branch ブランチへの切り替えに失敗しました"
         log_info "現在のブランチ: $(git branch --show-current)"
