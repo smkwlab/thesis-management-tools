@@ -520,10 +520,7 @@ create_orphan_initial_branch() {
     fi
     
     # コミット作成
-    local commit_message="Setup initial branch with empty placeholder
-
-- Empty placeholder for student content creation
-- Orphan branch with no history for proper diff comparison"
+    local commit_message="Setup initial branch with empty placeholder"
     
     if ! git commit -m "$commit_message" >/dev/null 2>&1; then
         log_error "initial ブランチのコミットに失敗しました"
@@ -531,8 +528,11 @@ create_orphan_initial_branch() {
     fi
     
     # リモートへプッシュ
-    if ! git push origin initial >/dev/null 2>&1; then
-        log_error "initial ブランチのプッシュに失敗しました"
+    local push_error
+    if ! push_error=$(git push origin initial 2>&1); then
+        local exit_code=$?
+        log_error "initial ブランチのプッシュに失敗しました (終了コード: $exit_code)"
+        log_error "エラー詳細: $push_error"
         return 1
     fi
     
@@ -567,16 +567,17 @@ create_review_branch_from_initial() {
     # main ブランチの内容をマージして学生の作業内容を含める
     if ! git merge main --no-edit --allow-unrelated-histories >/dev/null 2>&1; then
         log_error "❌ review-branch への main ブランチのマージでエラーが発生しました"
-        log_warn "   ⚠️ 通常この段階ではコンフリクトは発生しません"
-        log_warn "   考えられる原因: テンプレートの問題、または学生による誤った変更"
+        log_warn "   ⚠️ main ブランチのマージ中にコンフリクトが発生しました。内容を確認してください"
         log_warn "   管理者にお問い合わせください"
         return 1
     fi
     
     # リモートへプッシュ
-    if ! git push origin review-branch >/dev/null 2>&1; then
-        log_error "❌ review-branch のプッシュに失敗しました"
-        log_warn "   考えられる原因: 権限不足、ネットワークの問題、またはリモートリポジトリの設定"
+    local push_error
+    if ! push_error=$(git push origin review-branch 2>&1); then
+        local exit_code=$?
+        log_error "❌ review-branch のプッシュに失敗しました (終了コード: $exit_code)"
+        log_error "エラー詳細: $push_error"
         return 1
     fi
     
