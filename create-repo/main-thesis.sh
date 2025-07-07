@@ -81,6 +81,7 @@ setup_latex_environment
 echo "テンプレートファイルを整理中..."
 rm -f CLAUDE.md 2>/dev/null || true
 rm -rf docs/ 2>/dev/null || true
+rm -f README.md-aldc .????*-aldc 2>/dev/null || true
 
 # 論文タイプに応じて不要なファイルを削除
 if [ "$THESIS_TYPE" = "shuuron" ]; then
