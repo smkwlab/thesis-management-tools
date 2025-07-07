@@ -93,12 +93,14 @@ echo "📝 initial ブランチを作成中..."
 git checkout --orphan initial >/dev/null 2>&1
 
 # LaTeX ファイルを除去し、プレースホルダーファイルのみを作成
-git rm --cached --ignore-unmatch *.tex *.cls *.sty >/dev/null 2>&1 || true
+if ! git rm --cached --ignore-unmatch *.tex *.cls *.sty >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠️ LaTeX ファイルの削除に失敗しました。ファイルが存在しない可能性があります。${NC}" >&2
+fi
 
 # 空のプレースホルダーファイルを作成
 > .tex_placeholder
 git add .tex_placeholder >/dev/null 2>&1
-git commit -m "Setup initial branch with empty placeholder for full-line PR reviews
+git commit -m "Setup initial branch with empty placeholder
 
 - Empty placeholder for student content creation
 - Orphan branch with no history for proper diff comparison" >/dev/null 2>&1
@@ -114,13 +116,14 @@ git checkout -b review-branch >/dev/null 2>&1
 if ! git merge main --no-edit --allow-unrelated-histories >/dev/null 2>&1; then
     echo -e "${RED}❌ review-branch への main ブランチのマージでエラーが発生しました${NC}"
     echo -e "${YELLOW}   ⚠️ 通常この段階ではコンフリクトは発生しません${NC}"
-    echo -e "${YELLOW}   もし発生した場合は、テンプレートの問題の可能性があります${NC}"
+    echo -e "${YELLOW}   考えられる原因: テンプレートの問題、または学生による誤った変更${NC}"
     echo -e "${YELLOW}   管理者にお問い合わせください${NC}"
     exit 1
 fi
 
 if ! git push origin review-branch >/dev/null 2>&1; then
     echo -e "${RED}❌ review-branch のプッシュに失敗しました${NC}"
+    echo -e "${YELLOW}   考えられる原因: 権限不足、ネットワークの問題、またはリモートリポジトリの設定${NC}"
     exit 1
 fi
 
