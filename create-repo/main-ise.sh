@@ -270,11 +270,7 @@ else
     exit 1
 fi
 
-# STEP 2: 0th-draft ブランチの作成（main から分岐）
-echo "📝 0th-draft ブランチを作成中..."
-git checkout -b 0th-draft >/dev/null 2>&1
-
-# STEP 3&4: レビューワークフロー全体をセットアップ（共通関数使用）
+# STEP 2-5: レビューワークフロー全体をセットアップ（共通関数使用）
 setup_review_workflow "ISE report" "0th-draft" index.html || exit 1
 
 # 初期ドラフトをコミット・プッシュ（共通関数使用）
@@ -301,8 +297,17 @@ echo "🔒 review-branch のブランチ保護を設定中..."
 if [ "$INDIVIDUAL_MODE" = false ]; then
     # 組織リポジトリの場合はreview-branchも保護
     # 保護設定をJSONファイルから読み込み
-    # Docker内実行ではカレントディレクトリに配置されている
-    protection_config_file="./protection-config.json"
+    # Docker内実行では/workspaceに配置されている
+    # 堅牢なパス解決を実装
+    for possible_path in "./protection-config.json" "/workspace/protection-config.json" "$(dirname "$0")/protection-config.json"; do
+        if [ -f "$possible_path" ]; then
+            protection_config_file="$possible_path"
+            break
+        fi
+    done
+    
+    # ファイルが見つからない場合のデフォルト
+    protection_config_file="${protection_config_file:-./protection-config.json}"
     if [ ! -f "$protection_config_file" ]; then
         echo -e "${YELLOW}⚠️ 保護設定ファイルが見つかりません: $protection_config_file${NC}"
         echo -e "${YELLOW}   review-branch のブランチ保護設定をスキップします${NC}"
