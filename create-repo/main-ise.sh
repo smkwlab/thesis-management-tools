@@ -184,60 +184,8 @@ echo "🌿 Pull Request学習用ブランチ構成を作成中..."
 # STEP 1: main ブランチでファイルをセットアップ
 echo "📝 main ブランチでセットアップファイルを作成中..."
 
-# 1-1: README.md をカスタマイズ
-REPORT_TITLE="情報科学演習 レポート #${ISE_REPORT_NUM}"
-REPORT_PERIOD=$([ "$ISE_REPORT_NUM" = "1" ] && echo "前期" || echo "後期")
-
-cat > README.md << EOF
-# ${STUDENT_ID} - ${REPORT_TITLE}
-
-${REPORT_PERIOD}の情報科学演習レポート（Pull Request学習用）
-
-## 📋 基本情報
-
-- **学籍番号**: ${STUDENT_ID}
-- **レポート**: ${REPORT_TITLE} (${REPORT_PERIOD})
-- **作成日**: $(date '+%Y年%m月%d日')
-
-## 🚀 作業の流れ
-
-### 1. 作業用ブランチの作成
-\`\`\`bash
-git checkout review-branch >/dev/null 2>&1
-git checkout -b 1st-draft >/dev/null 2>&1
-\`\`\`
-
-### 2. レポート作成
-- \`index.html\` を編集
-- 必要に応じて画像や資料を追加
-
-### 3. Pull Request作成
-1. 変更をコミット・プッシュ
-2. GitHub上でPull Requestを作成
-3. レビューを待つ
-
-### 4. レビュー対応
-- フィードバックに基づいて修正
-- 必要に応じて新しいドラフトブランチで再提出
-
-## 📁 ファイル構成
-
-\`\`\`
-${STUDENT_ID}-ise-report${ISE_REPORT_NUM}/
-├── index.html          # メインレポート
-├── README.md           # このファイル
-├── REVIEW_BRANCH.md    # レビューブランチ説明
-└── assets/             # 画像・資料
-\`\`\`
-
-## 🔗 関連リンク
-
-- [レポートページ](index.html)
-- [下川研究室](https://shimokawa-lab.kyusan-u.ac.jp/)
-
----
-**セットアップ**: $(date '+%Y-%m-%d %H:%M:%S') JST
-EOF
+# 1-1: テンプレートのREADME.mdを保持（上書きしない）
+echo "ise-report-templateのREADME.mdを保持します"
 
 # 1-2: REVIEW_BRANCH.md を作成
 cat > REVIEW_BRANCH.md << 'EOF'
@@ -256,12 +204,12 @@ cat > REVIEW_BRANCH.md << 'EOF'
 EOF
 
 # 1-3: main ブランチでセットアップファイルをコミット
-git add README.md REVIEW_BRANCH.md >/dev/null 2>&1
+git add REVIEW_BRANCH.md >/dev/null 2>&1
 git commit -m "Initial setup for ISE Report #${ISE_REPORT_NUM}
 
 - Setup Pull Request learning environment
 - Create review-branch and 0th-draft
-- Report: ${REPORT_TITLE} (${REPORT_PERIOD})" >/dev/null 2>&1
+- Keep original README.md from ise-report-template" >/dev/null 2>&1
 
 if git push origin main >/dev/null 2>&1; then
     echo -e "${GREEN}✓ main ブランチセットアップ完了${NC}"
@@ -279,7 +227,7 @@ commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}
 
 - Setup Pull Request learning environment
 - Create review-branch and 0th-draft
-- Report: ${REPORT_TITLE} (${REPORT_PERIOD})
+- Keep original README.md from ise-report-template
 " "0th-draft" || exit 1
 
 # review-branchに戻る
