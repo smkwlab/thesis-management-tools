@@ -86,8 +86,18 @@ echo "ブランチを設定中..."
 git add . >/dev/null 2>&1
 git diff-index --quiet HEAD -- || git commit -m "Initialize repository with template cleanup" >/dev/null 2>&1 || true
 
-# STEP 3&4: orphan branch ワークフロー全体をセットアップ（共通関数使用）
-setup_orphan_branch_workflow ".tex_placeholder" "*.tex *.cls *.sty" "thesis" "main" || exit 1
+# STEP 3&4: レビューワークフロー全体をセットアップ（共通関数使用）
+if [ "$THESIS_TYPE" = "shuuron" ]; then
+    # 修士論文: thesis.tex + abstract.tex
+    setup_review_workflow "thesis" "0th-draft" thesis.tex abstract.tex || exit 1
+elif [ "$THESIS_TYPE" = "sotsuron" ]; then
+    # 卒業論文: sotsuron.tex + gaiyou.tex  
+    setup_review_workflow "thesis" "0th-draft" sotsuron.tex gaiyou.tex || exit 1
+else
+    log_error "無効なTHESIS_TYPEです: $THESIS_TYPE"
+    log_error "有効な値: shuuron (修士論文) または sotsuron (卒業論文)"
+    exit 1
+fi
 
 # Issue作成（組織モードのみ）
 if [ "$INDIVIDUAL_MODE" = false ]; then

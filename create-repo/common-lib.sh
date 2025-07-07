@@ -476,26 +476,26 @@ EOF
 }
 
 # ================================
-# Orphan Branch 管理関数
+# レビューワークフロー管理関数
 # ================================
 
 #
-# initial ブランチ（orphan）の作成
+# initial ブランチの作成
+# 指定されたファイルを空のベースライン状態にして差分比較用の基準点を作成
 # 
 # Args:
-#   $1: placeholder_file - 作成するプレースホルダーファイル名（例: "index.html", ".tex_placeholder"）
-#   $2: files_to_remove - 削除対象ファイルパターン（例: "index.html", "*.tex *.cls *.sty"）  
-#   $3: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
+#   $1: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
+#   $2...: target_files - ベースライン化するファイル名（複数可、例: index.html, thesis.tex abstract.tex）
 #
-create_orphan_initial_branch() {
-    local placeholder_file="$1"
-    local files_to_remove="$2"
-    local context="$3"
+create_initial_branch() {
+    local context="$1"
+    shift 1  # 最初の引数を除去
+    local target_files="$@"  # 残りの引数がすべて対象ファイル
     
     # 引数の検証
-    if [ -z "$placeholder_file" ] || [ -z "$context" ]; then
-        log_error "create_orphan_initial_branch: 必須引数が不足しています"
-        log_error "使用方法: create_orphan_initial_branch <placeholder_file> <files_to_remove> <context>"
+    if [ -z "$context" ] || [ -z "$target_files" ]; then
+        log_error "create_initial_branch: 必須引数が不足しています"
+        log_error "使用方法: create_initial_branch <context> <target_files...>"
         return 1
     fi
     
@@ -507,19 +507,28 @@ create_orphan_initial_branch() {
         return 1
     fi
     
-    # 指定されたファイルを削除（オプション）
-    if [ -n "$files_to_remove" ]; then
-        if ! git rm --cached --ignore-unmatch $files_to_remove >/dev/null 2>&1; then
-            log_warn "${context}ファイルの削除に失敗しました。ファイルが存在しない可能性があります。"
-        fi
-    fi
+    # 指定されたファイルをベースライン状態（空）にする
+    log_debug "対象ファイルをベースライン状態にします: $target_files"
     
-    # プレースホルダーファイルを作成
-    > "$placeholder_file"
-    if ! git add "$placeholder_file" >/dev/null 2>&1; then
-        log_error "プレースホルダーファイルの追加に失敗しました"
-        return 1
-    fi
+    # まず対象ファイルを削除してから空で再作成（差分比較のため）
+    for file in $target_files; do
+        if [ -n "$file" ]; then
+            # ファイルが存在しGitの管理下にある場合は削除
+            if [ -f "$file" ] && git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+                git rm --cached "$file" >/dev/null 2>&1
+                log_debug "ファイルを削除: $file"
+            fi
+            
+            # 空のファイルとして再作成（パーミッション保持のためtouchしてから空に）
+            touch "$file"
+            > "$file"
+            if ! git add "$file" >/dev/null 2>&1; then
+                log_error "ベースラインファイルの追加に失敗しました: $file"
+                return 1
+            fi
+            log_debug "ベースラインファイルを作成: $file"
+        fi
+    done
     
     # コミット作成
     local commit_message="Setup initial branch with empty placeholder"
@@ -548,13 +557,13 @@ create_orphan_initial_branch() {
 # Args:
 #   $1: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
 #
-create_review_branch_from_initial() {
+create_review_branch() {
     local context="$1"
     
     # 引数の検証
     if [ -z "$context" ]; then
-        log_error "create_review_branch_from_initial: context引数が必要です"
-        log_error "使用方法: create_review_branch_from_initial <context>"
+        log_error "create_review_branch: context引数が必要です"
+        log_error "使用方法: create_review_branch <context>"
         return 1
     fi
     
@@ -588,37 +597,37 @@ create_review_branch_from_initial() {
 }
 
 #
-# orphan branch ワークフロー全体のセットアップ（ラッパー関数）
+# レビューワークフロー全体のセットアップ（ラッパー関数）
+# initial ブランチ（差分比較基準）と review-branch（レビュー用）を作成
 #
 # Args:
-#   $1: placeholder_file - 作成するプレースホルダーファイル名（例: "index.html", ".tex_placeholder"）
-#   $2: files_to_remove - 削除対象ファイルパターン（例: "index.html", "*.tex *.cls *.sty"）  
-#   $3: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
-#   $4: return_branch - 処理後に戻るブランチ名（オプション、デフォルト: main）
+#   $1: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
+#   $2: return_branch - 処理後に戻るブランチ名（オプション、デフォルト: main）
+#   $3...: target_files - ベースライン化するファイル名（複数可、例: index.html, thesis.tex abstract.tex）
 #
-setup_orphan_branch_workflow() {
-    local placeholder_file="$1"
-    local files_to_remove="$2"
-    local context="$3"
-    local return_branch="${4:-main}"
+setup_review_workflow() {
+    local context="$1"
+    local return_branch="${2:-main}"
+    shift 2  # 最初の2つの引数を除去
+    local target_files="$@"  # 残りの引数がすべて対象ファイル
     
     # 引数の検証
-    if [ -z "$placeholder_file" ] || [ -z "$context" ]; then
-        log_error "setup_orphan_branch_workflow: 必須引数が不足しています"
-        log_error "使用方法: setup_orphan_branch_workflow <placeholder_file> <files_to_remove> <context> [return_branch]"
+    if [ -z "$context" ] || [ -z "$target_files" ]; then
+        log_error "setup_review_workflow: 必須引数が不足しています"
+        log_error "使用方法: setup_review_workflow <context> [return_branch] <target_files...>"
         return 1
     fi
     
-    log_info "🌿 orphan branch ワークフローを開始します..."
+    log_info "🌿 レビューワークフローを開始します..."
     
     # STEP 1: initial ブランチ作成
-    if ! create_orphan_initial_branch "$placeholder_file" "$files_to_remove" "$context"; then
+    if ! create_initial_branch "$context" $target_files; then
         log_error "initial ブランチの作成に失敗しました"
         return 1
     fi
     
     # STEP 2: review-branch 作成
-    if ! create_review_branch_from_initial "$context"; then
+    if ! create_review_branch "$context"; then
         log_error "review-branch の作成に失敗しました"
         return 1
     fi
@@ -631,7 +640,7 @@ setup_orphan_branch_workflow() {
         log_info "✓ $return_branch ブランチに戻りました"
     fi
     
-    log_info "✅ orphan branch ワークフロー完了"
+    log_info "✅ レビューワークフロー完了"
     return 0
 }
 
