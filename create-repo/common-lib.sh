@@ -473,6 +473,165 @@ cd thesis-management-tools/scripts
 EOF
 }
 
+# ================================
+# Orphan Branch 管理関数
+# ================================
+
+#
+# initial ブランチ（orphan）の作成
+# 
+# Args:
+#   $1: placeholder_file - 作成するプレースホルダーファイル名（例: "index.html", ".tex_placeholder"）
+#   $2: files_to_remove - 削除対象ファイルパターン（例: "index.html", "*.tex *.cls *.sty"）  
+#   $3: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
+#
+create_orphan_initial_branch() {
+    local placeholder_file="$1"
+    local files_to_remove="$2"
+    local context="$3"
+    
+    # 引数の検証
+    if [ -z "$placeholder_file" ] || [ -z "$context" ]; then
+        log_error "create_orphan_initial_branch: 必須引数が不足しています"
+        log_error "使用方法: create_orphan_initial_branch <placeholder_file> <files_to_remove> <context>"
+        return 1
+    fi
+    
+    log_info "📝 initial ブランチを作成中..."
+    
+    # orphan ブランチとして initial を作成（履歴を継承しない）
+    if ! git checkout --orphan initial >/dev/null 2>&1; then
+        log_error "orphan ブランチの作成に失敗しました"
+        return 1
+    fi
+    
+    # 指定されたファイルを削除（オプション）
+    if [ -n "$files_to_remove" ]; then
+        if ! git rm --cached --ignore-unmatch $files_to_remove >/dev/null 2>&1; then
+            log_warn "${context}ファイルの削除に失敗しました。ファイルが存在しない可能性があります。"
+        fi
+    fi
+    
+    # プレースホルダーファイルを作成
+    > "$placeholder_file"
+    if ! git add "$placeholder_file" >/dev/null 2>&1; then
+        log_error "プレースホルダーファイルの追加に失敗しました"
+        return 1
+    fi
+    
+    # コミット作成
+    local commit_message="Setup initial branch with empty placeholder
+
+- Empty placeholder for student content creation
+- Orphan branch with no history for proper diff comparison"
+    
+    if ! git commit -m "$commit_message" >/dev/null 2>&1; then
+        log_error "initial ブランチのコミットに失敗しました"
+        return 1
+    fi
+    
+    # リモートへプッシュ
+    if ! git push origin initial >/dev/null 2>&1; then
+        log_error "initial ブランチのプッシュに失敗しました"
+        return 1
+    fi
+    
+    log_info "✓ initial ブランチ作成完了"
+    return 0
+}
+
+#
+# review-branch の作成（initial から分岐後、main の内容をマージ）
+#
+# Args:
+#   $1: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
+#
+create_review_branch_from_initial() {
+    local context="$1"
+    
+    # 引数の検証
+    if [ -z "$context" ]; then
+        log_error "create_review_branch_from_initial: context引数が必要です"
+        log_error "使用方法: create_review_branch_from_initial <context>"
+        return 1
+    fi
+    
+    log_info "📝 review-branch ブランチを作成中..."
+    
+    # review-branch を initial から作成
+    if ! git checkout -b review-branch >/dev/null 2>&1; then
+        log_error "review-branch の作成に失敗しました"
+        return 1
+    fi
+    
+    # main ブランチの内容をマージして学生の作業内容を含める
+    if ! git merge main --no-edit --allow-unrelated-histories >/dev/null 2>&1; then
+        log_error "❌ review-branch への main ブランチのマージでエラーが発生しました"
+        log_warn "   ⚠️ 通常この段階ではコンフリクトは発生しません"
+        log_warn "   考えられる原因: テンプレートの問題、または学生による誤った変更"
+        log_warn "   管理者にお問い合わせください"
+        return 1
+    fi
+    
+    # リモートへプッシュ
+    if ! git push origin review-branch >/dev/null 2>&1; then
+        log_error "❌ review-branch のプッシュに失敗しました"
+        log_warn "   考えられる原因: 権限不足、ネットワークの問題、またはリモートリポジトリの設定"
+        return 1
+    fi
+    
+    log_info "✓ review-branch 作成完了"
+    return 0
+}
+
+#
+# orphan branch ワークフロー全体のセットアップ（ラッパー関数）
+#
+# Args:
+#   $1: placeholder_file - 作成するプレースホルダーファイル名（例: "index.html", ".tex_placeholder"）
+#   $2: files_to_remove - 削除対象ファイルパターン（例: "index.html", "*.tex *.cls *.sty"）  
+#   $3: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
+#   $4: return_branch - 処理後に戻るブランチ名（オプション、デフォルト: main）
+#
+setup_orphan_branch_workflow() {
+    local placeholder_file="$1"
+    local files_to_remove="$2"
+    local context="$3"
+    local return_branch="${4:-main}"
+    
+    # 引数の検証
+    if [ -z "$placeholder_file" ] || [ -z "$context" ]; then
+        log_error "setup_orphan_branch_workflow: 必須引数が不足しています"
+        log_error "使用方法: setup_orphan_branch_workflow <placeholder_file> <files_to_remove> <context> [return_branch]"
+        return 1
+    fi
+    
+    log_info "🌿 orphan branch ワークフローを開始します..."
+    
+    # STEP 1: initial ブランチ作成
+    if ! create_orphan_initial_branch "$placeholder_file" "$files_to_remove" "$context"; then
+        log_error "initial ブランチの作成に失敗しました"
+        return 1
+    fi
+    
+    # STEP 2: review-branch 作成
+    if ! create_review_branch_from_initial "$context"; then
+        log_error "review-branch の作成に失敗しました"
+        return 1
+    fi
+    
+    # STEP 3: 指定されたブランチに戻る
+    if ! git checkout "$return_branch" >/dev/null 2>&1; then
+        log_warn "⚠️ $return_branch ブランチへの切り替えに失敗しました"
+        log_info "現在のブランチ: $(git branch --show-current)"
+    else
+        log_info "✓ $return_branch ブランチに戻りました"
+    fi
+    
+    log_info "✅ orphan branch ワークフロー完了"
+    return 0
+}
+
 #
 # LaTeX環境セットアップ関数
 #
