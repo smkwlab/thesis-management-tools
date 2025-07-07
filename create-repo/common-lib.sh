@@ -95,6 +95,8 @@ check_github_auth_docker() {
     if validate_token_env; then
         log_info "GitHub認証済み（環境変数認証）"
         return 0
+    else
+        log_debug "環境変数GH_TOKENが未設定または無効。セキュアファイル認証を試みます。"
     fi
     
     # セキュアファイル認証
