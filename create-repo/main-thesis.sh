@@ -77,6 +77,18 @@ setup_git_user "thesis-setup@smkwlab.github.io" "Thesis Setup Tool"
 # テンプレート整理
 echo "テンプレートファイルを整理中..."
 rm -f CLAUDE.md 2>/dev/null || true
+rm -rf docs/ 2>/dev/null || true
+
+# 論文タイプに応じて不要なファイルを削除
+if [ "$THESIS_TYPE" = "shuuron" ]; then
+    # 修士論文: sotsuron.tex, gaiyou.tex を削除
+    rm -f sotsuron.tex gaiyou.tex 2>/dev/null || true
+    echo "修士論文用: sotsuron.tex, gaiyou.tex を削除しました"
+elif [ "$THESIS_TYPE" = "sotsuron" ]; then
+    # 卒業論文: thesis.tex, abstract.tex を削除
+    rm -f thesis.tex abstract.tex 2>/dev/null || true
+    echo "卒業論文用: thesis.tex, abstract.tex を削除しました"
+fi
 
 # LaTeX環境のセットアップ（共通関数使用）
 setup_latex_environment
