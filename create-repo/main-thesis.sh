@@ -111,7 +111,8 @@ echo "🔒 review-branch のブランチ保護を設定中..."
 if [ "$INDIVIDUAL_MODE" = false ]; then
     # 組織リポジトリの場合はreview-branchも保護
     # 保護設定をJSONファイルから読み込み
-    protection_config_file="${SCRIPT_DIR}/protection-config.json"
+    # Docker内実行ではカレントディレクトリに配置されている
+    protection_config_file="./protection-config.json"
     if [ ! -f "$protection_config_file" ]; then
         echo -e "${YELLOW}⚠️ 保護設定ファイルが見つかりません: $protection_config_file${NC}"
         echo -e "${YELLOW}   review-branch のブランチ保護設定をスキップします${NC}"
