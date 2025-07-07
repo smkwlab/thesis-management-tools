@@ -274,8 +274,8 @@ fi
 echo "📝 0th-draft ブランチを作成中..."
 git checkout -b 0th-draft >/dev/null 2>&1
 
-# STEP 3&4: orphan branch ワークフロー全体をセットアップ（共通関数使用）
-setup_orphan_branch_workflow "index.html" "index.html" "ISE report" "0th-draft" || exit 1
+# STEP 3&4: レビューワークフロー全体をセットアップ（共通関数使用）
+setup_review_workflow "ISE report" "0th-draft" index.html || exit 1
 
 # 初期ドラフトをコミット・プッシュ（共通関数使用）
 echo "📤 初期ドラフトをコミット中..."
