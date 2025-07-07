@@ -86,49 +86,8 @@ echo "ブランチを設定中..."
 git add . >/dev/null 2>&1
 git diff-index --quiet HEAD -- || git commit -m "Initialize repository with template cleanup" >/dev/null 2>&1 || true
 
-# STEP 3: initial ブランチを独立したブランチとして作成
-echo "📝 initial ブランチを作成中..."
-
-# orphan ブランチとして initial を作成（履歴を継承しない）
-git checkout --orphan initial >/dev/null 2>&1
-
-# LaTeX ファイルを除去し、プレースホルダーファイルのみを作成
-if ! git rm --cached --ignore-unmatch *.tex *.cls *.sty >/dev/null 2>&1; then
-    echo -e "${YELLOW}⚠️ LaTeX ファイルの削除に失敗しました。ファイルが存在しない可能性があります。${NC}" >&2
-fi
-
-# 空のプレースホルダーファイルを作成
-> .tex_placeholder
-git add .tex_placeholder >/dev/null 2>&1
-git commit -m "Setup initial branch with empty placeholder
-
-- Empty placeholder for student content creation
-- Orphan branch with no history for proper diff comparison" >/dev/null 2>&1
-git push origin initial >/dev/null 2>&1
-
-echo -e "${GREEN}✓ initial ブランチ作成完了${NC}"
-
-# STEP 4: review-branch の作成（initial から分岐後、main の内容をマージ）
-echo "📝 review-branch ブランチを作成中..."
-git checkout -b review-branch >/dev/null 2>&1
-
-# main ブランチの内容をマージして学生の作業内容を含める
-if ! git merge main --no-edit --allow-unrelated-histories >/dev/null 2>&1; then
-    echo -e "${RED}❌ review-branch への main ブランチのマージでエラーが発生しました${NC}"
-    echo -e "${YELLOW}   ⚠️ 通常この段階ではコンフリクトは発生しません${NC}"
-    echo -e "${YELLOW}   考えられる原因: テンプレートの問題、または学生による誤った変更${NC}"
-    echo -e "${YELLOW}   管理者にお問い合わせください${NC}"
-    exit 1
-fi
-
-if ! git push origin review-branch >/dev/null 2>&1; then
-    echo -e "${RED}❌ review-branch のプッシュに失敗しました${NC}"
-    echo -e "${YELLOW}   考えられる原因: 権限不足、ネットワークの問題、またはリモートリポジトリの設定${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✓ review-branch 作成完了${NC}"
-git checkout main >/dev/null 2>&1
+# STEP 3&4: orphan branch ワークフロー全体をセットアップ（共通関数使用）
+setup_orphan_branch_workflow ".tex_placeholder" "*.tex *.cls *.sty" "thesis" "main" || exit 1
 
 # Issue作成（組織モードのみ）
 if [ "$INDIVIDUAL_MODE" = false ]; then
