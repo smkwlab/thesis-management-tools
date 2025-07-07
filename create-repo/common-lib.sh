@@ -513,13 +513,14 @@ create_initial_branch() {
     # まず対象ファイルを削除してから空で再作成（差分比較のため）
     for file in $target_files; do
         if [ -n "$file" ]; then
-            # ファイルが存在する場合は削除
-            if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+            # ファイルが存在しGitの管理下にある場合は削除
+            if [ -f "$file" ] && git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
                 git rm --cached "$file" >/dev/null 2>&1
                 log_debug "ファイルを削除: $file"
             fi
             
-            # 空のファイルとして再作成
+            # 空のファイルとして再作成（パーミッション保持のためtouchしてから空に）
+            touch "$file"
             > "$file"
             if ! git add "$file" >/dev/null 2>&1; then
                 log_error "ベースラインファイルの追加に失敗しました: $file"
