@@ -91,15 +91,17 @@ get_current_user() {
 check_github_auth_docker() {
     log_debug "GitHub認証を確認中..."
     
+    # 環境変数認証（Git Bashからの受け渡し含む）
+    if validate_token_env; then
+        log_info "GitHub認証済み（環境変数認証）"
+        return 0
+    else
+        log_debug "環境変数GH_TOKENが未設定または無効。セキュアファイル認証を試みます。"
+    fi
+    
     # セキュアファイル認証
     if validate_token_file "/tmp/gh_token"; then
         log_info "GitHub認証済み（セキュアファイル認証）"
-        return 0
-    fi
-    
-    # 環境変数認証
-    if validate_token_env; then
-        log_info "GitHub認証済み（トークン認証）"
         return 0
     fi
     

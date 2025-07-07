@@ -332,6 +332,18 @@ case "$DETECTED_DOC_TYPE" in
         ;;
 esac
 
+# Git Bash環境下でのみGH_TOKENを環境変数として渡す
+if [[ -n "$MSYSTEM" ]] || [[ "$OSTYPE" == "msys" ]] || [[ -n "$MINGW_PREFIX" ]] || ([[ -n "$WINDIR" ]] && [[ "$SHELL" == *"bash"* ]]); then
+    # Git Bash環境下ではGH_TOKENを取得・設定
+    if [ -z "$GH_TOKEN" ]; then
+        if GH_TOKEN=$(gh auth token 2>/dev/null); then
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e GH_TOKEN=$GH_TOKEN"
+        else
+            echo "⚠️ GitHub認証トークンの取得に失敗しました。gh auth login を実行してください。"
+        fi
+    fi
+fi
+
 # 統一されたDocker実行（全タイプ共通）
 if [ -n "$STUDENT_ID" ]; then
     if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME" "$STUDENT_ID"; then
