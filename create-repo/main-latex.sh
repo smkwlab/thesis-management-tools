@@ -37,7 +37,7 @@ read_document_name() {
     echo ""
     echo "📝 ドキュメント名を入力してください (デフォルト: latex):"
     echo "   例: research-note, report2024, experiment-log"
-    read -p "> " DOCUMENT_NAME
+    read -r -p "> " DOCUMENT_NAME
     
     DOCUMENT_NAME="${DOCUMENT_NAME:-latex}"
     
@@ -88,7 +88,7 @@ fi
 echo "📤 変更をコミット中..."
 commit_and_push "Initial customization for ${DOCUMENT_NAME}
 
-- Setup LaTeX environment for weekly reports
+- Setup LaTeX environment for document creation
 " || exit 1
 
 # Registry Manager連携（組織ユーザーのみ）
