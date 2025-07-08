@@ -88,7 +88,7 @@ fi
 echo "📤 変更をコミット中..."
 commit_and_push "Initial customization for ${DOCUMENT_NAME}
 
-- Setup LaTeX environment for document creation
+- Setup LaTeX environment
 " || exit 1
 
 # Registry Manager連携（組織ユーザーのみ）
