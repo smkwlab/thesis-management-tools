@@ -45,11 +45,7 @@ confirm_creation "$REPO_PATH" || exit 0
 echo ""
 echo "📁 リポジトリを作成中..."
 create_repository "$REPO_PATH" "$TEMPLATE_REPOSITORY" "private" "true" || exit 1
-
 cd "$REPO_NAME"
-
-# テンプレートファイルの保持（README.md上書きを廃止）
-echo "📝 wr-templateのREADME.mdを保持します"
 
 # LaTeX環境のセットアップ
 setup_latex_environment
@@ -62,7 +58,6 @@ setup_git_user "setup-wr@smkwlab.github.io" "Weekly Report Setup Tool"
 echo "📤 変更をコミット中..."
 commit_and_push "Initialize weekly report repository for ${STUDENT_ID}
 
-- Keep original README.md from wr-template
 - Setup LaTeX environment for weekly reports
 " || exit 1
 
@@ -78,11 +73,10 @@ echo ""
 echo "===============================================" 
 echo -e "${GREEN}✅ セットアップが完了しました！${NC}"
 echo ""
-echo "リポジトリ: https://github.com/$REPO_PATH"
-echo "ローカル: ./${REPO_NAME}"
+echo "リポジトリ: https://github.com/${REPO_PATH}"
 echo ""
 echo "次のステップ:"
-echo "1. reports/week01.md を編集して最初の週報を作成"
+echo "1. 20yy-mm-dd.tex をコピーして週報ファイルを作成後編集"
 echo "2. git add, commit, pushで変更を保存"
 echo "3. 毎週新しい週報ファイルを追加"
 echo ""
