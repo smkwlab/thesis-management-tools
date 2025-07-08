@@ -5,7 +5,7 @@
     "restrictions": {
         "users": [],
         "teams": [],
-        "apps": []
+        "apps": ["github-actions"]
     },
     "allow_force_pushes": false,
     "allow_deletions": false,
