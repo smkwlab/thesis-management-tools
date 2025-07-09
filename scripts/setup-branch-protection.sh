@@ -3,9 +3,8 @@
 # Individual Branch Protection Setup Script
 #
 # 個別学生のブランチ保護設定
-# Usage: ./setup-branch-protection.sh <student_id> [repository_name]
-#   student_id: 学生ID (k##rs###, k##gjk##など)
-#   repository_name: リポジトリ名 (省略時は学生IDから自動判定)
+# Usage: ./setup-branch-protection.sh <repository_name>
+#   repository_name: リポジトリ名
 #
 
 set -e
