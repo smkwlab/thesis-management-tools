@@ -1242,7 +1242,7 @@ process_thesis_with_feedback() {
     
     # 1. ブランチ保護設定
     echo "  ブランチ保護設定を適用中..."
-    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
+    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
         echo "  ✅ ブランチ保護設定完了"
     else
         echo "  ❌ ブランチ保護設定失敗"
@@ -1301,7 +1301,7 @@ process_ise_with_feedback() {
     
     # 1. ブランチ保護設定（PR学習目的）
     echo "  ブランチ保護設定を適用中..."
-    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
+    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
         echo "  ✅ ブランチ保護設定完了"
     else
         echo "  ❌ ブランチ保護設定失敗"
@@ -1499,8 +1499,8 @@ process_thesis_issue() {
     log_info "論文リポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. ブランチ保護設定
-    if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
-        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME"
+    if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
+        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME (学生ID: $CURRENT_STUDENT_ID)"
         return 1
     fi
     
@@ -1552,8 +1552,8 @@ process_ise_issue() {
     fi
     
     # 2. ブランチ保護設定
-    if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
-        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME"
+    if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
+        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME (学生ID: $CURRENT_STUDENT_ID)"
         return 1
     fi
     
