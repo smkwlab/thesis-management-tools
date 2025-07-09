@@ -276,7 +276,7 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
 
 ```bash
 cd scripts
-./setup-branch-protection.sh k21rs001
+./scripts/setup-branch-protection.sh k21rs001-sotsuron
 ```
 
 - Issue の自動クローズ機能付き
