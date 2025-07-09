@@ -1242,7 +1242,7 @@ process_thesis_with_feedback() {
     
     # 1. ブランチ保護設定
     echo "  ブランチ保護設定を適用中..."
-    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
+    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
         echo "  ✅ ブランチ保護設定完了"
     else
         echo "  ❌ ブランチ保護設定失敗"
@@ -1301,7 +1301,7 @@ process_ise_with_feedback() {
     
     # 1. ブランチ保護設定（PR学習目的）
     echo "  ブランチ保護設定を適用中..."
-    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_NAME"; then
+    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
         echo "  ✅ ブランチ保護設定完了"
     else
         echo "  ❌ ブランチ保護設定失敗"
