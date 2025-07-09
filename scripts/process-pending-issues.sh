@@ -1206,7 +1206,7 @@ process_weekly_report_with_feedback() {
     
     # 1. thesis-student-registry 更新
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "wr" "completed"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "wr"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1251,7 +1251,7 @@ process_thesis_with_feedback() {
     
     # 2. thesis-student-registry 更新
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1310,7 +1310,7 @@ process_ise_with_feedback() {
     
     # 2. thesis-student-registry 更新
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1364,7 +1364,7 @@ process_latex_with_feedback() {
     
     # 1. thesis-student-registry 更新（ブランチ保護なし）
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1466,7 +1466,7 @@ process_weekly_report_issue() {
     log_info "週報リポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. thesis-student-registry への登録
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "wr" "completed"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "wr"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1505,7 +1505,7 @@ process_thesis_issue() {
     fi
     
     # 2. thesis-student-registry への登録
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1546,7 +1546,7 @@ process_ise_issue() {
     log_info "ISEリポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. thesis-student-registry への登録
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "ise" "active"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "ise"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1591,7 +1591,7 @@ process_latex_issue() {
     log_info "LaTeXリポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. thesis-student-registry への登録のみ（ブランチ保護なし）
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "latex" "completed"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "latex"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1639,13 +1639,12 @@ add_issue_comment() {
 }
 
 #
-# thesis-student-registry 更新（GitHub API経由）
+# thesis-student-registry 更新（GitHub API経由、github_username付き）
 #
 update_thesis_student_registry() {
     local repo_name="$1"
     local student_id="$2"
     local repo_type="$3"
-    local status="$4"
     
     log_debug "thesis-student-registry 更新: $repo_name ($repo_type) - $student_id"
     
@@ -1654,33 +1653,42 @@ update_thesis_student_registry() {
         return 0
     fi
     
+    # Issue作成者のGitHub usernameを取得
+    local github_username="${CURRENT_ISSUE_AUTHOR:-unknown}"
+    
     # 現在のrepositories.jsonを取得
     local current_json
     if ! current_json=$(gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json --jq '.content' | base64 -d 2>/dev/null); then
         log_error "repositories.json の取得に失敗: $repo_name"
-        log_error "考えられる原因:"
-        log_error "  - GitHub APIアクセス権限不足"
-        log_error "  - ネットワーク接続問題"
-        log_error "  - thesis-student-registry リポジトリへのアクセス権限不足"
         return 1
     fi
     
-    # 新しいエントリを作成
+    # 新しいエントリを作成（github_usernameを含む）
     local updated_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+    
+    # 既存エントリのcreated_atを保持、新規の場合は現在時刻を使用
+    local created_at
+    local existing_created_at=$(echo "$current_json" | jq -r --arg repo_name "$repo_name" '.[$repo_name].created_at // empty')
+    if [ -n "$existing_created_at" ] && [ "$existing_created_at" != "null" ]; then
+        created_at="$existing_created_at"
+    else
+        created_at="$updated_at"
+    fi
+    
     local new_entry=$(cat <<EOF
 {
   "student_id": "$student_id",
   "repository_type": "$repo_type",
-  "status": "$status",
-  "stage": "$repo_type",
-  "updated_at": "$updated_at"
+  "created_at": "$created_at",
+  "updated_at": "$updated_at",
+  "github_username": "$github_username"
 }
 EOF
 )
     
-    # JSONを更新（既存エントリを明示的に削除してから新規追加）
+    # JSONを更新
     local updated_json
-    if ! updated_json=$(echo "$current_json" | jq --indent 2 --arg repo_name "$repo_name" --argjson new_entry "$new_entry" 'del(.[$repo_name]) | . + {($repo_name): $new_entry}'); then
+    if ! updated_json=$(echo "$current_json" | jq --indent 2 --arg repo_name "$repo_name" --argjson new_entry "$new_entry" '.[$repo_name] = $new_entry'); then
         log_error "JSON更新処理に失敗: $repo_name"
         return 1
     fi
@@ -1689,10 +1697,6 @@ EOF
     local sha
     if ! sha=$(gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json --jq '.sha'); then
         log_error "SHA取得に失敗: $repo_name"
-        log_error "考えられる原因:"
-        log_error "  - GitHub APIアクセス権限不足"
-        log_error "  - repositories.json ファイルが存在しない"
-        log_error "  - リポジトリアクセス権限不足"
         return 1
     fi
     
@@ -1703,19 +1707,15 @@ EOF
 Repository: $repo_name
 Student ID: $masked_student_id
 Type: $repo_type
-Status: $status
+GitHub Username: $github_username
 Updated: $updated_at
 
-Processed via automated issue processor."
+Processed via automated issue processor with GitHub username."
     
     # base64エンコードしてGitHub APIで更新
     local encoded_content
     if ! encoded_content=$(echo "$updated_json" | base64); then
         log_error "base64エンコードに失敗: $repo_name"
-        log_error "考えられる原因:"
-        log_error "  - JSON形式エラー"
-        log_error "  - base64コマンドの問題"
-        log_error "  - メモリ不足"
         return 1
     fi
     
@@ -1728,12 +1728,6 @@ Processed via automated issue processor."
         return 0
     else
         log_error "GitHub API更新に失敗: $repo_name"
-        log_error "考えられる原因:"
-        log_error "  - GitHub APIレート制限"
-        log_error "  - ファイル書き込み権限不足"
-        log_error "  - SHA値の不一致（同時更新による競合）"
-        log_error "  - ネットワーク接続問題"
-        log_error "  - API認証期限切れ"
         return 1
     fi
 }
