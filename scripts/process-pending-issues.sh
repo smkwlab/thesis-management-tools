@@ -1206,7 +1206,7 @@ process_weekly_report_with_feedback() {
     
     # 1. thesis-student-registry 更新
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "wr" "completed"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "wr"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1251,7 +1251,7 @@ process_thesis_with_feedback() {
     
     # 2. thesis-student-registry 更新
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1310,7 +1310,7 @@ process_ise_with_feedback() {
     
     # 2. thesis-student-registry 更新
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1364,7 +1364,7 @@ process_latex_with_feedback() {
     
     # 1. thesis-student-registry 更新（ブランチ保護なし）
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1466,7 +1466,7 @@ process_weekly_report_issue() {
     log_info "週報リポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. thesis-student-registry への登録
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "wr" "completed"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "wr"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1505,7 +1505,7 @@ process_thesis_issue() {
     fi
     
     # 2. thesis-student-registry への登録
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE" "completed"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1591,7 +1591,7 @@ process_latex_issue() {
     log_info "LaTeXリポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. thesis-student-registry への登録のみ（ブランチ保護なし）
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "latex" "completed"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "latex"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -1645,7 +1645,6 @@ update_thesis_student_registry() {
     local repo_name="$1"
     local student_id="$2"
     local repo_type="$3"
-    local status="$4"  # 互換性のため保持（将来の拡張で使用予定、現在は新しいデータ構造でstatusフィールドなし）
     
     log_debug "thesis-student-registry 更新: $repo_name ($repo_type) - $student_id"
     
