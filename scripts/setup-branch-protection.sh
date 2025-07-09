@@ -111,15 +111,14 @@ verify_admin_permissions() {
 
 # 学生リストの更新（pending → completed）
 update_student_lists() {
-    local student_id="$1"
-    local repo_name="$2"
+    local repo_name="$1"
     # データは thesis-student-registry で管理されるため、ローカルファイル操作は不要
     
     log "ブランチ保護設定の記録中..."
     
     # thesis-student-registry のリポジトリ情報を更新（protection_statusをprotectedに設定）
     # これは registry-manager または thesis-monitor が担当
-    log "リポジトリ情報: $repo_name (学生ID: $student_id)"
+    log "リポジトリ情報: $repo_name"
     log "保護状態: protected"
     
     success "✅ ブランチ保護設定の記録が完了しました"
@@ -200,27 +199,12 @@ close_related_issue() {
 
 # ブランチ保護設定
 setup_protection() {
-    local student_id="$1"
-    local repo_name="$2"
+    local repo_name="$1"
     
-    # 学生ID検証
-    if ! [[ "$student_id" =~ ^k[0-9]{2}(rs[0-9]{3}|jk[0-9]{3}|gjk[0-9]{2})$ ]]; then
-        error "Invalid student ID format: $student_id"
-        error "Expected format: k##rs### (undergraduate) or k##gjk## (graduate)"
-        return 1
-    fi
-    
-    # リポジトリ名が指定されていない場合は従来の自動判定を使用
+    # リポジトリ名の検証
     if [ -z "$repo_name" ]; then
-        # 論文タイプの判定
-        if [[ "$student_id" =~ ^k[0-9]{2}rs[0-9]{3}$ ]]; then
-            thesis_type="sotsuron"
-        elif [[ "$student_id" =~ ^k[0-9]{2}jk[0-9]{3}$ ]]; then
-            thesis_type="sotsuron"
-        elif [[ "$student_id" =~ ^k[0-9]{2}gjk[0-9]{2}$ ]]; then
-            thesis_type="thesis"
-        fi
-        repo_name="${student_id}-${thesis_type}"
+        error "Repository name is required"
+        return 1
     fi
     
     log "Setting up branch protection for: smkwlab/$repo_name"
@@ -330,7 +314,7 @@ setup_protection() {
         close_related_issue "$repo_name"
         
         # 学生リストの更新（pending → completed）
-        update_student_lists "$student_id" "$repo_name"
+        update_student_lists "$repo_name"
         
         return 0
     else
@@ -345,16 +329,16 @@ show_help() {
     cat <<EOF
 Individual Branch Protection Setup Script
 
-Usage: $0 <student_id> [repository_name]
+Usage: $0 <repository_name>
 
 Arguments:
-  student_id       Student ID (k##rs### for undergraduate, k##gjk## for graduate)
-  repository_name  Repository name (optional, auto-detected from student_id if not provided)
+  repository_name  Repository name (without smkwlab/ prefix)
 
 Examples:
-  $0 k21rs001                    # Setup protection for k21rs001-sotsuron
-  $0 k21gjk01                    # Setup protection for k21gjk01-thesis
-  $0 k02jk059 k02jk059-ise-report1  # Setup protection for specific repository
+  $0 k21rs001-sotsuron          # Setup protection for thesis repository
+  $0 k21gjk01-thesis            # Setup protection for graduate thesis
+  $0 k02jk059-ise-report1       # Setup protection for ISE report repository
+  $0 k21rs001-wr                # Setup protection for weekly report repository
 
 Protection Rules Applied:
   - Requires 1 approving review before merge
@@ -371,11 +355,10 @@ EOF
 
 # メイン処理
 main() {
-    local student_id="$1"
-    local repo_name="$2"
+    local repo_name="$1"
     
-    if [ -z "$student_id" ]; then
-        error "Student ID is required"
+    if [ -z "$repo_name" ]; then
+        error "Repository name is required"
         echo
         show_help
         exit 1
@@ -393,7 +376,7 @@ main() {
         exit 1
     fi
     
-    setup_protection "$student_id" "$repo_name"
+    setup_protection "$repo_name"
 }
 
 # コマンドライン処理
@@ -403,7 +386,7 @@ case "${1:-}" in
         exit 0
         ;;
     "")
-        error "Student ID is required"
+        error "Repository name is required"
         echo
         show_help
         exit 1
