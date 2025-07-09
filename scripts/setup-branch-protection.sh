@@ -124,77 +124,6 @@ update_student_lists() {
     success "✅ ブランチ保護設定の記録が完了しました"
 }
 
-# 関連Issueを自動クローズ
-close_related_issue() {
-    local repo_name="$1"
-    
-    log "関連Issueの検索とクローズ中..."
-    
-    # リポジトリ名に基づいてIssueを検索（絵文字を避けてより安全に）
-    local search_term="smkwlab/${repo_name}"
-    local issues
-    
-    # デバッグ情報の出力
-    if [ "${DEBUG:-0}" = "1" ]; then
-        log "🔍 Issue検索詳細:"
-        log "   検索対象: $search_term"
-        log "   条件: タイトルに'ブランチ保護設定依頼'を含む"
-        log "   状態: open"
-    fi
-    
-    # GitHub CLIでIssue検索（タイトルにリポジトリ名が含まれるものを検索）
-    # まずラベル付きで検索、見つからなければラベルなしで検索
-    issues=$(gh issue list --repo smkwlab/thesis-management-tools \
-        --state open \
-        --label "branch-protection" \
-        --json number,title \
-        --jq ".[] | select(.title | contains(\"$search_term\")) | .number" 2>/dev/null || echo "")
-    
-    # ラベル付きで見つからない場合は、ラベルなしで検索
-    if [ -z "$issues" ]; then
-        issues=$(gh issue list --repo smkwlab/thesis-management-tools \
-            --state open \
-            --json number,title \
-            --jq ".[] | select((.title | contains(\"$search_term\")) and (.title | contains(\"ブランチ保護設定依頼\"))) | .number" 2>/dev/null || echo "")
-    fi
-    
-    if [ -n "$issues" ]; then
-        for issue_number in $issues; do
-            log "Issue #${issue_number} をクローズ中..."
-            
-            if gh issue close "$issue_number" --repo smkwlab/thesis-management-tools \
-                --comment "✅ ブランチ保護設定が完了しました。
-
-### 設定内容
-- 1つ以上の承認レビューが必要
-- 新しいコミット時に古いレビューを無効化  
-- フォースプッシュとブランチ削除を禁止
-
-### 確認
-リポジトリ設定: https://github.com/smkwlab/${repo_name}/settings/branches
-
-このIssueは自動的にクローズされました。" 2>/dev/null; then
-                success "✅ 関連Issue #${issue_number} を自動クローズしました"
-            else
-                warn "⚠️  Issue #${issue_number} のクローズに失敗しました"
-                if [ "${DEBUG:-0}" = "1" ]; then
-                    warn "   権限不足またはAPI制限の可能性があります"
-                fi
-            fi
-        done
-    else
-        if [ "${DEBUG:-0}" = "1" ]; then
-            warn "⚠️  関連Issueが見つかりませんでした（検索: ${search_term}）"
-            warn "   以下を確認してください："
-            warn "   - Issueタイトルにリポジトリ名が含まれているか"
-            warn "   - 'ブランチ保護設定依頼'の文字が含まれているか" 
-            warn "   - Issueがopen状態か"
-        else
-            warn "⚠️  関連Issueが見つかりませんでした（リポジトリ: ${search_term}）"
-            warn "   手動でIssueをクローズしてください"
-        fi
-    fi
-}
 
 
 # ブランチ保護設定
@@ -305,8 +234,6 @@ setup_protection() {
         success "     - Dismisses stale reviews when new commits are pushed"
         success "     - Prevents force pushes and branch deletion"
         
-        # 対応するIssueを自動クローズ
-        close_related_issue "$repo_name"
         
         # 学生リストの更新（pending → completed）
         update_student_lists "$repo_name"
