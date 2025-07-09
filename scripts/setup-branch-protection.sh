@@ -201,12 +201,6 @@ close_related_issue() {
 setup_protection() {
     local repo_name="$1"
     
-    # リポジトリ名の検証
-    if [ -z "$repo_name" ]; then
-        error "Repository name is required"
-        return 1
-    fi
-    
     log "Setting up branch protection for: smkwlab/$repo_name"
     log "Note: 'smkwlab/' prefix is automatically added to repository name"
     
@@ -336,10 +330,10 @@ Arguments:
   repository_name  Repository name (without smkwlab/ prefix)
 
 Examples:
-  $0 k21rs001-sotsuron          # Setup protection for thesis repository
-  $0 k21gjk01-thesis            # Setup protection for graduate thesis
-  $0 k02jk059-ise-report1       # Setup protection for ISE report repository
-  $0 k21rs001-wr                # Setup protection for weekly report repository
+  $0 k21rs001-sotsuron          # Setup protection for thesis repository (→ smkwlab/k21rs001-sotsuron)
+  $0 k21gjk01-thesis            # Setup protection for graduate thesis (→ smkwlab/k21gjk01-thesis)
+  $0 k02jk059-ise-report1       # Setup protection for ISE report repository (→ smkwlab/k02jk059-ise-report1)
+  $0 k21rs001-wr                # Setup protection for weekly report repository (→ smkwlab/k21rs001-wr)
 
 Protection Rules Applied:
   - Requires 1 approving review before merge
