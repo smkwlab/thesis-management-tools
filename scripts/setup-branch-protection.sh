@@ -208,6 +208,7 @@ setup_protection() {
     fi
     
     log "Setting up branch protection for: smkwlab/$repo_name"
+    log "Note: 'smkwlab/' prefix is automatically added to repository name"
     
     # APIレート制限チェック
     if ! check_rate_limit; then
