@@ -1645,7 +1645,7 @@ update_thesis_student_registry() {
     local repo_name="$1"
     local student_id="$2"
     local repo_type="$3"
-    local status="$4"  # 互換性のため保持（使用されない）
+    local status="$4"  # 互換性のため保持（将来の拡張で使用予定、現在は新しいデータ構造でstatusフィールドなし）
     
     log_debug "thesis-student-registry 更新: $repo_name ($repo_type) - $student_id"
     
@@ -1679,7 +1679,7 @@ EOF
     
     # JSONを更新
     local updated_json
-    if ! updated_json=$(echo "$current_json" | jq --indent 2 --arg repo_name "$repo_name" --argjson new_entry "$new_entry" 'del(.[$repo_name]) | . + {($repo_name): $new_entry}'); then
+    if ! updated_json=$(echo "$current_json" | jq --indent 2 --arg repo_name "$repo_name" --argjson new_entry "$new_entry" '.[$repo_name] = $new_entry'); then
         log_error "JSON更新処理に失敗: $repo_name"
         return 1
     fi
