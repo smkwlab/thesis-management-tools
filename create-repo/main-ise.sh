@@ -178,6 +178,8 @@ setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
 
 # STEP 1: main ブランチでファイルをセットアップ
 echo "テンプレートファイルを整理中..."
+rm -f CLAUDE.md 2>/dev/null || true
+rm -rf docs/ 2>/dev/null || true
 
 # main ブランチでの初期セットアップコミット
 git add .
