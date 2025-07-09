@@ -1665,11 +1665,21 @@ update_thesis_student_registry() {
     
     # 新しいエントリを作成（github_usernameを含む）
     local updated_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+    
+    # 既存エントリのcreated_atを保持、新規の場合は現在時刻を使用
+    local created_at
+    local existing_created_at=$(echo "$current_json" | jq -r --arg repo_name "$repo_name" '.[$repo_name].created_at // empty')
+    if [ -n "$existing_created_at" ] && [ "$existing_created_at" != "null" ]; then
+        created_at="$existing_created_at"
+    else
+        created_at="$updated_at"
+    fi
+    
     local new_entry=$(cat <<EOF
 {
   "student_id": "$student_id",
   "repository_type": "$repo_type",
-  "created_at": "$updated_at",
+  "created_at": "$created_at",
   "updated_at": "$updated_at",
   "github_username": "$github_username"
 }
