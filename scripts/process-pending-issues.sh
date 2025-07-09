@@ -1500,7 +1500,7 @@ process_thesis_issue() {
     
     # 1. ブランチ保護設定
     if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
-        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME"
+        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME (学生ID: $CURRENT_STUDENT_ID)"
         return 1
     fi
     
@@ -1553,7 +1553,7 @@ process_ise_issue() {
     
     # 2. ブランチ保護設定
     if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
-        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME"
+        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME (学生ID: $CURRENT_STUDENT_ID)"
         return 1
     fi
     
