@@ -1546,7 +1546,7 @@ process_ise_issue() {
     log_info "ISEリポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. thesis-student-registry への登録
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "ise" "active"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "ise"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
