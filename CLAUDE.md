@@ -25,7 +25,7 @@ DOC_TYPE=latex STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note AUTHOR_NAME="Taro
 ### Branch Protection Setup (Faculty)
 ```bash
 # Individual student setup
-./scripts/setup-branch-protection.sh k21rs001
+./scripts/setup-branch-protection.sh k21rs001-sotsuron
 
 # Check protection status
 gh repo view smkwlab/k21rs001-sotsuron --json branchProtectionRules
