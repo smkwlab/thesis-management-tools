@@ -18,12 +18,7 @@ fi
 DOC_TYPE="${DOC_TYPE}"
 
 # 引数または環境変数から学籍番号を取得
-# ただし、INDIVIDUAL_MODE=trueかつDOC_TYPE=latexの場合はスキップ
-if [ "${INDIVIDUAL_MODE:-false}" = "true" ] && [ "$DOC_TYPE" = "latex" ]; then
-    STUDENT_ID=""
-else
-    STUDENT_ID="${1:-$STUDENT_ID}"
-fi
+STUDENT_ID="${1:-$STUDENT_ID}"
 
 # 文書タイプの検証
 if [ -z "$DOC_TYPE" ]; then
@@ -324,6 +319,10 @@ case "$DETECTED_DOC_TYPE" in
         # ブランチ保護設定が環境変数で指定されている場合は渡す
         if [ -n "$ENABLE_PROTECTION" ]; then
             DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ENABLE_PROTECTION=$ENABLE_PROTECTION"
+        fi
+        # Registry Manager連携設定が環境変数で指定されている場合は渡す
+        if [ -n "$ENABLE_REGISTRY_MANAGER" ]; then
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ENABLE_REGISTRY_MANAGER=$ENABLE_REGISTRY_MANAGER"
         fi
         ;;
     ise)
