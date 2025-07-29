@@ -320,10 +320,6 @@ case "$DETECTED_DOC_TYPE" in
         if [ -n "$ENABLE_PROTECTION" ]; then
             DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ENABLE_PROTECTION=$ENABLE_PROTECTION"
         fi
-        # Registry Manager連携設定が環境変数で指定されている場合は渡す
-        if [ -n "$ENABLE_REGISTRY_MANAGER" ]; then
-            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ENABLE_REGISTRY_MANAGER=$ENABLE_REGISTRY_MANAGER"
-        fi
         ;;
     ise)
         # ISE固有の環境変数処理
