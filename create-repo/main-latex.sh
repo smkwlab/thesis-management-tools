@@ -104,6 +104,7 @@ commit_and_push "Initial customization for ${DOCUMENT_NAME}
 " || exit 1
 
 # Registry Manager連携（組織ユーザーのみ、かつ学籍番号がある場合）
+# 条件: 個人モードが無効 AND 学籍番号が存在 AND Registryリポジトリがアクセス可能
 if [ "$INDIVIDUAL_MODE" = false ] && [ -n "$STUDENT_ID" ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
     if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "latex" "$ORGANIZATION"; then
         echo -e "${YELLOW}⚠️ Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。${NC}"
