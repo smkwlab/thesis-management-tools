@@ -20,12 +20,18 @@ ORGANIZATION=$(determine_organization)
 TEMPLATE_REPOSITORY="${ORGANIZATION}/latex-template"
 echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
 
-# 学籍番号の入力
-STUDENT_ID=$(read_student_id "$1")
-
-# 学籍番号の正規化と検証
-STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
-echo -e "${GREEN}✓ 学籍番号: $STUDENT_ID${NC}"
+# INDIVIDUAL_MODEの場合は学籍番号をスキップ
+if [ "$INDIVIDUAL_MODE" = true ]; then
+    echo -e "${BLUE}📝 個人モード: 学籍番号の入力をスキップします${NC}"
+    STUDENT_ID=""
+else
+    # 学籍番号の入力
+    STUDENT_ID=$(read_student_id "$1")
+    
+    # 学籍番号の正規化と検証
+    STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
+    echo -e "${GREEN}✓ 学籍番号: $STUDENT_ID${NC}"
+fi
 
 # ドキュメント名の入力
 read_document_name() {
@@ -49,7 +55,13 @@ read_document_name() {
 }
 
 read_document_name
-REPO_NAME="${STUDENT_ID}-${DOCUMENT_NAME}"
+
+# リポジトリ名の決定
+if [ "$INDIVIDUAL_MODE" = true ]; then
+    REPO_NAME="${DOCUMENT_NAME}"
+else
+    REPO_NAME="${STUDENT_ID}-${DOCUMENT_NAME}"
+fi
 
 # 組織アクセス確認
 check_organization_access "$ORGANIZATION"
@@ -91,8 +103,8 @@ commit_and_push "Initial customization for ${DOCUMENT_NAME}
 - Setup LaTeX environment
 " || exit 1
 
-# Registry Manager連携（組織ユーザーのみ）
-if [ "$INDIVIDUAL_MODE" = false ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
+# Registry Manager連携（組織ユーザーのみ、かつ学籍番号がある場合）
+if [ "$INDIVIDUAL_MODE" = false ] && [ -n "$STUDENT_ID" ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
     if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "latex" "$ORGANIZATION"; then
         echo -e "${YELLOW}⚠️ Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。${NC}"
     fi

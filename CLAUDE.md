@@ -20,6 +20,9 @@ DOC_TYPE=ise /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwla
 
 # Advanced configuration with environment variables
 DOC_TYPE=latex STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+
+# Individual mode for personal LaTeX documents (no student ID required)
+INDIVIDUAL_MODE=true DOC_TYPE=latex DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
 ### Branch Protection Setup (Faculty)

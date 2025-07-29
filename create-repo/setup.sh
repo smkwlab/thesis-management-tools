@@ -18,7 +18,12 @@ fi
 DOC_TYPE="${DOC_TYPE}"
 
 # 引数または環境変数から学籍番号を取得
-STUDENT_ID="${1:-$STUDENT_ID}"
+# ただし、INDIVIDUAL_MODE=trueかつDOC_TYPE=latexの場合はスキップ
+if [ "${INDIVIDUAL_MODE:-false}" = "true" ] && [ "$DOC_TYPE" = "latex" ]; then
+    STUDENT_ID=""
+else
+    STUDENT_ID="${1:-$STUDENT_ID}"
+fi
 
 # 文書タイプの検証
 if [ -z "$DOC_TYPE" ]; then
