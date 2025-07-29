@@ -16,6 +16,24 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-wr.sh)"
 ```
 
+### Universal Setup Script with Document Types
+```bash
+# Thesis repository
+DOC_TYPE=thesis STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+
+# Weekly reports
+DOC_TYPE=wr STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+
+# General LaTeX documents (organization mode)
+DOC_TYPE=latex STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+
+# General LaTeX documents (individual mode - no student ID required)
+INDIVIDUAL_MODE=true DOC_TYPE=latex DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+
+# ISE reports
+DOC_TYPE=ise STUDENT_ID=k21rs001 ISE_REPORT_NUM=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+```
+
 ### Advanced Usage
 ```bash
 # Debug mode for troubleshooting

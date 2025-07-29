@@ -20,6 +20,9 @@ DOC_TYPE=ise /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwla
 
 # Advanced configuration with environment variables
 DOC_TYPE=latex STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+
+# Individual mode for personal LaTeX documents (no student ID required)
+INDIVIDUAL_MODE=true DOC_TYPE=latex DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 ```
 
 ### Branch Protection Setup (Faculty)
@@ -79,6 +82,11 @@ Universal Setup Script uses `DOC_TYPE` environment variable to specify document 
 DOCUMENT_NAME=research-note    # Custom document name
 AUTHOR_NAME="Taro Yamada"      # Author name
 ENABLE_PROTECTION=true         # Enable branch protection
+
+# Individual mode behavior (DOC_TYPE=latex only)
+INDIVIDUAL_MODE=true           # Skip student ID input, create in personal account
+# Note: When INDIVIDUAL_MODE=true, any STUDENT_ID argument is ignored
+# Note: Individual mode automatically disables Registry Manager integration
 
 # ISE report configuration
 ASSIGNMENT_TYPE=exercise       # Assignment type
