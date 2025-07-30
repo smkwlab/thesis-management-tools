@@ -344,15 +344,25 @@ if [[ -n "$MSYSTEM" ]] || [[ "$OSTYPE" == "msys" ]] || [[ -n "$MINGW_PREFIX" ]] 
     fi
 fi
 
+# 対話的入力が必要かどうかを判断
+DOCKER_OPTIONS="--rm"
+if [ "$DOC_TYPE" = "latex" ] && [ "$INDIVIDUAL_MODE" = "true" ] && [ -n "$DOCUMENT_NAME" ]; then
+    # INDIVIDUAL_MODEでDOCUMENT_NAMEが指定されている場合は非対話的モード
+    echo "📋 非対話的モードで実行（DOCUMENT_NAME: $DOCUMENT_NAME）"
+else
+    # その他の場合は対話的モード
+    DOCKER_OPTIONS="$DOCKER_OPTIONS -it"
+fi
+
 # 統一されたDocker実行（全タイプ共通）
 if [ -n "$STUDENT_ID" ]; then
-    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME" "$STUDENT_ID"; then
+    if ! docker run $DOCKER_OPTIONS $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME" "$STUDENT_ID"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         echo "学籍番号: $STUDENT_ID"
         exit 1
     fi
 else
-    if ! docker run --rm -it $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME"; then
+    if ! docker run $DOCKER_OPTIONS $DOCKER_ENV_VARS -v "$TOKEN_FILE:/tmp/gh_token:ro" "$DOCKER_IMAGE_NAME"; then
         echo "❌ セットアップスクリプトの実行に失敗しました"
         exit 1
     fi
