@@ -180,7 +180,7 @@ detect_user_type() {
     fi
     
     # INDIVIDUAL_MODE環境変数による明示的指定
-    if [ "${INDIVIDUAL_MODE:-false}" = "true" ]; then
+    if [[ "${INDIVIDUAL_MODE:-false}" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
         echo "individual_user"
         return 0
     fi
@@ -346,7 +346,7 @@ fi
 
 # 対話的入力が必要かどうかを判断
 DOCKER_OPTIONS="--rm"
-if [ "$DOC_TYPE" = "latex" ] && [ "$INDIVIDUAL_MODE" = "true" ] && [ -n "$DOCUMENT_NAME" ]; then
+if [ "$DOC_TYPE" = "latex" ] && [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]] && [ -n "$DOCUMENT_NAME" ]; then
     # INDIVIDUAL_MODEでDOCUMENT_NAMEが指定されている場合は非対話的モード
     echo "📋 非対話的モードで実行（DOCUMENT_NAME: $DOCUMENT_NAME）"
 else

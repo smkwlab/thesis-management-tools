@@ -299,7 +299,10 @@ check_organization_membership() {
 check_organization_access() {
     local organization="$1"
     
-    [ "$INDIVIDUAL_MODE" = false ] && check_organization_membership "$organization" "$CURRENT_USER" || exit 1
+    # INDIVIDUAL_MODEが有効でない場合のみ組織メンバーシップをチェック
+    if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+        check_organization_membership "$organization" "$CURRENT_USER" || exit 1
+    fi
 }
 
 # ================================
@@ -311,10 +314,10 @@ determine_repository_path() {
     local organization="$1"
     local repo_name="$2"
     
-    if [ "$INDIVIDUAL_MODE" = false ]; then
-        echo "${organization}/${repo_name}"
-    else
+    if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
         echo "${CURRENT_USER}/${repo_name}"
+    else
+        echo "${organization}/${repo_name}"
     fi
 }
 
@@ -326,8 +329,8 @@ confirm_creation() {
     echo -e "${BRIGHT_WHITE}🎯 作成予定リポジトリ: $repo_path${NC}"
     echo ""
     
-    # INDIVIDUAL_MODEの場合は自動承認
-    if [ "$INDIVIDUAL_MODE" = "true" ]; then
+    # INDIVIDUAL_MODEの場合は自動承認（柔軟な値判定）
+    if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
         echo "📋 個人モード: 自動的に続行します"
         return 0
     fi
