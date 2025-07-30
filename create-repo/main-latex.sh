@@ -87,6 +87,12 @@ cd "$REPO_NAME"
 # LaTeX環境のセットアップ
 setup_latex_environment
 
+# STEP 1: main ブランチでファイルをセットアップ
+echo "テンプレートファイルを整理中..."
+rm -f CLAUDE.md 2>/dev/null || true
+rm -rf docs/ 2>/dev/null || true
+find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
+
 # Git設定
 setup_git_auth || exit 1
 setup_git_user "setup-latex@smkwlab.github.io" "LaTeX Setup Tool"
