@@ -16,8 +16,8 @@ ENABLE_PROTECTION="${ENABLE_PROTECTION:-false}"
 # 組織設定
 ORGANIZATION=$(determine_organization)
 
-# テンプレートリポジトリの設定
-TEMPLATE_REPOSITORY="${ORGANIZATION}/latex-template"
+# テンプレートリポジトリの設定（常にsmkwlab/latex-templateを使用）
+TEMPLATE_REPOSITORY="smkwlab/latex-template"
 echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
 
 # INDIVIDUAL_MODEの場合は学籍番号をスキップ
