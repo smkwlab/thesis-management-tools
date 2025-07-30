@@ -20,8 +20,8 @@ ORGANIZATION=$(determine_organization)
 TEMPLATE_REPOSITORY="smkwlab/latex-template"
 echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
 
-# INDIVIDUAL_MODEの場合は学籍番号をスキップ
-if [ "$INDIVIDUAL_MODE" = true ]; then
+# INDIVIDUAL_MODEの場合は学籍番号をスキップ（柔軟な値判定）
+if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
     echo -e "${BLUE}📝 個人モード: 学籍番号の入力をスキップします${NC}"
     STUDENT_ID=""
 else
@@ -56,8 +56,8 @@ read_document_name() {
 
 read_document_name
 
-# リポジトリ名の決定
-if [ "$INDIVIDUAL_MODE" = true ]; then
+# リポジトリ名の決定（柔軟な値判定）
+if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
     REPO_NAME="${DOCUMENT_NAME}"
 else
     REPO_NAME="${STUDENT_ID}-${DOCUMENT_NAME}"
@@ -105,7 +105,8 @@ commit_and_push "Initial customization for ${DOCUMENT_NAME}
 
 # Registry Manager連携（組織ユーザーのみ、かつ学籍番号がある場合）
 # 条件: 個人モードが無効 AND 学籍番号が存在 AND Registryリポジトリがアクセス可能
-if [ "$INDIVIDUAL_MODE" = false ] && [ -n "$STUDENT_ID" ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
+# INDIVIDUAL_MODEが有効でない場合のみRegistry Manager連携
+if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]] && [ -n "$STUDENT_ID" ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
     if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "latex" "$ORGANIZATION"; then
         echo -e "${YELLOW}⚠️ Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。${NC}"
     fi
