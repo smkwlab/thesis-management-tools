@@ -325,6 +325,13 @@ confirm_creation() {
     echo ""
     echo -e "${BRIGHT_WHITE}🎯 作成予定リポジトリ: $repo_path${NC}"
     echo ""
+    
+    # INDIVIDUAL_MODEの場合は自動承認
+    if [ "$INDIVIDUAL_MODE" = "true" ]; then
+        echo "📋 個人モード: 自動的に続行します"
+        return 0
+    fi
+    
     read -p "続行しますか? [Y/n]: " -n 1 -r
     echo ""
     
