@@ -29,6 +29,7 @@ if [ -z "$DOC_TYPE" ]; then
     echo "  DOC_TYPE=wr $0"
     echo "  DOC_TYPE=latex $0"
     echo "  DOC_TYPE=ise $0"
+    echo "  DOC_TYPE=poster $0"
     echo ""
     exit 1
 fi
@@ -65,9 +66,15 @@ configure_document_type() {
             DOCKER_IMAGE_NAME="ise-setup-alpine"
             MAIN_SCRIPT="main-ise.sh"
             ;;
+        poster)
+            DOC_DESCRIPTION="📊 学会ポスターリポジトリ"
+            DOCKERFILE_NAME="Dockerfile-poster"
+            DOCKER_IMAGE_NAME="poster-setup-alpine"
+            MAIN_SCRIPT="main-poster.sh"
+            ;;
         *)
             echo "❌ サポートされていない文書タイプ: $doc_type"
-            echo "対応タイプ: thesis, wr, latex, ise"
+            echo "対応タイプ: thesis, wr, latex, ise, poster"
             exit 1
             ;;
     esac
