@@ -113,14 +113,13 @@ fi
 echo "📤 変更をコミット中..."
 commit_and_push "Initial customization for ${POSTER_NAME}
 
-- Setup LaTeX environment
-" || exit 1
+Setup LaTeX environment" || exit 1
 
 # Registry Manager連携（組織ユーザーのみ、かつ学籍番号がある場合）
 # 条件: 個人モードが無効 AND 学籍番号が存在 AND Registryリポジトリがアクセス可能
 # INDIVIDUAL_MODEが有効でない場合のみRegistry Manager連携
 if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]] && [ -n "$STUDENT_ID" ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
-    if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "poster" "$ORGANIZATION"; then
+    if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "poster" "$ORGANIZATION" &>/dev/null; then
         echo -e "${YELLOW}⚠️ Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。${NC}"
     fi
 fi
