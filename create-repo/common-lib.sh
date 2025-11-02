@@ -692,7 +692,7 @@ setup_latex_environment() {
 check_and_remove_auto_assign_files() {
     # USER_TYPE が未定義または空の場合は、安全のため外部ユーザーとして扱う
     if [ -z "$USER_TYPE" ] || [ "$USER_TYPE" != "organization_member" ]; then
-        log_warn "外部ユーザーを検出。auto-assign 設定を削除します。"
+        log_info "外部ユーザーを検出。auto-assign 設定を削除します。"
         rm -f .github/workflows/autoassignees.yml 2>/dev/null || true
         rm -f .github/auto_assign_myteams.yml 2>/dev/null || true
     else
