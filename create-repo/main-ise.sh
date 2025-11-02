@@ -182,13 +182,7 @@ rm -f CLAUDE.md 2>/dev/null || true
 rm -rf docs/ 2>/dev/null || true
 
 # smkwlab メンバーチェック: 非メンバーの場合は auto-assign ファイルを削除
-if [ "$USER_TYPE" = "organization_member" ]; then
-    echo -e "${GREEN}✓ smkwlab メンバーを検出。auto-assign 設定を維持します。${NC}"
-else
-    echo -e "${YELLOW}✓ 外部ユーザーを検出。auto-assign 設定を削除します。${NC}"
-    rm -f .github/workflows/autoassignees.yml 2>/dev/null || true
-    rm -f .github/auto_assign_myteams.yml 2>/dev/null || true
-fi
+check_and_remove_auto_assign_files
 
 # main ブランチでの初期セットアップコミット
 git add .
