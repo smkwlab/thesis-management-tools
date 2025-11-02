@@ -678,3 +678,25 @@ setup_latex_environment() {
         return 1
     fi
 }
+
+# smkwlab メンバーチェックと auto-assign ファイル削除
+#
+# 外部ユーザーがテンプレートを使用する場合、smkwlab 固有の auto-assign 設定を削除します。
+# setup.sh で判定された USER_TYPE 環境変数を使用します。
+#
+# 環境変数:
+#   USER_TYPE - "organization_member" または "individual_user"
+#
+# 戻り値:
+#   0 - 成功（メンバーチェック完了）
+check_and_remove_auto_assign_files() {
+    # USER_TYPE が未定義または空の場合は、安全のため外部ユーザーとして扱う
+    if [ -z "$USER_TYPE" ] || [ "$USER_TYPE" != "organization_member" ]; then
+        log_info "外部ユーザーを検出。auto-assign 設定を削除します。"
+        rm -f .github/workflows/autoassignees.yml 2>/dev/null || true
+        rm -f .github/auto_assign_myteams.yml 2>/dev/null || true
+    else
+        log_info "smkwlab メンバーを検出。auto-assign 設定を維持します。"
+    fi
+    return 0
+}

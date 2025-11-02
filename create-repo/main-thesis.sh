@@ -94,6 +94,9 @@ elif [ "$THESIS_TYPE" = "sotsuron" ]; then
     echo "卒業論文用: thesis.tex, abstract.tex を削除しました"
 fi
 
+# smkwlab メンバーチェック: 非メンバーの場合は auto-assign ファイルを削除
+check_and_remove_auto_assign_files
+
 # main ブランチでの初期セットアップコミット
 git add .
 git commit -m "Initial setup for ${THESIS_TYPE}" >/dev/null 2>&1 || true

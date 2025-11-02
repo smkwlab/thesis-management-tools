@@ -181,6 +181,9 @@ echo "テンプレートファイルを整理中..."
 rm -f CLAUDE.md 2>/dev/null || true
 rm -rf docs/ 2>/dev/null || true
 
+# smkwlab メンバーチェック: 非メンバーの場合は auto-assign ファイルを削除
+check_and_remove_auto_assign_files
+
 # main ブランチでの初期セットアップコミット
 git add .
 git commit -m "Initial setup for ISE Report #${ISE_REPORT_NUM}" >/dev/null 2>&1 || true
