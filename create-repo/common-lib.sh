@@ -490,174 +490,27 @@ EOF
 # ================================
 
 #
-# initial ブランチの作成
-# 指定されたファイルを空のベースライン状態にして差分比較用の基準点を作成
-# 
-# Args:
-#   $1: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
-#   $2...: target_files - ベースライン化するファイル名（複数可、例: index.html, thesis.tex abstract.tex）
-#
-create_initial_branch() {
-    local context="$1"
-    shift 1  # 最初の引数を除去
-    local target_files="$@"  # 残りの引数がすべて対象ファイル
-    
-    # 引数の検証
-    if [ -z "$context" ] || [ -z "$target_files" ]; then
-        log_error "create_initial_branch: 必須引数が不足しています"
-        log_error "使用方法: create_initial_branch <context> <target_files...>"
-        return 1
-    fi
-    
-    log_info "📝 initial ブランチを作成中..."
-    
-    # orphan ブランチとして initial を作成（履歴を継承しない）
-    if ! git checkout --orphan initial >/dev/null 2>&1; then
-        log_error "orphan ブランチの作成に失敗しました"
-        return 1
-    fi
-    
-    # 指定されたファイルをベースライン状態（空）にする
-    log_debug "対象ファイルをベースライン状態にします: $target_files"
-    
-    # まず対象ファイルを削除してから空で再作成（差分比較のため）
-    for file in $target_files; do
-        if [ -n "$file" ]; then
-            # ファイルが存在しGitの管理下にある場合は削除
-            if [ -f "$file" ] && git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
-                git rm --cached "$file" >/dev/null 2>&1
-                log_debug "ファイルを削除: $file"
-            fi
-            
-            # 空のファイルとして再作成（パーミッション保持のためtouchしてから空に）
-            touch "$file"
-            > "$file"
-            if ! git add "$file" >/dev/null 2>&1; then
-                log_error "ベースラインファイルの追加に失敗しました: $file"
-                return 1
-            fi
-            log_debug "ベースラインファイルを作成: $file"
-        fi
-    done
-    
-    # コミット作成
-    local commit_message="Setup initial branch with empty placeholder"
-    
-    if ! git commit -m "$commit_message" >/dev/null 2>&1; then
-        log_error "initial ブランチのコミットに失敗しました"
-        return 1
-    fi
-    
-    # リモートへプッシュ
-    local push_error
-    if ! push_error=$(git push origin initial 2>&1); then
-        local exit_code=$?
-        log_error "initial ブランチのプッシュに失敗しました (終了コード: $exit_code)"
-        log_error "エラー詳細: $push_error"
-        return 1
-    fi
-    
-    log_info "✓ initial ブランチ作成完了"
-    return 0
-}
-
-#
-# review-branch の作成（initial から分岐後、main の内容をマージ）
+# レビューワークフロー設定
 #
 # Args:
-#   $1: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
-#
-create_review_branch() {
-    local context="$1"
-    
-    # 引数の検証
-    if [ -z "$context" ]; then
-        log_error "create_review_branch: context引数が必要です"
-        log_error "使用方法: create_review_branch <context>"
-        return 1
-    fi
-    
-    log_info "📝 review-branch ブランチを作成中..."
-    
-    # review-branch を initial から作成
-    if ! git checkout -b review-branch >/dev/null 2>&1; then
-        log_error "review-branch の作成に失敗しました"
-        return 1
-    fi
-    
-    # main ブランチの内容をマージして学生の作業内容を含める
-    if ! git merge main --no-edit --allow-unrelated-histories >/dev/null 2>&1; then
-        log_error "❌ review-branch への main ブランチのマージでエラーが発生しました"
-        log_warn "   ⚠️ main ブランチのマージ中にコンフリクトが発生しました。内容を確認してください"
-        log_warn "   管理者にお問い合わせください"
-        return 1
-    fi
-    
-    # リモートへプッシュ
-    local push_error
-    if ! push_error=$(git push origin review-branch 2>&1); then
-        local exit_code=$?
-        log_error "❌ review-branch のプッシュに失敗しました (終了コード: $exit_code)"
-        log_error "エラー詳細: $push_error"
-        return 1
-    fi
-    
-    log_info "✓ review-branch 作成完了"
-    return 0
-}
-
-#
-# レビューワークフロー全体のセットアップ（ラッパー関数）
-# initial ブランチ（差分比較基準）と review-branch（レビュー用）を作成
-#
-# Args:
-#   $1: context - コンテキスト名（例: "ISE report", "thesis"） - エラーメッセージ用
-#   $2: return_branch - 処理後に戻るブランチ名（オプション、デフォルト: main）
-#   $3...: target_files - ベースライン化するファイル名（複数可、例: index.html, thesis.tex abstract.tex）
+#   $1: draft_branch - ドラフトブランチ名（例: 0th-draft）
 #
 setup_review_workflow() {
-    local context="$1"
-    local return_branch="${2:-main}"
-    shift 2  # 最初の2つの引数を除去
-    local target_files="$@"  # 残りの引数がすべて対象ファイル
-    
-    # 引数の検証
-    if [ -z "$context" ] || [ -z "$target_files" ]; then
-        log_error "setup_review_workflow: 必須引数が不足しています"
-        log_error "使用方法: setup_review_workflow <context> [return_branch] <target_files...>"
+    local draft_branch="$1"
+
+    if [ -z "$draft_branch" ]; then
+        log_error "setup_review_workflow: ドラフトブランチ名が指定されていません"
         return 1
     fi
-    
-    log_info "🌿 レビューワークフローを開始します..."
-    
-    # STEP 1: 0th-draft ブランチの作成（main から分岐）
-    log_info "📝 0th-draft ブランチを作成中..."
-    if ! git checkout -b "$return_branch" >/dev/null 2>&1; then
-        log_error "$return_branch ブランチの作成に失敗しました"
+
+    log_info "🌿 ドラフトブランチを作成中: $draft_branch"
+
+    if ! git checkout -b "$draft_branch" >/dev/null 2>&1; then
+        log_error "$draft_branch ブランチの作成に失敗しました"
         return 1
     fi
-    
-    # STEP 2: initial ブランチ作成
-    if ! create_initial_branch "$context" $target_files; then
-        log_error "initial ブランチの作成に失敗しました"
-        return 1
-    fi
-    
-    # STEP 3: review-branch 作成
-    if ! create_review_branch "$context"; then
-        log_error "review-branch の作成に失敗しました"
-        return 1
-    fi
-    
-    # STEP 4: 0th-draft ブランチに戻る
-    if ! git checkout "$return_branch" >/dev/null 2>&1; then
-        log_warn "⚠️ $return_branch ブランチへの切り替えに失敗しました"
-        log_info "現在のブランチ: $(git branch --show-current)"
-    else
-        log_info "✓ $return_branch ブランチに戻りました"
-    fi
-    
-    log_info "✅ レビューワークフロー完了"
+
+    log_info "✅ ドラフトブランチ作成完了"
     return 0
 }
 

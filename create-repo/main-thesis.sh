@@ -108,69 +108,18 @@ else
     exit 1
 fi
 
-# レビューワークフロー全体をセットアップ
-if [ "$THESIS_TYPE" = "shuuron" ]; then
-    # 修士論文: thesis.tex + abstract.tex
-    setup_review_workflow "thesis" "0th-draft" thesis.tex abstract.tex || exit 1
-elif [ "$THESIS_TYPE" = "sotsuron" ]; then
-    # 卒業論文: sotsuron.tex + gaiyou.tex  
-    setup_review_workflow "thesis" "0th-draft" sotsuron.tex gaiyou.tex || exit 1
-else
-    log_error "無効なTHESIS_TYPEです: $THESIS_TYPE"
-    log_error "有効な値: shuuron (修士論文) または sotsuron (卒業論文)"
-    exit 1
-fi
+# ドラフトブランチを作成
+setup_review_workflow "0th-draft" || exit 1
 
 # 初期ドラフトをコミット・プッシュ
 echo "📤 初期ドラフトをコミット中..."
-commit_and_push "Initial setup for ${THESIS_TYPE}
+commit_and_push "Initial setup for ${THESIS_TYPE}" "0th-draft" || exit 1
 
-- Create review-branch and 0th-draft
-" "0th-draft" || exit 1
-
-# review-branchに戻る
-git checkout review-branch >/dev/null 2>&1
-
-# Registry Manager連携（組織ユーザーのみ、ブランチ保護も含む）
+# Registry Manager連携（組織ユーザーのみ）
 if [ "$INDIVIDUAL_MODE" = false ] && gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
     if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$THESIS_TYPE" "$ORGANIZATION"; then
         echo -e "${YELLOW}⚠️ Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。${NC}"
     fi
-fi
-
-# review-branch のブランチ保護設定
-echo "🔒 review-branch のブランチ保護を設定中..."
-if [ "$INDIVIDUAL_MODE" = false ]; then
-    # 組織リポジトリの場合はreview-branchも保護
-    # 保護設定をJSONファイルから読み込み
-    # Docker内実行では/workspaceに配置されている
-    # 堅牢なパス解決を実装
-    for possible_path in "./protection-config.json" "/workspace/protection-config.json" "$(dirname "$0")/protection-config.json"; do
-        if [ -f "$possible_path" ]; then
-            protection_config_file="$possible_path"
-            break
-        fi
-    done
-    
-    # ファイルが見つからない場合のデフォルト
-    protection_config_file="${protection_config_file:-./protection-config.json}"
-    if [ ! -f "$protection_config_file" ]; then
-        echo -e "${YELLOW}⚠️ 保護設定ファイルが見つかりません: $protection_config_file${NC}"
-        echo -e "${YELLOW}   review-branch のブランチ保護設定をスキップします${NC}"
-    else
-        protection_config=$(cat "$protection_config_file")
-        
-        if echo "$protection_config" | gh api "repos/${ORGANIZATION}/${REPO_NAME}/branches/review-branch/protection" \
-            --method PUT \
-            --input - >/dev/null 2>&1; then
-            echo -e "${GREEN}✓ review-branch のブランチ保護設定完了${NC}"
-        else
-            echo -e "${YELLOW}⚠️ review-branch のブランチ保護設定に失敗しました${NC}"
-            echo -e "${YELLOW}   後で手動設定が必要な場合があります${NC}"
-        fi
-    fi
-else
-    echo -e "${BLUE}   個人リポジトリのため、review-branch 保護はスキップ${NC}"
 fi
 
 # 完了メッセージ
