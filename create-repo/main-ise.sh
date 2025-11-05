@@ -185,7 +185,7 @@ rm -rf docs/ 2>/dev/null || true
 check_and_remove_auto_assign_files
 
 # main ブランチでの初期セットアップコミット
-git add .
+git add -u
 git commit -m "Initial setup for ISE Report #${ISE_REPORT_NUM}" >/dev/null 2>&1 || true
 
 if git push origin main >/dev/null 2>&1; then
