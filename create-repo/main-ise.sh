@@ -7,7 +7,7 @@ set -e
 export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 共通ライブラリの読み込み
-source ./common-lib.sh
+source "${SCRIPT_DIR}/common-lib.sh"
 
 # 共通初期化
 init_script_common "情報科学演習レポートリポジトリセットアップツール" "📝"
