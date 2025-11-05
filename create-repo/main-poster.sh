@@ -98,7 +98,7 @@ echo "テンプレートファイルを整理中..."
 rm -f CLAUDE.md 2>/dev/null || true
 rm -rf docs/ 2>/dev/null || true
 find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
-git add .
+git add -u
 
 # Git設定
 setup_git_auth || exit 1
