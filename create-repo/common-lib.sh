@@ -532,24 +532,52 @@ setup_latex_environment() {
     fi
 }
 
-# smkwlab メンバーチェックと auto-assign ファイル削除
+# smkwlab 組織メンバー用の auto-assign 設定追加
 #
-# 外部ユーザーがテンプレートを使用する場合、smkwlab 固有の auto-assign 設定を削除します。
-# setup.sh で判定された USER_TYPE 環境変数を使用します。
+# 組織メンバーの場合のみ、PR自動レビュワー割り当て設定を追加します。
+# テンプレートリポジトリには含めず、setup時に動的に追加することで
+# セキュアバイデフォルトを実現します。
 #
 # 環境変数:
 #   USER_TYPE - "organization_member" または "individual_user"
+#   SCRIPT_DIR - スクリプトのディレクトリパス（templates/ を参照）
 #
 # 戻り値:
-#   0 - 成功（メンバーチェック完了）
-check_and_remove_auto_assign_files() {
-    # USER_TYPE が未定義または空の場合は、安全のため外部ユーザーとして扱う
-    if [ -z "$USER_TYPE" ] || [ "$USER_TYPE" != "organization_member" ]; then
-        log_info "外部ユーザーを検出。auto-assign 設定を削除します。"
-        rm -f .github/workflows/autoassignees.yml 2>/dev/null || true
-        rm -f .github/auto_assign_myteams.yml 2>/dev/null || true
+#   0 - 成功（設定追加完了または不要）
+setup_auto_assign_for_organization_members() {
+    # 組織メンバーの場合のみ auto-assign 設定を追加
+    if [ "$USER_TYPE" = "organization_member" ]; then
+        log_info "組織メンバー: auto-assign設定を追加します"
+
+        # .github/workflows ディレクトリが存在することを確認
+        mkdir -p .github/workflows
+
+        # スクリプトディレクトリを特定（SCRIPT_DIR が未定義の場合）
+        local script_dir="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+        local template_dir="${script_dir}/templates"
+
+        # テンプレートディレクトリの存在確認
+        if [ ! -d "${template_dir}" ]; then
+            log_error "テンプレートディレクトリが見つかりません: ${template_dir}"
+            return 1
+        fi
+
+        # テンプレートファイルをコピー
+        if [ -f "${template_dir}/autoassignees.yml" ]; then
+            cp "${template_dir}/autoassignees.yml" .github/workflows/
+            log_info "  ✓ .github/workflows/autoassignees.yml を追加"
+        else
+            log_warn "  ⚠️ テンプレートファイルが見つかりません: ${template_dir}/autoassignees.yml"
+        fi
+
+        if [ -f "${template_dir}/auto_assign_myteams.yml" ]; then
+            cp "${template_dir}/auto_assign_myteams.yml" .github/
+            log_info "  ✓ .github/auto_assign_myteams.yml を追加"
+        else
+            log_warn "  ⚠️ テンプレートファイルが見つかりません: ${template_dir}/auto_assign_myteams.yml"
+        fi
     else
-        log_info "smkwlab メンバーを検出。auto-assign 設定を維持します。"
+        log_info "外部ユーザー: auto-assign設定はスキップします"
     fi
     return 0
 }

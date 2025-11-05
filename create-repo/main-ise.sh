@@ -181,8 +181,8 @@ echo "テンプレートファイルを整理中..."
 rm -f CLAUDE.md 2>/dev/null || true
 rm -rf docs/ 2>/dev/null || true
 
-# smkwlab メンバーチェック: 非メンバーの場合は auto-assign ファイルを削除
-check_and_remove_auto_assign_files
+# smkwlab 組織メンバーの場合は auto-assign 設定を追加
+setup_auto_assign_for_organization_members
 
 # main ブランチでの初期セットアップコミット
 git add -u

@@ -1,0 +1,18 @@
+# This workflow automatically assigns reviewers and the PR author to pull requests when they are opened or marked ready for review.
+# It uses the 'auto-assign-action' to add reviewers/assignees based on a configuration file, and 'assign-author' to assign the PR author.
+# For more details, see: https://qiita.com/yusuke-sasaki/items/94a8f64e837966266bfb
+name: 'Auto Assign'
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+jobs:
+  add-reviews:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assignees and Reviewers to PR
+        uses: kentaro-m/auto-assign-action@v2.0.0
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: ".github/auto_assign_myteams.yml"
+      - name: Assign author to PR
+        uses: technote-space/assign-author@v1
