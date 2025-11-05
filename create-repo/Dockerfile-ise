@@ -26,6 +26,7 @@ WORKDIR /workspace
 COPY main-ise.sh ./
 COPY common-lib.sh ./
 COPY protection-config.json ./
+COPY templates/ ./templates/
 RUN chmod +x main-ise.sh common-lib.sh
 
 # Docker環境では手動ブラウザアクセスを前提
