@@ -88,9 +88,9 @@ find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
 
 # 論文タイプに応じて不要なファイルを削除
 if [ "$THESIS_TYPE" = "shuuron" ]; then
-    # 修士論文: sotsuron.tex, gaiyou.tex を削除
-    rm -f sotsuron.tex gaiyou.tex 2>/dev/null || true
-    echo "修士論文用: sotsuron.tex, gaiyou.tex を削除しました"
+    # 修士論文: sotsuron.tex, gaiyou.tex, example.tex, example-gaiyou.tex を削除
+    rm -f sotsuron.tex gaiyou.tex example.tex example-gaiyou.tex 2>/dev/null || true
+    echo "修士論文用: sotsuron.tex, gaiyou.tex, example.tex, example-gaiyou.tex を削除しました"
 elif [ "$THESIS_TYPE" = "sotsuron" ]; then
     # 卒業論文: thesis.tex, abstract.tex を削除
     rm -f thesis.tex abstract.tex 2>/dev/null || true
