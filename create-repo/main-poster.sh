@@ -95,7 +95,6 @@ setup_latex_environment
 
 # STEP 1: main ブランチでファイルをセットアップ
 echo "テンプレートファイルを整理中..."
-# テンプレート固有のファイルを削除（存在しない場合もあるのでエラーは無視）
 rm -f CLAUDE.md 2>/dev/null || true
 rm -rf docs/ 2>/dev/null || true
 find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
