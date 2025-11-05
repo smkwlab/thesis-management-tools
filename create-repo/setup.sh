@@ -17,8 +17,8 @@ fi
 # 引数または環境変数から文書タイプを取得（引数を優先）
 DOC_TYPE="${1:-$DOC_TYPE}"
 
-# 引数または環境変数から学籍番号を取得
-STUDENT_ID="${2:-$STUDENT_ID}"
+# 学籍番号は環境変数から取得
+STUDENT_ID="${STUDENT_ID}"
 
 # 文書タイプの検証
 if [ -z "$DOC_TYPE" ]; then
@@ -31,8 +31,8 @@ if [ -z "$DOC_TYPE" ]; then
     echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash ise"
     echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash poster"
     echo ""
-    echo "学籍番号も指定する場合："
-    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash thesis k21rs001"
+    echo "学籍番号を指定する場合（環境変数）："
+    echo "  STUDENT_ID=k21rs001 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash thesis"
     echo ""
     echo "環境変数での指定も可能："
     echo "  DOC_TYPE=thesis /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\""

@@ -9,8 +9,8 @@ Administrative tools and workflows for thesis supervision at Kyushu Sangyo Unive
 # Universal Setup Script - All document types supported (Recommended)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis
 
-# With student ID specified
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis k21rs001
+# With student ID specified (environment variable)
+STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis
 
 # Document type specific usage
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis   # Thesis repository
@@ -22,7 +22,7 @@ Administrative tools and workflows for thesis supervision at Kyushu Sangyo Unive
 DOC_TYPE=thesis /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
 
 # Advanced configuration with environment variables
-DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash latex k21rs001
+DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash latex
 
 # Individual mode for personal LaTeX documents (no student ID required)
 INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash latex
