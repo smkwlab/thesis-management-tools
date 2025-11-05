@@ -552,8 +552,17 @@ setup_auto_assign_for_organization_members() {
         # .github/workflows ディレクトリが存在することを確認
         mkdir -p .github/workflows
 
+        # スクリプトディレクトリを特定（SCRIPT_DIR が未定義の場合）
+        local script_dir="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+        local template_dir="${script_dir}/templates"
+
+        # テンプレートディレクトリの存在確認
+        if [ ! -d "${template_dir}" ]; then
+            log_error "テンプレートディレクトリが見つかりません: ${template_dir}"
+            return 1
+        fi
+
         # テンプレートファイルをコピー
-        local template_dir="${SCRIPT_DIR}/templates"
         if [ -f "${template_dir}/autoassignees.yml" ]; then
             cp "${template_dir}/autoassignees.yml" .github/workflows/
             log_info "  ✓ autoassignees.yml を追加"
