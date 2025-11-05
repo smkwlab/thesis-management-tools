@@ -189,6 +189,7 @@ setup_auto_assign_for_organization_members
 
 # main ブランチでの初期セットアップコミット
 git add -u
+git add .github/ 2>/dev/null || true
 git commit -m "Initial setup for ISE Report #${ISE_REPORT_NUM}" >/dev/null 2>&1 || true
 
 if git push origin main >/dev/null 2>&1; then
