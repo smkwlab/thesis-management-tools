@@ -565,14 +565,14 @@ setup_auto_assign_for_organization_members() {
         # テンプレートファイルをコピー
         if [ -f "${template_dir}/autoassignees.yml" ]; then
             cp "${template_dir}/autoassignees.yml" .github/workflows/
-            log_info "  ✓ autoassignees.yml を追加"
+            log_info "  ✓ .github/workflows/autoassignees.yml を追加"
         else
             log_warn "  ⚠️ テンプレートファイルが見つかりません: ${template_dir}/autoassignees.yml"
         fi
 
         if [ -f "${template_dir}/auto_assign_myteams.yml" ]; then
             cp "${template_dir}/auto_assign_myteams.yml" .github/
-            log_info "  ✓ auto_assign_myteams.yml を追加"
+            log_info "  ✓ .github/auto_assign_myteams.yml を追加"
         else
             log_warn "  ⚠️ テンプレートファイルが見つかりません: ${template_dir}/auto_assign_myteams.yml"
         fi
