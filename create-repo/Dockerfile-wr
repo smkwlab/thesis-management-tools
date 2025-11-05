@@ -23,6 +23,7 @@ WORKDIR /workspace
 # セットアップスクリプトをコピー
 COPY main-wr.sh ./
 COPY common-lib.sh ./
+COPY templates/ ./templates/
 RUN chmod +x main-wr.sh common-lib.sh
 
 # Docker環境では手動ブラウザアクセスを前提
