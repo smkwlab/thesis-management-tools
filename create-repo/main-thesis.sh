@@ -3,6 +3,9 @@
 
 set -e
 
+# スクリプトディレクトリを保存（templates/ 参照用）
+export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # 共通ライブラリの読み込み
 source ./common-lib.sh
 
