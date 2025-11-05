@@ -14,22 +14,28 @@ fi
 # 文書タイプ設定
 # ================================
 
-# 文書タイプの明示的指定（必須）
-DOC_TYPE="${DOC_TYPE}"
+# 引数または環境変数から文書タイプを取得（引数を優先）
+DOC_TYPE="${1:-$DOC_TYPE}"
 
 # 引数または環境変数から学籍番号を取得
-STUDENT_ID="${1:-$STUDENT_ID}"
+STUDENT_ID="${2:-$STUDENT_ID}"
 
 # 文書タイプの検証
 if [ -z "$DOC_TYPE" ]; then
-    echo "❌ DOC_TYPE環境変数が指定されていません"
+    echo "❌ 文書タイプが指定されていません"
     echo ""
     echo "使用例："
-    echo "  DOC_TYPE=thesis $0"
-    echo "  DOC_TYPE=wr $0"
-    echo "  DOC_TYPE=latex $0"
-    echo "  DOC_TYPE=ise $0"
-    echo "  DOC_TYPE=poster $0"
+    echo "  /bin/bash -c \"\$(curl -fsSL URL)\" bash thesis"
+    echo "  /bin/bash -c \"\$(curl -fsSL URL)\" bash wr"
+    echo "  /bin/bash -c \"\$(curl -fsSL URL)\" bash latex"
+    echo "  /bin/bash -c \"\$(curl -fsSL URL)\" bash ise"
+    echo "  /bin/bash -c \"\$(curl -fsSL URL)\" bash poster"
+    echo ""
+    echo "学籍番号も指定する場合："
+    echo "  /bin/bash -c \"\$(curl -fsSL URL)\" bash thesis k21rs001"
+    echo ""
+    echo "環境変数での指定も可能："
+    echo "  DOC_TYPE=thesis /bin/bash -c \"\$(curl -fsSL URL)\""
     echo ""
     exit 1
 fi
