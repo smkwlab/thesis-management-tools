@@ -179,6 +179,12 @@ cd "$REPO_NAME"
 setup_git_auth || exit 1
 setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
 
+# レビューワークフロー機能の有効化
+echo "レビューワークフロー機能を有効化中..."
+mkdir -p .devcontainer
+touch .devcontainer/.review-workflow
+echo -e "${GREEN}✓ レビューワークフロー機能を有効化しました${NC}"
+
 # STEP 1: main ブランチでファイルをセットアップ
 echo "テンプレートファイルを整理中..."
 rm -f CLAUDE.md 2>/dev/null || true

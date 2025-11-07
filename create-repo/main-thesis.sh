@@ -80,6 +80,12 @@ setup_git_user "setup-thesis@smkwlab.github.io" "Thesis Setup Tool"
 # LaTeX環境のセットアップ
 setup_latex_environment
 
+# レビューワークフロー機能の有効化
+echo "レビューワークフロー機能を有効化中..."
+mkdir -p .devcontainer
+touch .devcontainer/.review-workflow
+echo -e "${GREEN}✓ レビューワークフロー機能を有効化しました${NC}"
+
 # STEP 1: main ブランチでファイルをセットアップ
 echo "テンプレートファイルを整理中..."
 rm -f CLAUDE.md 2>/dev/null || true
