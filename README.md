@@ -120,10 +120,6 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
   - GitHub Actions自動マージ許可
   - final-*タグ時の自動マージ対応
 
-- **[update-review-branch.sh](scripts/update-review-branch.sh)**: レビューブランチ手動更新（緊急用）
-  - GitHub Actions 障害時の緊急用
-  - トラブルシューティング用
-
 ### `create-repo/` - リポジトリ作成ツール
 
 - **[setup.sh](create-repo/setup.sh)**: リポジトリ作成スクリプト
@@ -304,9 +300,6 @@ cd scripts
 ```bash
 # ワークフロー実行状況確認
 gh run list --repo smkwlab/{student-repo}
-
-# 緊急時の手動更新
-./scripts/update-review-branch.sh {repo-name} {branch-name}
 ```
 
 #### ブランチ作成が失敗する

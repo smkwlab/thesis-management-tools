@@ -152,13 +152,7 @@ setup_protection() {
         error "Main branch not found in repository: smkwlab/$repo_name"
         return 1
     fi
-    
-    # review-branchの存在確認（存在する場合は保護対象に追加）
-    if gh api "repos/smkwlab/$repo_name/branches/review-branch" >/dev/null 2>&1; then
-        branches_to_protect+=("review-branch")
-        log "review-branchが見つかりました。保護対象に追加します。"
-    fi
-    
+
     # 各ブランチへの保護設定
     local protection_config='{
         "required_status_checks": {
