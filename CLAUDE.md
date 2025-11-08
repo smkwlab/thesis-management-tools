@@ -55,8 +55,6 @@ create-repo/
 scripts/
 ├── setup-branch-protection.sh    # Branch protection for individual student
 ├── process-pending-issues.sh     # Batch processing of pending repository requests
-├── bulk-setup-protection.sh      # Bulk branch protection setup
-├── update-review-branch.sh       # Emergency manual review branch update
 └── validate-yaml.sh              # YAML/GitHub Actions validation
 
 ## Data Management Integration
