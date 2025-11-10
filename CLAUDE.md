@@ -28,7 +28,22 @@ DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" STUDENT_ID=k21rs001 /bin/b
 INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash latex
 ```
 
-### Branch Protection Setup (Faculty)
+### Branch Protection Setup
+
+**Automatic Setup (Thesis Repositories)**
+
+Branch protection is automatically configured for thesis repositories through the following workflow:
+
+1. Student creates repository using `setup.sh`
+2. Issue is automatically created in `thesis-management-tools`
+3. GitHub Actions (`student-repo-management.yml`) triggers automatically
+4. `process-pending-issues.sh` executes `setup-branch-protection.sh`
+5. Branch protection settings applied and recorded in `thesis-student-registry`
+
+**Manual Setup (Faculty)**
+
+For manual branch protection setup or troubleshooting:
+
 ```bash
 # Individual student setup
 ./scripts/setup-branch-protection.sh k21rs001-sotsuron
@@ -36,6 +51,8 @@ INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://r
 # Check protection status
 gh repo view smkwlab/k21rs001-sotsuron --json branchProtectionRules
 ```
+
+**Note**: Weekly reports (wr-template), general LaTeX documents (latex-template), and ISE reports (ise-report-template) do not use branch protection as they have simpler workflows.
 
 ## Key Files & Structure
 
@@ -82,7 +99,6 @@ Universal Setup Script uses `DOC_TYPE` environment variable to specify document 
 # LaTeX document configuration
 DOCUMENT_NAME=research-note    # Custom document name
 AUTHOR_NAME="Taro Yamada"      # Author name
-ENABLE_PROTECTION=true         # Enable branch protection
 
 # Individual mode behavior (DOC_TYPE=latex only)
 INDIVIDUAL_MODE=true           # Skip student ID input, create in personal account

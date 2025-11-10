@@ -329,10 +329,6 @@ case "$DETECTED_DOC_TYPE" in
         if [ -n "$AUTHOR_NAME" ]; then
             DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e AUTHOR_NAME=$AUTHOR_NAME"
         fi
-        # ブランチ保護設定が環境変数で指定されている場合は渡す
-        if [ -n "$ENABLE_PROTECTION" ]; then
-            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ENABLE_PROTECTION=$ENABLE_PROTECTION"
-        fi
         ;;
     ise)
         # ISE固有の環境変数処理

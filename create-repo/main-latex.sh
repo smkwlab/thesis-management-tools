@@ -9,10 +9,6 @@ source ./common-lib.sh
 # 共通初期化
 init_script_common "汎用LaTeXリポジトリセットアップツール" "📝"
 
-# ブランチ保護設定の確認（環境変数でオプトイン）
-ENABLE_PROTECTION="${ENABLE_PROTECTION:-false}"
-[ "$ENABLE_PROTECTION" = "true" ] && echo -e "${YELLOW}⚠️ ブランチ保護が有効化されています${NC}"
-
 # 組織設定
 ORGANIZATION=$(determine_organization)
 
@@ -98,11 +94,6 @@ git add -u
 setup_git_auth || exit 1
 setup_git_user "setup-latex@smkwlab.github.io" "LaTeX Setup Tool"
 
-# ブランチ保護設定メッセージ（オプトイン）
-if [ "$ENABLE_PROTECTION" != "true" ]; then
-    echo -e "${BLUE}📝 汎用テンプレートのため、ブランチ保護は設定しません${NC}"
-    echo -e "${BLUE}   mainブランチで直接作業できます${NC}"
-fi
 # 変更をコミットしてプッシュ
 echo "📤 変更をコミット中..."
 commit_and_push "Initial customization for ${DOCUMENT_NAME}
