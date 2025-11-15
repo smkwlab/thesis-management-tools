@@ -132,21 +132,24 @@ update_student_lists() {
 
     if [ -n "$registry_manager_path" ]; then
         log "registry-manager を使用して保護状態を更新: $registry_manager_path"
-        if "$registry_manager_path" protect "$repo_name" 2>&1; then
+        output=$("$registry_manager_path" protect "$repo_name" 2>&1)
+        if [ $? -eq 0 ]; then
             success "✅ registry-manager で保護状態を更新しました"
+            success "✅ ブランチ保護設定の記録が完了しました"
         else
             warn "⚠️  registry-manager での保護状態更新に失敗しました"
             log "リポジトリ: $repo_name"
+            log "コマンド出力: $output"
             log "手動実行が必要: registry-manager protect $repo_name"
+            warn "⚠️  ブランチ保護設定の記録が完了しましたが、registry更新は失敗しました"
         fi
     else
         warn "⚠️  registry-manager が見つかりません"
         log "リポジトリ情報: $repo_name"
         log "保護状態: protected (未記録)"
         log "手動実行が必要: registry-manager protect $repo_name"
+        warn "⚠️  ブランチ保護設定の記録が完了しましたが、registry更新はスキップされました"
     fi
-
-    success "✅ ブランチ保護設定の記録が完了しました"
 }
 
 
