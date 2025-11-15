@@ -1,6 +1,7 @@
-# This workflow automatically assigns reviewers and the PR author to pull requests when they are opened or marked ready for review.
-# It uses the 'auto-assign-action' to add reviewers/assignees based on a configuration file, and 'assign-author' to assign the PR author.
-# For more details, see: https://qiita.com/yusuke-sasaki/items/94a8f64e837966266bfb
+---
+# Auto-assigns reviewers and PR author when PRs are opened or ready for review.
+# Uses auto-assign-action and assign-author.
+# Details: https://qiita.com/yusuke-sasaki/items/94a8f64e837966266bfb
 name: 'Auto Assign'
 on:
   pull_request:
