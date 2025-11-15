@@ -112,15 +112,44 @@ verify_admin_permissions() {
 update_student_lists() {
     local repo_name="$1"
     # データは thesis-student-registry で管理されるため、ローカルファイル操作は不要
-    
+
     log "ブランチ保護設定の記録中..."
-    
-    # thesis-student-registry のリポジトリ情報を更新（protection_statusをprotectedに設定）
-    # これは registry-manager または thesis-monitor が担当
-    log "リポジトリ情報: $repo_name"
-    log "保護状態: protected"
-    
-    success "✅ ブランチ保護設定の記録が完了しました"
+
+    # registry-manager で保護状態を更新
+    # thesis-student-registry/registry_manager/registry-manager を探す
+    local registry_manager_path=""
+
+    # 1. コマンドとして利用可能かチェック
+    if command -v registry-manager >/dev/null 2>&1; then
+        registry_manager_path="registry-manager"
+    # 2. 相対パスで探す（thesis-management-tools から thesis-student-registry へ）
+    elif [ -x "$SCRIPT_DIR/../../thesis-student-registry/registry_manager/registry-manager" ]; then
+        registry_manager_path="$SCRIPT_DIR/../../thesis-student-registry/registry_manager/registry-manager"
+    # 3. 絶対パスで探す（GitHub Actions 環境）
+    elif [ -x "$PWD/../thesis-student-registry/registry_manager/registry-manager" ]; then
+        registry_manager_path="$PWD/../thesis-student-registry/registry_manager/registry-manager"
+    fi
+
+    if [ -n "$registry_manager_path" ]; then
+        log "registry-manager を使用して保護状態を更新: $registry_manager_path"
+        output=$("$registry_manager_path" protect "$repo_name" 2>&1)
+        if [ $? -eq 0 ]; then
+            success "✅ registry-manager で保護状態を更新しました"
+            success "✅ ブランチ保護設定の記録が完了しました"
+        else
+            warn "⚠️  registry-manager での保護状態更新に失敗しました"
+            log "リポジトリ: $repo_name"
+            log "コマンド出力: $output"
+            log "手動実行が必要: registry-manager protect $repo_name"
+            warn "⚠️  ブランチ保護設定の記録が完了しましたが、registry更新は失敗しました"
+        fi
+    else
+        warn "⚠️  registry-manager が見つかりません"
+        log "リポジトリ情報: $repo_name"
+        log "保護状態: protected (未記録)"
+        log "手動実行が必要: registry-manager protect $repo_name"
+        warn "⚠️  ブランチ保護設定の記録が完了しましたが、registry更新はスキップされました"
+    fi
 }
 
 
