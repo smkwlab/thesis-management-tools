@@ -588,7 +588,7 @@ setup_auto_assign_for_organization_members() {
 # これにより、ワークフロー実行時のエラーを防ぎます。
 #
 # 環境変数:
-#   OPERATION_MODE - "organization" または "individual"
+#   USER_TYPE - "organization_member" または "individual_user"
 #
 # 削除対象:
 #   - .github/workflows/notify-ml-on-pr.yml (組織MLへのPR通知)
@@ -596,7 +596,7 @@ setup_auto_assign_for_organization_members() {
 # 戻り値:
 #   0 - 成功（削除完了または不要）
 remove_org_specific_workflows() {
-    if [ "$OPERATION_MODE" = "individual" ]; then
+    if [ "$USER_TYPE" = "individual_user" ]; then
         log_info "組織外ユーザー: ML通知ワークフローを削除"
         rm -f .github/workflows/notify-ml-on-pr.yml 2>/dev/null || true
     fi
