@@ -581,3 +581,24 @@ setup_auto_assign_for_organization_members() {
     fi
     return 0
 }
+
+# 組織専用ワークフローの削除
+#
+# 組織外ユーザーの場合、Organization Secretsに依存するワークフローを削除します。
+# これにより、ワークフロー実行時のエラーを防ぎます。
+#
+# 環境変数:
+#   USER_TYPE - "organization_member" または "individual_user"
+#
+# 削除対象:
+#   - .github/workflows/notify-ml-on-pr.yml (組織MLへのPR通知)
+#
+# 戻り値:
+#   0 - 成功（削除完了または不要）
+remove_org_specific_workflows() {
+    if [ "$USER_TYPE" = "individual_user" ]; then
+        log_info "組織外ユーザー: ML通知ワークフローを削除"
+        rm -f .github/workflows/notify-ml-on-pr.yml 2>/dev/null || true
+    fi
+    return 0
+}
