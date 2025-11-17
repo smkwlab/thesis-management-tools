@@ -106,6 +106,9 @@ fi
 # smkwlab 組織メンバーの場合は auto-assign 設定を追加
 setup_auto_assign_for_organization_members
 
+# 組織外ユーザーの場合は組織専用ワークフローを削除
+remove_org_specific_workflows
+
 # main ブランチでの初期セットアップコミット
 git add -u
 git add .github/ 2>/dev/null || true
