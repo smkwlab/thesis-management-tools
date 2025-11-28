@@ -108,6 +108,42 @@ verify_admin_permissions() {
     fi
 }
 
+# enforce_admins 設定
+# GitHub API では enforce_admins は別エンドポイントで設定する必要がある
+# 参照: https://docs.github.com/en/rest/branches/branch-protection#set-admin-branch-protection
+setup_enforce_admins() {
+    local repo_name="$1"
+    local enforce="$2"  # true or false
+    local branch="${3:-main}"
+
+    log "enforce_admins 設定: $enforce (branch: $branch)"
+
+    if [ "$enforce" = "true" ]; then
+        # 管理者にも保護ルールを適用
+        if gh api --method POST \
+           "repos/smkwlab/$repo_name/branches/$branch/protection/enforce_admins" \
+           >/dev/null 2>&1; then
+            success "✅ enforce_admins: true を設定しました"
+            return 0
+        else
+            warn "⚠️  enforce_admins: true の設定に失敗しました"
+            return 1
+        fi
+    else
+        # 管理者は保護ルールを回避可能（学生リポジトリ向け）
+        if gh api --method DELETE \
+           "repos/smkwlab/$repo_name/branches/$branch/protection/enforce_admins" \
+           >/dev/null 2>&1; then
+            success "✅ enforce_admins: false を設定しました（管理者は保護ルールを回避可能）"
+            return 0
+        else
+            # DELETE が失敗しても、既に false の場合があるため警告のみ
+            log "enforce_admins: false の設定をスキップ（既に設定済みの可能性）"
+            return 0
+        fi
+    fi
+}
+
 # 学生リストの更新（pending → completed）
 update_student_lists() {
     local repo_name="$1"
@@ -255,11 +291,14 @@ setup_protection() {
         success "     - Requires 1 approving review before merge"
         success "     - Dismisses stale reviews when new commits are pushed"
         success "     - Prevents force pushes and branch deletion"
-        
-        
+
+        # enforce_admins を false に設定（学生リポジトリでは管理者が直接操作できるようにする）
+        # 注: テンプレートリポジトリでは true を設定すべきだが、このスクリプトは学生リポジトリ用
+        setup_enforce_admins "$repo_name" "false"
+
         # 学生リストの更新（pending → completed）
         update_student_lists "$repo_name"
-        
+
         return 0
     else
         error "❌ 一部のブランチ保護設定に失敗しました ($success_count/$total_branches)"
