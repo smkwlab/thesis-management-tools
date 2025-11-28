@@ -114,7 +114,7 @@ verify_admin_permissions() {
 setup_enforce_admins() {
     local repo_name="$1"
     local enforce="$2"  # true or false
-    local branch="${3:-main}"
+    local branch="${3:-main}"  # 将来の拡張用（複数ブランチ対応）
 
     log "enforce_admins 設定: $enforce (branch: $branch)"
 
@@ -294,7 +294,10 @@ setup_protection() {
 
         # enforce_admins を false に設定（学生リポジトリでは管理者が直接操作できるようにする）
         # 注: テンプレートリポジトリでは true を設定すべきだが、このスクリプトは学生リポジトリ用
-        setup_enforce_admins "$repo_name" "false"
+        if ! setup_enforce_admins "$repo_name" "false"; then
+            error "❌ enforce_admins 設定に失敗しました"
+            return 1
+        fi
 
         # 学生リストの更新（pending → completed）
         update_student_lists "$repo_name"
