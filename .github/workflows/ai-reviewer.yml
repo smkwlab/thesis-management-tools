@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Gemini Review Bot
-        uses: toshi0806/ai-reviewer@v1.3
+        uses: toshi0806/ai-reviewer@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
