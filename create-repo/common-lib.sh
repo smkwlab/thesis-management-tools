@@ -602,3 +602,123 @@ remove_org_specific_workflows() {
     fi
     return 0
 }
+
+# ================================
+# 高レベルセットアップ関数
+# ================================
+
+#
+# 標準セットアップフロー
+#
+# 共通的なリポジトリセットアップ処理を実行します。
+# - 組織アクセス確認
+# - リポジトリ存在確認
+# - 作成確認プロンプト
+# - リポジトリ作成
+# - Git認証設定
+# - 共通ファイル整理
+#
+# 前提条件（呼び出し前に設定が必要）:
+#   ORGANIZATION - 組織名
+#   REPO_NAME - リポジトリ名
+#   TEMPLATE_REPOSITORY - テンプレートリポジトリパス
+#   VISIBILITY - "private" または "public"
+#
+# Args:
+#   $1: doc_type - ドキュメントタイプ（thesis, wr, latex, ise）
+#
+# 結果:
+#   REPO_PATH - 作成されたリポジトリのパス（グローバル変数として設定）
+#
+# 戻り値:
+#   0 - 成功
+#   1 - 失敗
+#
+run_standard_setup() {
+    local doc_type="$1"
+
+    # 組織アクセス確認
+    check_organization_access "$ORGANIZATION"
+
+    # リポジトリパス決定
+    REPO_PATH=$(determine_repository_path "$ORGANIZATION" "$REPO_NAME")
+
+    # リポジトリの存在確認
+    if gh repo view "$REPO_PATH" >/dev/null 2>&1; then
+        die "リポジトリ $REPO_PATH は既に存在します"
+    fi
+
+    # 作成確認
+    confirm_creation "$REPO_PATH" || exit 0
+
+    # リポジトリ作成
+    echo ""
+    echo "📁 リポジトリを作成中..."
+    create_repository "$REPO_PATH" "$TEMPLATE_REPOSITORY" "$VISIBILITY" "true" || exit 1
+    cd "$REPO_NAME" || exit 1
+
+    # Git設定
+    setup_git_auth || exit 1
+    setup_git_user "setup-${doc_type}@smkwlab.github.io" "${doc_type^} Setup Tool"
+
+    # 共通ファイル整理
+    echo "テンプレートファイルを整理中..."
+    rm -f CLAUDE.md 2>/dev/null || true
+    rm -rf docs/ 2>/dev/null || true
+    find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
+}
+
+#
+# Registry Manager連携
+#
+# 組織ユーザーの場合、リポジトリをRegistry Managerに登録します。
+#
+# 前提条件:
+#   INDIVIDUAL_MODE - 個人モードフラグ
+#   STUDENT_ID - 学籍番号
+#   ORGANIZATION - 組織名
+#   REPO_NAME - リポジトリ名
+#
+# Args:
+#   $1: doc_type - ドキュメントタイプ（thesis, wr, latex, ise）
+#
+run_registry_integration() {
+    local doc_type="$1"
+
+    # 条件: 個人モードが無効 AND 学籍番号が存在 AND Registryリポジトリがアクセス可能
+    if [ "$INDIVIDUAL_MODE" = false ] && [ -n "$STUDENT_ID" ] && \
+       gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
+        if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$doc_type" "$ORGANIZATION"; then
+            log_warn "Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。"
+        fi
+    fi
+}
+
+#
+# 完了メッセージ表示
+#
+# 標準的な完了メッセージを表示します。
+#
+# 前提条件:
+#   REPO_PATH - リポジトリパス
+#
+# Args:
+#   $1: additional_message - 追加メッセージ（オプション、改行区切り）
+#
+print_completion_message() {
+    local additional_message="$1"
+
+    echo ""
+    echo "=============================================="
+    echo -e "${GREEN}✅ セットアップが完了しました！${NC}"
+    echo ""
+    echo "リポジトリ: https://github.com/${REPO_PATH}"
+
+    if [ -n "$additional_message" ]; then
+        echo ""
+        echo "$additional_message"
+    fi
+
+    echo ""
+    echo "=============================================="
+}
