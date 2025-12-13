@@ -129,30 +129,8 @@ else
     log_info "作成対象: ${REPO_NAME} (2回目のISEレポート)"
 fi
 
-# 組織アクセス確認
-check_organization_access "$ORGANIZATION"
-
-# 作成確認
-confirm_creation "${ORGANIZATION}/${REPO_NAME}" || exit 0
-
-# リポジトリ作成
-echo ""
-echo "📁 リポジトリを作成中..."
-echo "   学籍番号: $STUDENT_ID"
-echo "   リポジトリ名: $REPO_NAME"
-echo "   レポート番号: $ISE_REPORT_NUM"
-
-create_repository "${ORGANIZATION}/${REPO_NAME}" "$TEMPLATE_REPOSITORY" "$VISIBILITY" "true" || exit 1
-cd "$REPO_NAME" || exit 1
-
-# Git設定
-setup_git_auth || exit 1
-setup_git_user "setup-ise@smkwlab.github.io" "ISE Setup Tool"
-
-# 共通ファイル整理
-echo "テンプレートファイルを整理中..."
-rm -f CLAUDE.md 2>/dev/null || true
-rm -rf docs/ 2>/dev/null || true
+# 標準セットアップフロー
+run_standard_setup "ise"
 
 # レビューワークフロー機能の有効化
 echo "レビューワークフロー機能を有効化中..."
@@ -188,9 +166,6 @@ commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}" "0th-draft" ||
 run_registry_integration "ise"
 
 # 完了メッセージ
-# ISE 固有の REPO_PATH 設定（組織固定）
-REPO_PATH="${ORGANIZATION}/${REPO_NAME}"
-
 print_completion_message "📝 Pull Request学習を開始してください：
   1. GitHub Desktop または VS Code でリポジトリを開く
   2. 作業用ブランチ（1st-draft など）を作成
