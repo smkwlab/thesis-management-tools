@@ -629,7 +629,7 @@ remove_org_specific_workflows() {
 #   VISIBILITY - "private" または "public"
 #
 # Args:
-#   $1: doc_type - ドキュメントタイプ（thesis, wr, latex, ise）
+#   $1: doc_type - ドキュメントタイプ（thesis, wr, latex, ise, poster）
 #
 # 結果:
 #   REPO_PATH - 作成されたリポジトリのパス（グローバル変数として設定）

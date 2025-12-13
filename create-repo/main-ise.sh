@@ -172,7 +172,7 @@ if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
 fi
 
 # 完了メッセージ
-print_completion_message "📝 Pull Request学習を開始してください：
+print_completion_message "Pull Request学習を開始してください：
   1. GitHub Desktop または VS Code でリポジトリを開く
   2. 作業用ブランチ（1st-draft など）を作成
   3. index.html を編集してレポート作成
