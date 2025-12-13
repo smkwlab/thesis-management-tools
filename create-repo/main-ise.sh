@@ -16,10 +16,16 @@ VISIBILITY="private"
 
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
-# 学籍番号の入力と検証
-STUDENT_ID=$(read_student_id "$1")
-STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
-log_info "学籍番号: $STUDENT_ID"
+# INDIVIDUAL_MODEの場合は学籍番号をスキップ
+if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    log_debug "個人モード: 学籍番号の入力をスキップします"
+    STUDENT_ID=""
+else
+    # 学籍番号の入力と検証
+    STUDENT_ID=$(read_student_id "$1")
+    STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
+    log_info "学籍番号: $STUDENT_ID"
+fi
 
 # ISE レポート番号の決定とリポジトリ存在チェック（日時ベース）
 # この関数は ISE 固有のロジックのため、ここに残す
@@ -115,15 +121,22 @@ determine_ise_report_number() {
     echo "$report_num"
 }
 
-echo "📋 既存ISEレポートリポジトリの確認中..."
-ISE_REPORT_NUM=$(determine_ise_report_number "$STUDENT_ID")
-REPO_NAME="${STUDENT_ID}-ise-report${ISE_REPORT_NUM}"
-
-if [ "$ISE_REPORT_NUM" = "1" ]; then
-    log_info "作成対象: ${REPO_NAME} (初回のISEレポート)"
+# リポジトリ名の決定
+if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    ISE_REPORT_NUM="1"
+    REPO_NAME="ise-report"
+    log_info "個人モード: ISEレポートリポジトリとして設定します"
 else
-    log_info "${STUDENT_ID}-ise-report1 が存在"
-    log_info "作成対象: ${REPO_NAME} (2回目のISEレポート)"
+    echo "📋 既存ISEレポートリポジトリの確認中..."
+    ISE_REPORT_NUM=$(determine_ise_report_number "$STUDENT_ID")
+    REPO_NAME="${STUDENT_ID}-ise-report${ISE_REPORT_NUM}"
+
+    if [ "$ISE_REPORT_NUM" = "1" ]; then
+        log_info "作成対象: ${REPO_NAME} (初回のISEレポート)"
+    else
+        log_info "${STUDENT_ID}-ise-report1 が存在"
+        log_info "作成対象: ${REPO_NAME} (2回目のISEレポート)"
+    fi
 fi
 
 # 標準セットアップフロー
@@ -153,8 +166,10 @@ setup_review_workflow "0th-draft" || exit 1
 # 初期ドラフトをコミット・プッシュ
 commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}" "0th-draft" || exit 1
 
-# Registry Manager連携
-run_registry_integration "ise"
+# Registry Manager連携（INDIVIDUAL_MODEでない場合のみ）
+if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    run_registry_integration "ise"
+fi
 
 # 完了メッセージ
 print_completion_message "📝 Pull Request学習を開始してください：

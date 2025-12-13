@@ -16,13 +16,23 @@ VISIBILITY="private"
 
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
-# 学籍番号の入力と検証
-STUDENT_ID=$(read_student_id "$1")
-STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
-log_info "学籍番号: $STUDENT_ID"
+# INDIVIDUAL_MODEの場合は学籍番号をスキップ
+if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    log_debug "個人モード: 学籍番号の入力をスキップします"
+    STUDENT_ID=""
+else
+    # 学籍番号の入力と検証
+    STUDENT_ID=$(read_student_id "$1")
+    STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
+    log_info "学籍番号: $STUDENT_ID"
+fi
 
 # リポジトリ名の生成
-REPO_NAME="${STUDENT_ID}-wr"
+if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    REPO_NAME="weekly-report"
+else
+    REPO_NAME="${STUDENT_ID}-wr"
+fi
 
 # 標準セットアップフロー
 run_standard_setup "wr"
@@ -39,8 +49,10 @@ commit_and_push "Initialize weekly report repository for ${STUDENT_ID}
 - Setup LaTeX environment for weekly reports
 " || exit 1
 
-# Registry Manager連携
-run_registry_integration "wr"
+# Registry Manager連携（INDIVIDUAL_MODEでない場合のみ）
+if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    run_registry_integration "wr"
+fi
 
 # 完了メッセージ
 print_completion_message "次のステップ:
