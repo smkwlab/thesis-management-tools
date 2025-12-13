@@ -398,10 +398,14 @@ clone_repository() {
 }
 
 # Git操作（コミット・プッシュ）
+# Note: git add . を使用するのは、セットアップ時に新規作成されるファイル
+# （.devcontainer/, .github/ 等）も含めてステージングする必要があるため。
+# 呼び出し元で git add -u を使用する場合は、事前にステージングを行うこと。
 commit_and_push() {
     local commit_message="$1"
     local branch="${2:-main}"
-    
+
+    echo "📤 変更をコミット中..."
     git add . >/dev/null 2>&1
     git commit -m "$commit_message" >/dev/null 2>&1
     
@@ -601,4 +605,135 @@ remove_org_specific_workflows() {
         rm -f .github/workflows/notify-ml-on-pr.yml 2>/dev/null || true
     fi
     return 0
+}
+
+# ================================
+# 高レベルセットアップ関数
+# ================================
+
+#
+# 標準セットアップフロー
+#
+# 共通的なリポジトリセットアップ処理を実行します。
+# - 組織アクセス確認
+# - リポジトリ存在確認
+# - 作成確認プロンプト
+# - リポジトリ作成
+# - Git認証設定
+# - 共通ファイル整理
+#
+# 前提条件（呼び出し前に設定が必要）:
+#   ORGANIZATION - 組織名
+#   REPO_NAME - リポジトリ名
+#   TEMPLATE_REPOSITORY - テンプレートリポジトリパス
+#   VISIBILITY - "private" または "public"
+#
+# Args:
+#   $1: doc_type - ドキュメントタイプ（thesis, wr, latex, ise, poster）
+#
+# 結果:
+#   REPO_PATH - 作成されたリポジトリのパス（グローバル変数として設定）
+#
+# 戻り値:
+#   0 - 成功
+#   1 - 失敗
+#
+run_standard_setup() {
+    local doc_type="$1"
+
+    # ドキュメントタイプの表示名マッピング（略語は大文字）
+    local display_name
+    case "$doc_type" in
+        ise)    display_name="ISE" ;;
+        wr)     display_name="WR" ;;
+        *)      display_name="${doc_type^}" ;;
+    esac
+
+    # 組織アクセス確認
+    check_organization_access "$ORGANIZATION"
+
+    # リポジトリパス決定
+    REPO_PATH=$(determine_repository_path "$ORGANIZATION" "$REPO_NAME")
+
+    # リポジトリの存在確認
+    if gh repo view "$REPO_PATH" >/dev/null 2>&1; then
+        die "リポジトリ $REPO_PATH は既に存在します"
+    fi
+
+    # 作成確認
+    confirm_creation "$REPO_PATH" || exit 0
+
+    # リポジトリ作成
+    echo ""
+    echo "📁 リポジトリを作成中..."
+    create_repository "$REPO_PATH" "$TEMPLATE_REPOSITORY" "$VISIBILITY" "true" || exit 1
+    cd "$REPO_NAME" || exit 1
+
+    # Git設定
+    setup_git_auth || exit 1
+    setup_git_user "setup-${doc_type}@smkwlab.github.io" "${display_name} Setup Tool"
+
+    # 共通ファイル整理
+    echo "テンプレートファイルを整理中..."
+    rm -f CLAUDE.md 2>/dev/null || true
+    rm -rf docs/ 2>/dev/null || true
+    find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
+}
+
+#
+# Registry Manager連携
+#
+# 組織ユーザーの場合、リポジトリをRegistry Managerに登録します。
+# thesis-student-registry リポジトリにアクセス可能な場合のみ登録を実行します。
+#
+# 注意: INDIVIDUAL_MODE のチェックは呼び出し側の責任です。
+#       呼び出し側で INDIVIDUAL_MODE でないことを確認してから呼び出してください。
+#
+# 前提条件:
+#   STUDENT_ID - 学籍番号
+#   ORGANIZATION - 組織名
+#   REPO_NAME - リポジトリ名
+#
+# Args:
+#   $1: doc_type - ドキュメントタイプ（thesis, wr, latex, ise, poster）
+#
+run_registry_integration() {
+    local doc_type="$1"
+
+    # 条件: Registryリポジトリがアクセス可能
+    # 注: INDIVIDUAL_MODE のチェックは呼び出し側の責任
+    if gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
+        if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$doc_type" "$ORGANIZATION"; then
+            log_warn "Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。"
+        fi
+    fi
+}
+
+#
+# 完了メッセージ表示
+#
+# 標準的な完了メッセージを表示します。
+#
+# 前提条件:
+#   REPO_PATH - リポジトリパス
+#
+# Args:
+#   $1: additional_message - 追加メッセージ（オプション、改行区切り）
+#
+print_completion_message() {
+    local additional_message="$1"
+
+    echo ""
+    echo "=============================================="
+    echo -e "${GREEN}✅ セットアップが完了しました！${NC}"
+    echo ""
+    echo "リポジトリ: https://github.com/${REPO_PATH}"
+
+    if [ -n "$additional_message" ]; then
+        echo ""
+        echo "$additional_message"
+    fi
+
+    echo ""
+    echo "=============================================="
 }
