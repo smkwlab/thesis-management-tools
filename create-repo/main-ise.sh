@@ -17,12 +17,12 @@ ORGANIZATION=$(determine_organization)
 TEMPLATE_REPOSITORY="${ORGANIZATION}/ise-report-template"
 VISIBILITY="private"
 
-echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
+log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
 # 学籍番号の入力と検証
 STUDENT_ID=$(read_student_id "$1")
 STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
-echo -e "${GREEN}✓ 学籍番号: $STUDENT_ID${NC}"
+log_info "学籍番号: $STUDENT_ID"
 
 # ISE レポート番号の決定とリポジトリ存在チェック（日時ベース）
 # この関数は ISE 固有のロジックのため、ここに残す
@@ -123,10 +123,10 @@ ISE_REPORT_NUM=$(determine_ise_report_number "$STUDENT_ID")
 REPO_NAME="${STUDENT_ID}-ise-report${ISE_REPORT_NUM}"
 
 if [ "$ISE_REPORT_NUM" = "1" ]; then
-    echo "📝 作成対象: ${REPO_NAME} (初回のISEレポート)"
+    log_info "作成対象: ${REPO_NAME} (初回のISEレポート)"
 else
-    echo "✅ ${STUDENT_ID}-ise-report1 が存在"
-    echo "📝 作成対象: ${REPO_NAME} (2回目のISEレポート)"
+    log_info "${STUDENT_ID}-ise-report1 が存在"
+    log_info "作成対象: ${REPO_NAME} (2回目のISEレポート)"
 fi
 
 # 組織アクセス確認

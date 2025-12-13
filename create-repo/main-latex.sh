@@ -14,22 +14,22 @@ ORGANIZATION=$(determine_organization)
 TEMPLATE_REPOSITORY="smkwlab/latex-template"  # 常に固定
 VISIBILITY="public"
 
-echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
+log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
 # INDIVIDUAL_MODEの場合は学籍番号をスキップ
 if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
-    echo -e "${BLUE}📝 個人モード: 学籍番号の入力をスキップします${NC}"
+    log_debug "個人モード: 学籍番号の入力をスキップします"
     STUDENT_ID=""
 else
     STUDENT_ID=$(read_student_id "$1")
     STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
-    echo -e "${GREEN}✓ 学籍番号: $STUDENT_ID${NC}"
+    log_info "学籍番号: $STUDENT_ID"
 fi
 
 # ドキュメント名の入力
 read_document_name() {
     if [ -n "$DOCUMENT_NAME" ]; then
-        echo -e "${GREEN}✓ ドキュメント名: $DOCUMENT_NAME（環境変数指定）${NC}"
+        log_info "ドキュメント名: $DOCUMENT_NAME（環境変数指定）"
         return 0
     fi
 
@@ -41,7 +41,7 @@ read_document_name() {
     DOCUMENT_NAME="${DOCUMENT_NAME:-latex}"
 
     if ! [[ "$DOCUMENT_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        echo -e "${RED}❌ ドキュメント名は英数字、ハイフン、アンダースコアのみ使用可能です${NC}"
+        log_error "ドキュメント名は英数字、ハイフン、アンダースコアのみ使用可能です"
         DOCUMENT_NAME=""
         read_document_name
     fi

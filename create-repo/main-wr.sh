@@ -14,12 +14,12 @@ ORGANIZATION=$(determine_organization)
 TEMPLATE_REPOSITORY="${ORGANIZATION}/wr-template"
 VISIBILITY="private"
 
-echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
+log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
 # 学籍番号の入力と検証
 STUDENT_ID=$(read_student_id "$1")
 STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
-echo -e "${GREEN}✓ 学籍番号: $STUDENT_ID${NC}"
+log_info "学籍番号: $STUDENT_ID"
 
 # リポジトリ名の生成
 REPO_NAME="${STUDENT_ID}-wr"

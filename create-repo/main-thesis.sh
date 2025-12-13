@@ -17,12 +17,12 @@ ORGANIZATION=$(determine_organization)
 TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-${ORGANIZATION}/sotsuron-template}"
 VISIBILITY="private"
 
-echo -e "${GREEN}✓ テンプレートリポジトリ: $TEMPLATE_REPOSITORY${NC}"
+log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
 # 学籍番号の入力と検証
 STUDENT_ID=$(read_student_id "$1" "卒業論文の例: k21rs001, 修士論文の例: k21gjk01")
 STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
-echo -e "${GREEN}✓ 学籍番号: $STUDENT_ID${NC}"
+log_info "学籍番号: $STUDENT_ID"
 
 # 論文タイプの判定
 determine_thesis_type() {
@@ -40,10 +40,10 @@ THESIS_TYPE=$(determine_thesis_type "$STUDENT_ID")
 # リポジトリ名の決定
 if [ "$THESIS_TYPE" = "shuuron" ]; then
     REPO_NAME="${STUDENT_ID}-master"
-    echo -e "${GREEN}✓ 修士論文リポジトリとして設定します${NC}"
+    log_info "修士論文リポジトリとして設定します"
 else
     REPO_NAME="${STUDENT_ID}-sotsuron"
-    echo -e "${GREEN}✓ 卒業論文リポジトリとして設定します${NC}"
+    log_info "卒業論文リポジトリとして設定します"
 fi
 
 # 標準セットアップフロー
@@ -61,10 +61,10 @@ log_info "レビューワークフロー機能を有効化しました"
 # 論文タイプに応じて不要なファイルを削除
 if [ "$THESIS_TYPE" = "shuuron" ]; then
     rm -f sotsuron.tex gaiyou.tex example.tex example-gaiyou.tex 2>/dev/null || true
-    echo "修士論文用: sotsuron.tex, gaiyou.tex, example.tex, example-gaiyou.tex を削除しました"
+    log_debug "修士論文用: sotsuron.tex, gaiyou.tex, example.tex, example-gaiyou.tex を削除しました"
 else
     rm -f thesis.tex abstract.tex 2>/dev/null || true
-    echo "卒業論文用: thesis.tex, abstract.tex を削除しました"
+    log_debug "卒業論文用: thesis.tex, abstract.tex を削除しました"
 fi
 
 # smkwlab 組織メンバーの場合は auto-assign 設定を追加
