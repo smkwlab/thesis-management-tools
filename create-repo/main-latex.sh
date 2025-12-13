@@ -67,7 +67,6 @@ remove_org_specific_workflows
 
 # 変更をコミットしてプッシュ
 git add -u
-echo "📤 変更をコミット中..."
 commit_and_push "Initial customization for ${DOCUMENT_NAME}
 
 - Setup LaTeX environment

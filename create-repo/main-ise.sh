@@ -182,7 +182,6 @@ fi
 setup_review_workflow "0th-draft" || exit 1
 
 # 初期ドラフトをコミット・プッシュ
-echo "📤 初期ドラフトをコミット中..."
 commit_and_push "Initial setup for ISE Report #${ISE_REPORT_NUM}" "0th-draft" || exit 1
 
 # Registry Manager連携

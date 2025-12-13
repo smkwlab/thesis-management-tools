@@ -401,7 +401,8 @@ clone_repository() {
 commit_and_push() {
     local commit_message="$1"
     local branch="${2:-main}"
-    
+
+    echo "📤 変更をコミット中..."
     git add . >/dev/null 2>&1
     git commit -m "$commit_message" >/dev/null 2>&1
     

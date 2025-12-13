@@ -105,7 +105,6 @@ setup_git_auth || exit 1
 setup_git_user "setup-poster@smkwlab.github.io" "Poster Setup Tool"
 
 # 変更をコミットしてプッシュ
-echo "📤 変更をコミット中..."
 commit_and_push "Initial setup for ${POSTER_NAME}
 
 - Configure LaTeX environment

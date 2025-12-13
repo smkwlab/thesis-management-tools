@@ -32,7 +32,6 @@ setup_latex_environment
 
 # 変更をコミットしてプッシュ
 git add -u
-echo "📤 変更をコミット中..."
 commit_and_push "Initialize weekly report repository for ${STUDENT_ID}
 
 - Setup LaTeX environment for weekly reports
