@@ -684,14 +684,13 @@ run_standard_setup() {
 # Registry Manager連携
 #
 # 組織ユーザーの場合、リポジトリをRegistry Managerに登録します。
-# 以下の条件を全て満たす場合のみ登録を実行します:
-# - INDIVIDUAL_MODE が false（または未設定）
-# - STUDENT_ID が空でない
-# - thesis-student-registry リポジトリにアクセス可能
+# thesis-student-registry リポジトリにアクセス可能な場合のみ登録を実行します。
+#
+# 注意: INDIVIDUAL_MODE のチェックは呼び出し側の責任です。
+#       呼び出し側で INDIVIDUAL_MODE でないことを確認してから呼び出してください。
 #
 # 前提条件:
-#   INDIVIDUAL_MODE - 個人モードフラグ（true の場合は登録スキップ）
-#   STUDENT_ID - 学籍番号（空の場合は登録スキップ）
+#   STUDENT_ID - 学籍番号
 #   ORGANIZATION - 組織名
 #   REPO_NAME - リポジトリ名
 #
@@ -701,9 +700,9 @@ run_standard_setup() {
 run_registry_integration() {
     local doc_type="$1"
 
-    # 条件: 個人モードが無効 AND 学籍番号が存在 AND Registryリポジトリがアクセス可能
-    if [ "$INDIVIDUAL_MODE" = false ] && [ -n "$STUDENT_ID" ] && \
-       gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
+    # 条件: Registryリポジトリがアクセス可能
+    # 注: INDIVIDUAL_MODE のチェックは呼び出し側の責任
+    if gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
         if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$doc_type" "$ORGANIZATION"; then
             log_warn "Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。"
         fi

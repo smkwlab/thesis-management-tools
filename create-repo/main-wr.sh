@@ -44,10 +44,17 @@ setup_latex_environment
 remove_org_specific_workflows
 
 # 変更をコミットしてプッシュ
-commit_and_push "Initialize weekly report repository for ${STUDENT_ID}
+if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    commit_and_push "Initialize weekly report repository
 
 - Setup LaTeX environment for weekly reports
 " || exit 1
+else
+    commit_and_push "Initialize weekly report repository for ${STUDENT_ID}
+
+- Setup LaTeX environment for weekly reports
+" || exit 1
+fi
 
 # Registry Manager連携（INDIVIDUAL_MODEでない場合のみ）
 if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
