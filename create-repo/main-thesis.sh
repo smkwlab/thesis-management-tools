@@ -3,11 +3,8 @@
 
 set -e
 
-# スクリプトディレクトリを保存（templates/ 参照用）
-export SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 # 共通ライブラリの読み込み
-source "${SCRIPT_DIR}/common-lib.sh"
+source ./common-lib.sh
 
 # 共通初期化
 init_script_common "論文リポジトリセットアップツール" "🎓"
