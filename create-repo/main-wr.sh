@@ -27,7 +27,7 @@ else
     log_info "学籍番号: $STUDENT_ID"
 fi
 
-# リポジトリ名の生成
+# リポジトリ名の決定
 if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
     REPO_NAME="weekly-report"
 else

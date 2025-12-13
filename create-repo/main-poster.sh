@@ -58,7 +58,7 @@ read_poster_name() {
 
 read_poster_name
 
-# リポジトリ名の決定（柔軟な値判定）
+# リポジトリ名の決定
 if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
     REPO_NAME="${POSTER_NAME}"
 else
