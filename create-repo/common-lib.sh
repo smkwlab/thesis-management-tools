@@ -398,6 +398,9 @@ clone_repository() {
 }
 
 # Git操作（コミット・プッシュ）
+# Note: git add . を使用するのは、セットアップ時に新規作成されるファイル
+# （.devcontainer/, .github/ 等）も含めてステージングする必要があるため。
+# 呼び出し元で git add -u を使用する場合は、事前にステージングを行うこと。
 commit_and_push() {
     local commit_message="$1"
     local branch="${2:-main}"
@@ -638,6 +641,14 @@ remove_org_specific_workflows() {
 run_standard_setup() {
     local doc_type="$1"
 
+    # ドキュメントタイプの表示名マッピング（略語は大文字）
+    local display_name
+    case "$doc_type" in
+        ise)    display_name="ISE" ;;
+        wr)     display_name="WR" ;;
+        *)      display_name="${doc_type^}" ;;
+    esac
+
     # 組織アクセス確認
     check_organization_access "$ORGANIZATION"
 
@@ -660,7 +671,7 @@ run_standard_setup() {
 
     # Git設定
     setup_git_auth || exit 1
-    setup_git_user "setup-${doc_type}@smkwlab.github.io" "${doc_type^} Setup Tool"
+    setup_git_user "setup-${doc_type}@smkwlab.github.io" "${display_name} Setup Tool"
 
     # 共通ファイル整理
     echo "テンプレートファイルを整理中..."
@@ -673,15 +684,19 @@ run_standard_setup() {
 # Registry Manager連携
 #
 # 組織ユーザーの場合、リポジトリをRegistry Managerに登録します。
+# 以下の条件を全て満たす場合のみ登録を実行します:
+# - INDIVIDUAL_MODE が false（または未設定）
+# - STUDENT_ID が空でない
+# - thesis-student-registry リポジトリにアクセス可能
 #
 # 前提条件:
-#   INDIVIDUAL_MODE - 個人モードフラグ
-#   STUDENT_ID - 学籍番号
+#   INDIVIDUAL_MODE - 個人モードフラグ（true の場合は登録スキップ）
+#   STUDENT_ID - 学籍番号（空の場合は登録スキップ）
 #   ORGANIZATION - 組織名
 #   REPO_NAME - リポジトリ名
 #
 # Args:
-#   $1: doc_type - ドキュメントタイプ（thesis, wr, latex, ise）
+#   $1: doc_type - ドキュメントタイプ（thesis, wr, latex, ise, poster）
 #
 run_registry_integration() {
     local doc_type="$1"

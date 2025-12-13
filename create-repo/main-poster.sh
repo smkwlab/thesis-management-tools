@@ -9,11 +9,11 @@ source ./common-lib.sh
 # 共通初期化
 init_script_common "学会ポスターリポジトリセットアップツール" "📊"
 
-# 組織設定
+# 設定
 ORGANIZATION=$(determine_organization)
+TEMPLATE_REPOSITORY="smkwlab/poster-template"  # 常に固定
+VISIBILITY="public"
 
-# テンプレートリポジトリの設定（常にsmkwlab/poster-templateを使用）
-TEMPLATE_REPOSITORY="smkwlab/poster-template"
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
 # INDIVIDUAL_MODEの場合は学籍番号をスキップ（柔軟な値判定）
@@ -65,41 +65,14 @@ else
     REPO_NAME="${STUDENT_ID}-${POSTER_NAME}"
 fi
 
-# 組織アクセス確認
-check_organization_access "$ORGANIZATION"
-
-# リポジトリパス決定
-REPO_PATH=$(determine_repository_path "$ORGANIZATION" "$REPO_NAME")
-
-# リポジトリの存在確認
-if gh repo view "$REPO_PATH" >/dev/null 2>&1; then
-    die "リポジトリ $REPO_PATH は既に存在します"
-fi
-
-# 作成確認
-confirm_creation "$REPO_PATH" || exit 0
-
-# リポジトリ作成
-echo ""
-echo "📁 リポジトリを作成中..."
-create_repository "$REPO_PATH" "$TEMPLATE_REPOSITORY" "public" "true" || exit 1
-cd "$REPO_NAME"
+# 標準セットアップフロー
+run_standard_setup "poster"
 
 # LaTeX環境のセットアップ
 setup_latex_environment
 
-# STEP 1: main ブランチでファイルをセットアップ
-echo "テンプレートファイルを整理中..."
-rm -f CLAUDE.md 2>/dev/null || true
-rm -rf docs/ 2>/dev/null || true
-find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
-
 # 組織外ユーザーの場合は組織専用ワークフローを削除
 remove_org_specific_workflows
-
-# Git設定
-setup_git_auth || exit 1
-setup_git_user "setup-poster@smkwlab.github.io" "Poster Setup Tool"
 
 # 変更をコミットしてプッシュ
 commit_and_push "Initial setup for ${POSTER_NAME}
