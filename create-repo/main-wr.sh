@@ -30,6 +30,9 @@ run_standard_setup "wr"
 # LaTeX環境のセットアップ
 setup_latex_environment
 
+# 組織外ユーザーの場合は組織専用ワークフローを削除
+remove_org_specific_workflows
+
 # 変更をコミットしてプッシュ
 commit_and_push "Initialize weekly report repository for ${STUDENT_ID}
 
