@@ -52,12 +52,6 @@ run_standard_setup "thesis"
 # LaTeX環境のセットアップ
 setup_latex_environment
 
-# レビューワークフロー機能の有効化
-echo "レビューワークフロー機能を有効化中..."
-mkdir -p .devcontainer
-touch .devcontainer/.review-workflow
-log_info "レビューワークフロー機能を有効化しました"
-
 # 論文タイプに応じて不要なファイルを削除
 if [ "$THESIS_TYPE" = "shuuron" ]; then
     rm -f sotsuron.tex gaiyou.tex example.tex example-gaiyou.tex 2>/dev/null || true

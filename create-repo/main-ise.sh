@@ -132,12 +132,6 @@ fi
 # 標準セットアップフロー
 run_standard_setup "ise"
 
-# レビューワークフロー機能の有効化
-echo "レビューワークフロー機能を有効化中..."
-mkdir -p .devcontainer
-touch .devcontainer/.review-workflow
-log_info "レビューワークフロー機能を有効化しました"
-
 # smkwlab 組織メンバーの場合は auto-assign 設定を追加
 setup_auto_assign_for_organization_members
 
