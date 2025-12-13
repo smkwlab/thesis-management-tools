@@ -98,8 +98,6 @@ find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
 # 組織外ユーザーの場合は組織専用ワークフローを削除
 remove_org_specific_workflows
 
-git add -u
-
 # Git設定
 setup_git_auth || exit 1
 setup_git_user "setup-poster@smkwlab.github.io" "Poster Setup Tool"

@@ -31,7 +31,6 @@ run_standard_setup "wr"
 setup_latex_environment
 
 # 変更をコミットしてプッシュ
-git add -u
 commit_and_push "Initialize weekly report repository for ${STUDENT_ID}
 
 - Setup LaTeX environment for weekly reports
