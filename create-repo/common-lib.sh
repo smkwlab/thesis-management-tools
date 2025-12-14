@@ -655,7 +655,7 @@ run_standard_setup() {
         ise)    display_name="ISE" ;;
         wr)     display_name="WR" ;;
         thesis) display_name="Thesis" ;;
-        latex)  display_name="Latex" ;;
+        latex)  display_name="LaTeX" ;;
         poster) display_name="Poster" ;;
         *)      display_name="$doc_type" ;;
     esac
