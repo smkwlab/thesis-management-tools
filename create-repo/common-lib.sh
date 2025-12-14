@@ -56,8 +56,16 @@ init_script_common() {
 
 # 動作モード設定
 setup_operation_mode() {
+    # 環境変数 INDIVIDUAL_MODE が既に設定されている場合は優先
+    if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+        log_info "👤 個人ユーザーモード有効（環境変数指定）"
+        OPERATION_MODE="individual"
+        INDIVIDUAL_MODE=true
+        return
+    fi
+
     local user_type="${USER_TYPE:-organization_member}"
-    
+
     if [ "$user_type" = "individual_user" ]; then
         log_info "👤 個人ユーザーモード有効"
         OPERATION_MODE="individual"
@@ -646,7 +654,10 @@ run_standard_setup() {
     case "$doc_type" in
         ise)    display_name="ISE" ;;
         wr)     display_name="WR" ;;
-        *)      display_name="${doc_type^}" ;;
+        thesis) display_name="Thesis" ;;
+        latex)  display_name="Latex" ;;
+        poster) display_name="Poster" ;;
+        *)      display_name="$doc_type" ;;
     esac
 
     # 組織アクセス確認
