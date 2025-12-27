@@ -5,6 +5,10 @@
 # 設定・定数
 # ================================
 
+# スクリプトディレクトリを読み込み時に確定（cd後でも正しいパスを参照できるように）
+# 注: source で読み込まれた場合、${BASH_SOURCE[0]} はこのファイルのパス
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+
 # 色定義
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
