@@ -12,7 +12,7 @@ init_script_common "汎用LaTeXリポジトリセットアップツール" "📝
 # 設定
 ORGANIZATION=$(determine_organization)
 TEMPLATE_REPOSITORY="smkwlab/latex-template"  # 常に固定
-VISIBILITY="public"
+VISIBILITY="private"
 
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
