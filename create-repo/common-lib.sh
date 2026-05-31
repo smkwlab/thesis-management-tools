@@ -548,6 +548,28 @@ setup_latex_environment() {
     fi
 }
 
+# テンプレートファイルの整理
+#
+# 自動生成リポジトリに不要なファイルを削除します。
+# - CLAUDE.md      : テンプレート／latex-environment 由来の開発者向け説明（学生リポジトリには不要）
+# - docs/          : テンプレート／latex-environment 由来のドキュメント
+# - *-aldc         : aldc が統合時に生成する衝突ファイルのバックアップ
+#
+# 重要: この関数は aldc 実行（setup_latex_environment）の **後** に呼ぶ必要があります。
+# aldc は latex-environment 由来の CLAUDE.md / docs/ を持ち込み、既存ファイルと衝突した
+# 場合は <元ファイル名>-aldc としてバックアップを残すため、aldc 実行前に削除しても
+# これらは再生成・残存してしまいます（Issue #433）。
+#
+# 戻り値:
+#   0 - 常に成功
+cleanup_template_files() {
+    log_info "テンプレートファイルを整理中..."
+    rm -f CLAUDE.md 2>/dev/null || true
+    rm -rf docs/ 2>/dev/null || true
+    find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
+    return 0
+}
+
 # smkwlab 組織メンバー用の auto-assign 設定追加
 #
 # 組織メンバーの場合のみ、PR自動レビュワー割り当て設定を追加します。
@@ -688,11 +710,10 @@ run_standard_setup() {
     setup_git_auth || exit 1
     setup_git_user "setup-${doc_type}@smkwlab.github.io" "${display_name} Setup Tool"
 
-    # 共通ファイル整理
-    echo "テンプレートファイルを整理中..."
-    rm -f CLAUDE.md 2>/dev/null || true
-    rm -rf docs/ 2>/dev/null || true
-    find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
+    # 注意: テンプレートファイルの整理（CLAUDE.md / docs/ / *-aldc 削除）は
+    # ここでは行わない。aldc（setup_latex_environment）が latex-environment 由来の
+    # CLAUDE.md / docs/ を持ち込み、衝突ファイルを *-aldc として生成するため、
+    # 整理は aldc 実行後に cleanup_template_files() で行う必要がある（Issue #433）。
 }
 
 #

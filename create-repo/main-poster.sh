@@ -74,6 +74,9 @@ setup_latex_environment
 # 組織外ユーザーの場合は組織専用ワークフローを削除
 remove_org_specific_workflows
 
+# テンプレートファイルの整理（aldc 実行後に行う必要がある: Issue #433）
+cleanup_template_files
+
 # 変更をコミットしてプッシュ
 commit_and_push "Initial setup for ${POSTER_NAME}
 
