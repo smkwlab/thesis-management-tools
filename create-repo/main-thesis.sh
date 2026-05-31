@@ -75,6 +75,9 @@ setup_auto_assign_for_organization_members
 # 組織外ユーザーの場合は組織専用ワークフローを削除
 remove_org_specific_workflows
 
+# テンプレートファイルの整理（aldc 実行後に行う必要がある: Issue #433）
+cleanup_template_files
+
 # main ブランチでの初期セットアップコミット
 git add -u
 git add .github/ 2>/dev/null || true
