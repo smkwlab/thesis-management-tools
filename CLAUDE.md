@@ -28,6 +28,18 @@ DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" STUDENT_ID=k21rs001 /bin/b
 INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash latex
 ```
 
+**Version pinning (reproducibility & safety)**: The commands above default to `main`
+(latest) for convenience. To pin a specific version, replace `main` in the URL with a
+release tag (e.g. `v1.0.0`); the script body and the content it clones internally are
+both pinned to that tag. The internal ref can also be overridden via `UNIVERSAL_REF`
+(precedence: `UNIVERSAL_REF` > `UNIVERSAL_BRANCH` > embedded default `main`).
+See [docs/RELEASE.md](docs/RELEASE.md) for the release workflow.
+
+```bash
+# Pinned version
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh)" bash thesis
+```
+
 ### Branch Protection Setup
 
 **Automatic Setup (Thesis Repositories)**
@@ -171,6 +183,7 @@ gh repo view smkwlab/repo-name --json defaultBranch,visibility
 
 ## Detailed Documentation
 
+- **[Release Guide](docs/RELEASE.md)** - SemVer policy, manual release procedure, version pinning
 - **[Development Guide](docs/CLAUDE-DEVELOPMENT.md)** - Architecture, security, testing
 - **[Troubleshooting](docs/CLAUDE-TROUBLESHOOTING.md)** - Common issues, debug commands
 - **[Workflows](docs/CLAUDE-WORKFLOWS.md)** - Student/faculty workflows, ecosystem integration

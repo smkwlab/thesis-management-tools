@@ -11,6 +11,21 @@ if [ "${DEBUG:-0}" = "1" ]; then
 fi
 
 # ================================
+# バージョン固定（再現性・安全性）
+# ================================
+# このスクリプトが内部で clone・利用する thesis-management-tools の参照先（ref）。
+#
+# EMBEDDED_REF はリリース時にタグ（例: v1.0.0）へ書き換えられる。main ブランチ上では
+# "main" のまま。これにより、タグ付き URL から取得した setup.sh は、内部で clone する
+# 内容も同じタグに固定され、完全な再現性が得られる（リリース手順は docs/RELEASE.md）。
+#
+# 明示的に上書きしたい場合は環境変数で指定する：
+#   UNIVERSAL_REF=v1.0.0   タグ / コミットSHA / ブランチを固定（推奨）
+#   UNIVERSAL_BRANCH=...    後方互換のためのエイリアス（UNIVERSAL_REF を優先）
+EMBEDDED_REF="main"
+SETUP_REF="${UNIVERSAL_REF:-${UNIVERSAL_BRANCH:-$EMBEDDED_REF}}"
+
+# ================================
 # 文書タイプ設定
 # ================================
 
@@ -285,11 +300,12 @@ fi
 
 cd "$TEMP_DIR"
 
-# ブランチ指定がある場合は切り替え
-BRANCH="${UNIVERSAL_BRANCH:-main}"
-if ! git checkout "$BRANCH" 2>/dev/null; then
-    echo "⚠️ ブランチ $BRANCH が見つかりません。mainブランチを使用します。"
+# 指定された参照（タグ / コミットSHA / ブランチ）に切り替え
+if ! git checkout "$SETUP_REF" 2>/dev/null; then
+    echo "⚠️ 指定された参照 ($SETUP_REF) が見つかりません。mainブランチを使用します。"
     git checkout main 2>/dev/null || true
+elif [ "$SETUP_REF" != "main" ]; then
+    echo "📌 バージョン固定: $SETUP_REF"
 fi
 
 cd create-repo
