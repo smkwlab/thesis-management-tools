@@ -61,7 +61,7 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 
 - スクリプトの内容は公開リポジトリでいつでも確認できます。実行前に内容を確認したい場合は、
   上記 URL をブラウザで開いて確認してください。
-- 利用可能なバージョンは [Releases](https://github.com/smkwlab/thesis-management-tools/releases) を参照してください。
+- 利用可能なバージョン（`v1.0.0` などの具体的なリリース）は [Releases](https://github.com/smkwlab/thesis-management-tools/releases) を参照してください。なお `v1` はそれらの最新を指す移動タグ（ポインタ）であり、Releases 一覧には個別の項目としては現れません。
 - リリース運用の詳細は [docs/RELEASE.md](../docs/RELEASE.md) を参照してください。
 
 ## よくある質問
