@@ -40,13 +40,20 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 スクリプトを取得します。ある時点の手順を確実に再現したい場合や、内容を固定して
 実行したい場合は、**タグ（バージョン）で固定した版**を利用できます。
 
-`setup.sh` の URL のブランチ部分（`main`）をタグ（例: `v1.0.0`）に変えるだけで、
-スクリプト本体・内部で取得する内容ともに同じバージョンに固定されます
-（文書タイプ引数の指定方法はこれまでと同じで、以下は論文 `thesis` の例です）。
+`setup.sh` の URL のブランチ部分（`main`）をタグに変えるだけで、スクリプト本体・
+内部で取得する内容ともに同じバージョンに固定されます（文書タイプ引数の指定方法は
+これまでと同じで、以下は論文 `thesis` の例です）。
 
 ```bash
+# 最新の v1 系（移動タグ。安定版を使いたい場合の推奨。テンプレート README もこちら）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1/create-repo/setup.sh)" bash thesis
+
+# 特定パッチに完全固定（厳密な再現が必要な場合）
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh)" bash thesis
 ```
+
+> `v1` は「最新の v1 系リリース」を指す移動タグです（GitHub Actions の `@v4` と同様）。
+> 完全に同一の内容を再現したい場合は `v1.0.0` のように具体的なバージョンを指定してください。
 
 > 変更するのは **URL 内の `main` の部分だけ**です。コマンド末尾の引数（上の例では
 > `bash thesis`。`bash` は `bash -c` のダミー引数 `$0`、`thesis` が実際の文書タイプ `$1`）や、

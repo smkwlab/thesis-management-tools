@@ -70,11 +70,48 @@ git branch -D release-v1.0.0
 
 # 6. GitHub Release を作成（リリースノートを添付）
 gh release create v1.0.0 --title "v1.0.0" --notes "リリース内容..."
+
+# 7. メジャー移動タグ v1 を当該リリースに合わせる（下記「メジャー移動タグ」参照）
+git tag -f v1 v1.0.0
+git push origin v1 --force
 ```
 
 > **重要**: リリース用コミット（`EMBEDDED_REF="v1.0.0"`）を `main` にマージしないこと。
 > マージすると `main` の `setup.sh` が古いタグを指し続けてしまう。
 > `main` 上の `EMBEDDED_REF` は常に `"main"` を保つ。
+
+## メジャー移動タグ（`v1` など）
+
+利用側テンプレート（`sotsuron-template` 等）のコマンド例は、安定したメジャー系列を
+指す**移動タグ** `vN`（例: `v1`）を参照する（GitHub Actions の `@v4` と同じ考え方）。
+
+- `vN` は「その時点の最新の `vN.*.*` リリース」を指す。リリースのたびに最新へ動かす。
+- これにより、パッチ／マイナーリリースのたびに各テンプレートの README を更新する必要が
+  なくなる。**README の更新が必要になるのはメジャー更新（`v1` → `v2`）のときだけ**。
+- `vN` は単なるポインタ用タグであり、GitHub Release は作らない（Release は `vX.Y.Z` のみ）。
+
+### 二段固定との関係
+
+`vN` は「どのリリースコミットを取得するか」を選ぶだけで、固定の正確さは損なわれない。
+
+- `…/v1/create-repo/setup.sh` を取得すると、`v1` が指すコミット（例: `v1.0.0`）の
+  `setup.sh` が得られる。その `EMBEDDED_REF` は**正確なバージョン**（`v1.0.0`）なので、
+  内部 clone も `v1.0.0` に固定される。
+- `v1` を `v1.1.0` のコミットへ動かせば、`…/v1/…` は自動的に `v1.1.0` を取得・固定する
+  （`EMBEDDED_REF` は各リリースコミットに焼き込まれているため）。
+
+### 運用ルール
+
+- **パッチ／マイナー**（`v1.0.1`, `v1.1.0` など）: 上記リリース手順の最後に
+  `git tag -f v1 vX.Y.Z && git push origin v1 --force` で `v1` を前進させる。
+- **メジャー**（`v2.0.0`）: 新しい移動タグ `v2` を作成し、利用側テンプレートの
+  README コマンド例を `/v1/` → `/v2/` に更新する（旧 `v1` は据え置きで互換維持）。
+
+```bash
+# 例: v1 系の新リリース vX.Y.Z 後に v1 を前進させる
+git tag -f v1 vX.Y.Z
+git push origin v1 --force
+```
 
 ### 検証
 
@@ -105,6 +142,10 @@ curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/mai
 URL のブランチ部分をタグに変えるだけで、本体・内部 clone とも当該タグに固定される。
 
 ```bash
+# 最新の v1 系（移動タグ。テンプレート README はこちらを採用）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1/create-repo/setup.sh)" bash thesis
+
+# 特定パッチに完全固定（厳密な再現が必要な場合）
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh)" bash thesis
 ```
 
