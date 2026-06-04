@@ -36,12 +36,13 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 
 ## 再現性・安全性（固定版の利用）
 
-上記のコマンドは利便性を重視し、既定で `main`（最新版）のスクリプトを取得します。
-ある時点の手順を確実に再現したい場合や、内容を固定して実行したい場合は、
-**タグ（バージョン）で固定した版**を利用できます。
+これまでの `setup.sh` 実行コマンドは利便性を重視し、URL の `main`（最新版）から
+スクリプトを取得します。ある時点の手順を確実に再現したい場合や、内容を固定して
+実行したい場合は、**タグ（バージョン）で固定した版**を利用できます。
 
-URL のブランチ部分（`main`）をタグ（例: `v1.0.0`）に変えるだけで、
-スクリプト本体・内部で取得する内容ともに同じバージョンに固定されます。
+`setup.sh` の URL のブランチ部分（`main`）をタグ（例: `v1.0.0`）に変えるだけで、
+スクリプト本体・内部で取得する内容ともに同じバージョンに固定されます
+（文書タイプ引数の指定方法はこれまでと同じで、以下は論文 `thesis` の例です）。
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh)" bash thesis
