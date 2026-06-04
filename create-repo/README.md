@@ -34,6 +34,29 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 - Windows: WSL + Docker Desktop
 - macOS: Docker Desktop
 
+## 再現性・安全性（固定版の利用）
+
+これまでの `setup.sh` 実行コマンドは利便性を重視し、URL の `main`（最新版）から
+スクリプトを取得します。ある時点の手順を確実に再現したい場合や、内容を固定して
+実行したい場合は、**タグ（バージョン）で固定した版**を利用できます。
+
+`setup.sh` の URL のブランチ部分（`main`）をタグ（例: `v1.0.0`）に変えるだけで、
+スクリプト本体・内部で取得する内容ともに同じバージョンに固定されます
+（文書タイプ引数の指定方法はこれまでと同じで、以下は論文 `thesis` の例です）。
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh)" bash thesis
+```
+
+> 変更するのは **URL 内の `main` の部分だけ**です。コマンド末尾の引数（上の例では
+> `bash thesis`。`bash` は `bash -c` のダミー引数 `$0`、`thesis` が実際の文書タイプ `$1`）や、
+> 各コマンド先頭の環境変数（`STUDENT_ID=...` など）はそのまま残してください。
+
+- スクリプトの内容は公開リポジトリでいつでも確認できます。実行前に内容を確認したい場合は、
+  上記 URL をブラウザで開いて確認してください。
+- 利用可能なバージョンは [Releases](https://github.com/smkwlab/thesis-management-tools/releases) を参照してください。
+- リリース運用の詳細は [docs/RELEASE.md](../docs/RELEASE.md) を参照してください。
+
 ## よくある質問
 
 ### Q: Docker Desktop が起動していないエラー

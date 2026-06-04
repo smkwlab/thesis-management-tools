@@ -11,6 +11,34 @@ if [ "${DEBUG:-0}" = "1" ]; then
 fi
 
 # ================================
+# バージョン固定（再現性・安全性）
+# ================================
+# このスクリプトが内部で clone・利用する thesis-management-tools の参照先（ref）。
+#
+# EMBEDDED_REF はリリース時にタグ（例: v1.0.0）へ書き換えられる。main ブランチ上では
+# "main" のまま。これにより、タグ付き URL から取得した setup.sh は、内部で clone する
+# 内容も同じタグに固定され、完全な再現性が得られる（リリース手順は docs/RELEASE.md）。
+#
+# 明示的に上書きしたい場合は環境変数で指定する：
+#   UNIVERSAL_REF=v1.0.0   タグ / コミットSHA / ブランチを固定（推奨）。解決できない
+#                          場合はエラー終了する（再現性・監査性のため main へ暗黙
+#                          フォールバックしない）。
+#   UNIVERSAL_BRANCH=...   後方互換のためのエイリアス（UNIVERSAL_REF を優先）。従来
+#                          どおり、解決できない場合は警告して main へフォールバックする。
+# 優先順位: UNIVERSAL_REF > UNIVERSAL_BRANCH > EMBEDDED_REF
+EMBEDDED_REF="main"
+if [ -n "$UNIVERSAL_REF" ]; then
+    SETUP_REF="$UNIVERSAL_REF"
+    SETUP_REF_LENIENT=0
+elif [ -n "$UNIVERSAL_BRANCH" ]; then
+    SETUP_REF="$UNIVERSAL_BRANCH"
+    SETUP_REF_LENIENT=1   # 後方互換: 解決失敗時は main へフォールバック
+else
+    SETUP_REF="$EMBEDDED_REF"
+    SETUP_REF_LENIENT=0
+fi
+
+# ================================
 # 文書タイプ設定
 # ================================
 
@@ -285,11 +313,47 @@ fi
 
 cd "$TEMP_DIR"
 
-# ブランチ指定がある場合は切り替え
-BRANCH="${UNIVERSAL_BRANCH:-main}"
-if ! git checkout "$BRANCH" 2>/dev/null; then
-    echo "⚠️ ブランチ $BRANCH が見つかりません。mainブランチを使用します。"
-    git checkout main 2>/dev/null || true
+# 指定された参照（タグ / コミットSHA / ブランチ）に切り替える。
+# clone 直後は既定ブランチ（main）に居るため、main 指定時は切り替え不要。
+if [ "$SETUP_REF" != "main" ]; then
+    # オプション注入対策: git がオプションと解釈するのは先頭が "-" の値のみ。
+    # そのような値（例: UNIVERSAL_REF=-x）は不正な参照として拒否する。
+    case "$SETUP_REF" in
+        -*)
+            echo "❌ 不正な参照指定です: $SETUP_REF"
+            exit 1
+            ;;
+    esac
+
+    # SETUP_REF をコミットに解決する。git rev-parse はリビジョンのみを解決し
+    # パスは解決しないため、SETUP_REF が（ref ではなく）パスとして誤って checkout され、
+    # HEAD が main のまま「固定成功」と表示される事態を防げる。
+    # ローカルに無いブランチ名は origin/ 経由でも解決を試みる。
+    if SETUP_COMMIT=$(git rev-parse --verify --quiet "${SETUP_REF}^{commit}"); then
+        :
+    elif SETUP_COMMIT=$(git rev-parse --verify --quiet "origin/${SETUP_REF}^{commit}"); then
+        :
+    elif [ "$SETUP_REF_LENIENT" = "1" ]; then
+        # 後方互換（UNIVERSAL_BRANCH）: 解決できない場合は従来どおり警告して main を使用する。
+        echo "⚠️ 指定された参照 ($SETUP_REF) が見つかりません。mainブランチを使用します。"
+        SETUP_COMMIT=""
+    else
+        # 固定版（UNIVERSAL_REF / リリースタグ）が見つからない場合、main への暗黙
+        # フォールバックは再現性・監査性を損なうため、エラーとして終了する。
+        echo "❌ 指定された参照 ($SETUP_REF) が見つかりません。"
+        echo "   タグ名・コミットSHA・ブランチ名が正しいか確認してください。"
+        echo "   利用可能なバージョン: https://github.com/smkwlab/thesis-management-tools/releases"
+        exit 1
+    fi
+
+    # 解決できた場合のみ detached HEAD で切り替える（lenient フォールバック時は main のまま）
+    if [ -n "$SETUP_COMMIT" ]; then
+        if ! git checkout --detach "$SETUP_COMMIT" 2>/dev/null; then
+            echo "❌ 参照 ($SETUP_REF) への切り替えに失敗しました。"
+            exit 1
+        fi
+        echo "📌 バージョン固定: $SETUP_REF"
+    fi
 fi
 
 cd create-repo
