@@ -72,7 +72,9 @@ git branch -D release-v1.0.0
 gh release create v1.0.0 --title "v1.0.0" --notes "リリース内容..."
 
 # 7. メジャー移動タグ v1 を当該リリースに合わせる（下記「メジャー移動タグ」参照）
-git tag -f v1 v1.0.0
+#    vX.Y.Z は annotated tag のため、^{} でコミットへ剥がして軽量タグにする
+#    （v1 がタグオブジェクトを指すと解決が不安定になるのを防ぐ）
+git tag -f v1 v1.0.0^{}
 git push origin v1 --force
 ```
 
@@ -103,13 +105,15 @@ git push origin v1 --force
 ### 運用ルール
 
 - **パッチ／マイナー**（`v1.0.1`, `v1.1.0` など）: 上記リリース手順の最後に
-  `git tag -f v1 vX.Y.Z && git push origin v1 --force` で `v1` を前進させる。
+  `git tag -f v1 vX.Y.Z^{} && git push origin v1 --force` で `v1` を前進させる
+  （`^{}` で annotated tag をコミットへ剥がし、`v1` を必ずコミットに向ける）。
 - **メジャー**（`v2.0.0`）: 新しい移動タグ `v2` を作成し、利用側テンプレートの
   README コマンド例を `/v1/` → `/v2/` に更新する（旧 `v1` は据え置きで互換維持）。
 
 ```bash
 # 例: v1 系の新リリース vX.Y.Z 後に v1 を前進させる
-git tag -f v1 vX.Y.Z
+# ^{} で annotated tag をコミットへ剥がし、v1 が必ずリリースコミットを指すようにする
+git tag -f v1 vX.Y.Z^{}
 git push origin v1 --force
 ```
 
