@@ -300,6 +300,16 @@ fi
 
 cd "$TEMP_DIR"
 
+# 参照先がオプションとして解釈されないよう検証する。
+# git の ref 名（タグ / ブランチ）は先頭に "-" を許さないため、先頭が "-" の値は
+# 不正としてフォールバックする（例: UNIVERSAL_REF=--detach のようなオプション注入対策）。
+case "$SETUP_REF" in
+    -*)
+        echo "⚠️ 不正な参照指定 ($SETUP_REF) のため main を使用します"
+        SETUP_REF="main"
+        ;;
+esac
+
 # 指定された参照（タグ / コミットSHA / ブランチ）に切り替え
 if ! git checkout "$SETUP_REF" 2>/dev/null; then
     echo "⚠️ 指定された参照 ($SETUP_REF) が見つかりません。mainブランチを使用します。"

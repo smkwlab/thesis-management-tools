@@ -47,6 +47,9 @@ URL のブランチ部分（`main`）をタグ（例: `v1.0.0`）に変えるだ
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh)" bash thesis
 ```
 
+> 変更するのは **URL 内の `main` の部分だけ**です。末尾の文書タイプ引数（上の例では
+> `bash thesis`）や、各コマンド先頭の環境変数（`STUDENT_ID=...` など）はそのまま残してください。
+
 - スクリプトの内容は公開リポジトリでいつでも確認できます。実行前に内容を確認したい場合は、
   上記 URL をブラウザで開いて確認してください。
 - 利用可能なバージョンは [Releases](https://github.com/smkwlab/thesis-management-tools/releases) を参照してください。
