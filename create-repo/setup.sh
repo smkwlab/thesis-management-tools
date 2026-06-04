@@ -311,11 +311,20 @@ case "$SETUP_REF" in
 esac
 
 # 指定された参照（タグ / コミットSHA / ブランチ）に切り替え
-if ! git checkout "$SETUP_REF" 2>/dev/null; then
+if git checkout "$SETUP_REF" 2>/dev/null; then
+    if [ "$SETUP_REF" != "main" ]; then
+        echo "📌 バージョン固定: $SETUP_REF"
+    fi
+elif [ "$SETUP_REF" = "main" ]; then
     echo "⚠️ 指定された参照 ($SETUP_REF) が見つかりません。mainブランチを使用します。"
     git checkout main 2>/dev/null || true
-elif [ "$SETUP_REF" != "main" ]; then
-    echo "📌 バージョン固定: $SETUP_REF"
+else
+    # 固定版が指定されているのに見つからない場合、main への暗黙フォールバックは
+    # 再現性・監査性を損なうため、エラーとして終了する。
+    echo "❌ 指定された参照 ($SETUP_REF) が見つかりません。"
+    echo "   タグ名・コミットSHA・ブランチ名が正しいか確認してください。"
+    echo "   利用可能なバージョン: https://github.com/smkwlab/thesis-management-tools/releases"
+    exit 1
 fi
 
 cd create-repo
