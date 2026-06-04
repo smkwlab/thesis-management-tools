@@ -300,31 +300,28 @@ fi
 
 cd "$TEMP_DIR"
 
-# オプション注入対策: 先頭が "-" の値は git checkout にオプションとして
-# 渡る恐れがある（例: UNIVERSAL_REF=--detach）。そのような値は不正と見なして
-# main にフォールバックする。
-case "$SETUP_REF" in
-    -*)
-        echo "⚠️ 不正な参照指定 ($SETUP_REF) のため main を使用します"
-        SETUP_REF="main"
-        ;;
-esac
+# 指定された参照（タグ / コミットSHA / ブランチ）に切り替える。
+# clone 直後は既定ブランチ（main）に居るため、main 指定時は切り替え不要。
+if [ "$SETUP_REF" != "main" ]; then
+    # オプション注入対策: git がオプションと解釈するのは先頭が "-" の値のみ。
+    # そのような値（例: UNIVERSAL_REF=--detach）は不正な参照として拒否する。
+    case "$SETUP_REF" in
+        -*)
+            echo "❌ 不正な参照指定です: $SETUP_REF"
+            exit 1
+            ;;
+    esac
 
-# 指定された参照（タグ / コミットSHA / ブランチ）に切り替え
-if git checkout "$SETUP_REF" 2>/dev/null; then
-    if [ "$SETUP_REF" != "main" ]; then
+    if git checkout "$SETUP_REF" 2>/dev/null; then
         echo "📌 バージョン固定: $SETUP_REF"
+    else
+        # 固定版が指定されているのに見つからない場合、main への暗黙フォールバックは
+        # 再現性・監査性を損なうため、エラーとして終了する。
+        echo "❌ 指定された参照 ($SETUP_REF) が見つかりません。"
+        echo "   タグ名・コミットSHA・ブランチ名が正しいか確認してください。"
+        echo "   利用可能なバージョン: https://github.com/smkwlab/thesis-management-tools/releases"
+        exit 1
     fi
-elif [ "$SETUP_REF" = "main" ]; then
-    echo "⚠️ 指定された参照 ($SETUP_REF) が見つかりません。mainブランチを使用します。"
-    git checkout main 2>/dev/null || true
-else
-    # 固定版が指定されているのに見つからない場合、main への暗黙フォールバックは
-    # 再現性・監査性を損なうため、エラーとして終了する。
-    echo "❌ 指定された参照 ($SETUP_REF) が見つかりません。"
-    echo "   タグ名・コミットSHA・ブランチ名が正しいか確認してください。"
-    echo "   利用可能なバージョン: https://github.com/smkwlab/thesis-management-tools/releases"
-    exit 1
 fi
 
 cd create-repo
