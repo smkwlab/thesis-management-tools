@@ -304,7 +304,7 @@ cd "$TEMP_DIR"
 # clone 直後は既定ブランチ（main）に居るため、main 指定時は切り替え不要。
 if [ "$SETUP_REF" != "main" ]; then
     # オプション注入対策: git がオプションと解釈するのは先頭が "-" の値のみ。
-    # そのような値（例: UNIVERSAL_REF=--detach）は不正な参照として拒否する。
+    # そのような値（例: UNIVERSAL_REF=-x）は不正な参照として拒否する。
     case "$SETUP_REF" in
         -*)
             echo "❌ 不正な参照指定です: $SETUP_REF"
@@ -312,8 +312,14 @@ if [ "$SETUP_REF" != "main" ]; then
             ;;
     esac
 
-    if git checkout "$SETUP_REF" 2>/dev/null; then
-        echo "📌 バージョン固定: $SETUP_REF"
+    # SETUP_REF をコミットに解決する。git rev-parse はリビジョンのみを解決し
+    # パスは解決しないため、SETUP_REF が（ref ではなく）パスとして誤って checkout され、
+    # HEAD が main のまま「固定成功」と表示される事態を防げる。
+    # ローカルに無いブランチ名は origin/ 経由でも解決を試みる。
+    if SETUP_COMMIT=$(git rev-parse --verify --quiet "${SETUP_REF}^{commit}"); then
+        :
+    elif SETUP_COMMIT=$(git rev-parse --verify --quiet "origin/${SETUP_REF}^{commit}"); then
+        :
     else
         # 固定版が指定されているのに見つからない場合、main への暗黙フォールバックは
         # 再現性・監査性を損なうため、エラーとして終了する。
@@ -322,6 +328,13 @@ if [ "$SETUP_REF" != "main" ]; then
         echo "   利用可能なバージョン: https://github.com/smkwlab/thesis-management-tools/releases"
         exit 1
     fi
+
+    # 解決したコミットへ detached HEAD で切り替える（一時 clone からのビルド用途）
+    if ! git checkout --detach "$SETUP_COMMIT" 2>/dev/null; then
+        echo "❌ 参照 ($SETUP_REF) への切り替えに失敗しました。"
+        exit 1
+    fi
+    echo "📌 バージョン固定: $SETUP_REF"
 fi
 
 cd create-repo
