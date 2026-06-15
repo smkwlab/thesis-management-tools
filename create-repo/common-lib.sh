@@ -272,9 +272,10 @@ read_student_id() {
 # - INDIVIDUAL_MODE が真のときは入力をスキップして空文字を返す
 # - それ以外は read_student_id → normalize_student_id を通した学籍番号を返す
 # ログ類は stderr に出力されるため、STUDENT_ID=$(read_student_id_if_needed "$1") の
-# ように stdout を捕捉しても汚染されない。正規化に失敗した場合は 1 を返すので、
-# set -e 環境では呼び出し側の代入がそこで停止する（従来の `|| exit 1` と同等）。
-# 使い方: STUDENT_ID=$(read_student_id_if_needed "$1" "卒業論文の例: k21rs001 ...")
+# ように stdout を捕捉しても汚染されない。正規化に失敗した場合は 1 を返す。
+# 呼び出し側は必ず `|| exit 1` を付けて使うこと（set -e 下の bare 代入でも停止するが、
+# 明示しておくことで set -e 無効時や local 代入時にも確実に停止できる）。
+# 使い方: STUDENT_ID=$(read_student_id_if_needed "$1" "卒業論文の例: k21rs001 ...") || exit 1
 read_student_id_if_needed() {
     local input_id="$1"
     local examples="$2"
