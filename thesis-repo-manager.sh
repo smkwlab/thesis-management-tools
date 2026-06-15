@@ -117,12 +117,6 @@ check_rate_limit() {
     return 0
 }
 
-# API呼び出し間のスリープ（レート制限対策）
-api_sleep() {
-    local sleep_time="${1:-0.1}"  # デフォルト100ms
-    sleep "$sleep_time"
-}
-
 # 学生ID検証
 validate_student_id() {
     local student_id="$1"
@@ -231,10 +225,11 @@ show_status() {
     echo "╠════════════╤════════════════════════╤═══════════╤════════════╤══════════════╣"
     echo "║ Student ID │ Repository             │ Status    │ Protection │ Last Update  ║"
     echo "╠════════════╪════════════════════════╪═══════════╪════════════╪══════════════╣"
-    
-    local students
-    students=$(get_all_students)
-    
+
+    # 保護状態は表示ループ内で集計する（2回目のループと API 呼び出しを避ける）
+    local protected_count=0
+    local unprotected_count=0
+
     if [ -z "$students" ]; then
         echo "║            │                        │           │            │              ║"
         echo "║            │     No students found │           │            │              ║"
@@ -271,13 +266,17 @@ show_status() {
                 
                 if [ "$protection_status" = "protected" ]; then
                     protection_icon="✅"
+                    protected_count=$((protected_count + 1))
                 else
                     protection_icon="❌"
+                    unprotected_count=$((unprotected_count + 1))
                 fi
             else
                 status="Not Found"
                 last_update="N/A"
                 protection_icon="N/A"
+                # 存在しないリポジトリは未保護として集計（従来の統計と同じ扱い）
+                unprotected_count=$((unprotected_count + 1))
             fi
             
             printf "║ %-10s │ %-22s │ %-9s │ %-10s │ %-12s ║\n" \
@@ -288,33 +287,12 @@ show_status() {
     echo "╚════════════╧════════════════════════╧═══════════╧════════════╧══════════════╝"
     echo
     
-    # 統計情報
-    local total_students
+    # 統計情報（表示ループで集計済み。保護状態の API はリポジトリ1件につき1回のみ）
+    local total_students=0
     if [ -n "$students" ]; then
         total_students=$(echo "$students" | wc -l | tr -d ' ')
-    else
-        total_students=0
     fi
-    
-    local protected_count=0
-    local unprotected_count=0
-    
-    if [ "$total_students" -gt 0 ]; then
-        while IFS= read -r student_id; do
-            local repo_name
-            repo_name=$(determine_repo_name "$student_id")
-            if [ -n "$repo_name" ]; then
-                local protection
-                protection=$(check_branch_protection "$repo_name")
-                if [ "$protection" = "protected" ]; then
-                    ((protected_count++))
-                else
-                    ((unprotected_count++))
-                fi
-            fi
-        done <<< "$students"
-    fi
-    
+
     echo "📊 Summary: Total: $total_students, Protected: $protected_count, Unprotected: $unprotected_count"
 }
 
