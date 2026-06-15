@@ -16,16 +16,8 @@ VISIBILITY="private"
 
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
-# INDIVIDUAL_MODEの場合は学籍番号をスキップ
-if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
-    log_debug "個人モード: 学籍番号の入力をスキップします"
-    STUDENT_ID=""
-else
-    # 学籍番号の入力と検証
-    STUDENT_ID=$(read_student_id "$1" "卒業論文の例: k21rs001, 修士論文の例: k21gjk01")
-    STUDENT_ID=$(normalize_student_id "$STUDENT_ID") || exit 1
-    log_info "学籍番号: $STUDENT_ID"
-fi
+# 学籍番号の取得（INDIVIDUAL_MODE のときはスキップして空文字）
+STUDENT_ID=$(read_student_id_if_needed "$1" "卒業論文の例: k21rs001, 修士論文の例: k21gjk01") || exit 1
 
 # 論文タイプの判定
 determine_thesis_type() {
