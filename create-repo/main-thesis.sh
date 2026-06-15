@@ -17,7 +17,7 @@ VISIBILITY="private"
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
 # 学籍番号の取得（INDIVIDUAL_MODE のときはスキップして空文字）
-STUDENT_ID=$(read_student_id_if_needed "$1" "卒業論文の例: k21rs001, 修士論文の例: k21gjk01")
+STUDENT_ID=$(read_student_id_if_needed "$1" "卒業論文の例: k21rs001, 修士論文の例: k21gjk01") || exit 1
 
 # 論文タイプの判定
 determine_thesis_type() {

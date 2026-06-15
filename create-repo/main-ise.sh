@@ -17,7 +17,7 @@ VISIBILITY="private"
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
 # 学籍番号の取得（INDIVIDUAL_MODE のときはスキップして空文字）
-STUDENT_ID=$(read_student_id_if_needed "$1")
+STUDENT_ID=$(read_student_id_if_needed "$1") || exit 1
 
 # ISE レポート番号の決定とリポジトリ存在チェック（日時ベース）
 # この関数は ISE 固有のロジックのため、ここに残す

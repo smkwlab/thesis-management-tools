@@ -17,7 +17,7 @@ VISIBILITY="private"
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
 
 # 学籍番号の取得（INDIVIDUAL_MODE のときはスキップして空文字）
-STUDENT_ID=$(read_student_id_if_needed "$1")
+STUDENT_ID=$(read_student_id_if_needed "$1") || exit 1
 
 # ポスター名の入力
 read_poster_name() {
