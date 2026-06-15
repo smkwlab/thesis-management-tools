@@ -268,6 +268,30 @@ read_student_id() {
     echo "$student_id"
 }
 
+# INDIVIDUAL_MODE を考慮した学籍番号の取得
+# - INDIVIDUAL_MODE が真のときは入力をスキップして空文字を返す
+# - それ以外は read_student_id → normalize_student_id を通した学籍番号を返す
+# ログ類は stderr に出力されるため、STUDENT_ID=$(read_student_id_if_needed "$1") の
+# ように stdout を捕捉しても汚染されない。正規化に失敗した場合は 1 を返すので、
+# set -e 環境では呼び出し側の代入がそこで停止する（従来の `|| exit 1` と同等）。
+# 使い方: STUDENT_ID=$(read_student_id_if_needed "$1" "卒業論文の例: k21rs001 ...")
+read_student_id_if_needed() {
+    local input_id="$1"
+    local examples="$2"
+
+    if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+        log_debug "個人モード: 学籍番号の入力をスキップします"
+        echo ""
+        return 0
+    fi
+
+    local student_id
+    student_id=$(read_student_id "$input_id" "$examples")
+    student_id=$(normalize_student_id "$student_id") || return 1
+    log_info "学籍番号: $student_id"
+    echo "$student_id"
+}
+
 # 組織設定決定
 determine_organization() {
     local default_org="${1:-$DEFAULT_ORG}"
