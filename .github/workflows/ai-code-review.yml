@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   review:
-    uses: smkwlab/.github/.github/workflows/ai-review.yml@ba7c091366008e5058d061ebf06d3c46986ea1a3 # v1
+    uses: smkwlab/.github/.github/workflows/ai-review.yml@0f2e1befa627f4eeccf13817cda70c508ed75f8d # v1
     permissions:
       contents: read
       pull-requests: write
