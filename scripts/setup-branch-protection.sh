@@ -150,8 +150,17 @@ setup_enforce_admins() {
 
 # 学生リストの更新（pending → completed）
 update_student_lists() {
-    local repo_name="$1"
+    local owner="$1"
+    local repo_name="$2"
     # データは thesis-student-registry で管理されるため、ローカルファイル操作は不要
+
+    # 学生レジストリ（thesis-student-registry）は smkwlab の学生リポジトリのみを管理対象とする。
+    # smkwlab 以外の owner（個人アカウント等）はレジストリ対象外なので更新をスキップする。
+    local registry_owner="${REGISTRY_OWNER:-smkwlab}"
+    if [ "$owner" != "$registry_owner" ]; then
+        log "owner '$owner' は学生レジストリ（$registry_owner）の管理対象外のため、registry 更新をスキップします"
+        return 0
+    fi
 
     log "ブランチ保護設定の記録中..."
 
@@ -172,8 +181,10 @@ update_student_lists() {
 
     if [ -n "$registry_manager_path" ]; then
         log "registry-manager を使用して保護状態を更新: $registry_manager_path"
-        output=$("$registry_manager_path" protect "$repo_name" 2>&1)
-        if [ $? -eq 0 ]; then
+        # set -e 下でも registry 更新失敗でスクリプト全体が終了しないよう、
+        # コマンド置換を if 条件で評価して終了コードを安全に判定する
+        local output
+        if output=$("$registry_manager_path" protect "$repo_name" 2>&1); then
             success "✅ registry-manager で保護状態を更新しました"
             success "✅ ブランチ保護設定の記録が完了しました"
         else
@@ -304,7 +315,7 @@ setup_protection() {
         fi
 
         # 学生リストの更新（pending → completed）
-        update_student_lists "$repo_name"
+        update_student_lists "$owner" "$repo_name"
 
         return 0
     else
