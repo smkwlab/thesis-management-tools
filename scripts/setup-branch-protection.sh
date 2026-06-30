@@ -15,8 +15,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 #   DEFAULT_OWNER  : 引数に '<owner>/' プレフィックスが無い場合に補完する既定 owner
 #   REGISTRY_OWNER : 学生レジストリ（thesis-student-registry）の管理対象 owner。
 #                    対象 owner がこの値と一致する場合のみレジストリを更新する。
-DEFAULT_OWNER="${REPO_OWNER:-smkwlab}"
-REGISTRY_OWNER="${REGISTRY_OWNER:-smkwlab}"
+readonly DEFAULT_OWNER="${REPO_OWNER:-smkwlab}"
+readonly REGISTRY_OWNER="${REGISTRY_OWNER:-smkwlab}"
 
 # カラー定義
 RED='\033[0;31m'
@@ -239,8 +239,8 @@ setup_protection() {
     # ローカル実行時は verify_admin_permissions の API 呼び出しと一部重複するが、
     # Actions 経路での存在保証のため意図的に残している。
     if ! gh repo view "$owner/$repo_name" >/dev/null 2>&1; then
-        error "Repository not found: $owner/$repo_name"
-        error "Please ensure the repository exists before setting up protection"
+        error "Repository not found or no read access: $owner/$repo_name"
+        error "Please ensure the repository exists and is accessible before setting up protection"
         return 1
     fi
 
