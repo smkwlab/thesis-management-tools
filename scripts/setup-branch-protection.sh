@@ -223,6 +223,10 @@ setup_protection() {
     fi
     
     # リポジトリ存在確認
+    # 注: verify_admin_permissions は GitHub Actions 環境では権限チェックを
+    # スキップする（早期 return する）ため、存在確認はこのパスで必ず行う。
+    # ローカル実行時は verify_admin_permissions の API 呼び出しと一部重複するが、
+    # Actions 経路での存在保証のため意図的に残している。
     if ! gh repo view "$owner/$repo_name" >/dev/null 2>&1; then
         error "Repository not found: $owner/$repo_name"
         error "Please ensure the repository exists before setting up protection"
@@ -352,8 +356,11 @@ Arguments:
                          organization (e.g. personal accounts).
 
 Environment:
-  REPO_OWNER   Default owner used when the argument has no '<owner>/' prefix
-               (default: smkwlab)
+  REPO_OWNER     Default owner used when the argument has no '<owner>/' prefix
+                 (default: smkwlab)
+  REGISTRY_OWNER Owner whose repositories are tracked in the student registry.
+                 The registry (thesis-student-registry) is only updated when the
+                 target owner matches this value (default: smkwlab)
 
 Examples:
   $0 k21rs001-sotsuron              # → smkwlab/k21rs001-sotsuron (default owner)
@@ -389,6 +396,11 @@ main() {
     # owner/repo の解決
     #   - "<owner>/<repo>" 形式が渡された場合は owner を抽出する
     #   - リポジトリ名のみの場合は REPO_OWNER（既定: smkwlab）を owner とする
+    # "<owner>/<repo>" を分割する。
+    #   - owner     = 最初の '/' より前   : ${input%%/*}
+    #   - repo_name = 最初の '/' より後ろ : ${input#*/}
+    # 多重スラッシュ（例: a/b/c）の場合は repo_name に '/' が残るため
+    # （owner=a, repo_name=b/c）、後続の正規表現バリデーションで弾かれる。
     local owner repo_name
     if [[ "$input" == */* ]]; then
         owner="${input%%/*}"
@@ -404,6 +416,8 @@ main() {
     #   - repo_name（リポジトリ名）: 英数字と '.' '_' '-'
     # これにより空文字・多重スラッシュ（例: owner//repo, a/b/c）・先頭/末尾スラッシュ・
     # 空白などの不正文字をまとめて弾く。
+    # 注: GitHub の完全な命名規則（先頭/末尾ハイフン禁止・連続ハイフン禁止等）までは
+    # 検証しない。そうした値は最終的に GitHub API 側でエラーとなる。
     if [[ ! "$owner" =~ ^[A-Za-z0-9-]+$ ]] || [[ ! "$repo_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
         error "Invalid repository specification: $input"
         error "Expected '<repository_name>' or '<owner>/<repository_name>'"
