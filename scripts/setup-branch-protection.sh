@@ -11,6 +11,13 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# デフォルト設定（環境変数で上書き可能）
+#   DEFAULT_OWNER  : 引数に '<owner>/' プレフィックスが無い場合に補完する既定 owner
+#   REGISTRY_OWNER : 学生レジストリ（thesis-student-registry）の管理対象 owner。
+#                    対象 owner がこの値と一致する場合のみレジストリを更新する。
+DEFAULT_OWNER="${REPO_OWNER:-smkwlab}"
+REGISTRY_OWNER="${REGISTRY_OWNER:-smkwlab}"
+
 # カラー定義
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -51,8 +58,12 @@ check_rate_limit() {
 }
 
 # アカウント権限チェック
+# 注: GitHub Actions 環境（GITHUB_ACTIONS が設定済み）では、GITHUB_TOKEN に
+#     十分な権限が保証されているため admin 権限チェックを早期 return でスキップする。
+#     そのためリポジトリ存在確認はローカル経路でのみ本関数が行い、Actions 経路では
+#     setup_protection 側の存在確認が担う（経路によりエラーメッセージが異なりうる）。
 # 返り値:
-#   0: 管理者権限あり
+#   0: 管理者権限あり（または Actions 環境でチェックスキップ）
 #   1: 権限なしまたはエラー
 verify_admin_permissions() {
     local owner="$1"
@@ -323,13 +334,12 @@ setup_protection() {
         fi
 
         # 学生リストの更新（pending → completed）
-        # 学生レジストリ（thesis-student-registry）は smkwlab の学生リポジトリのみを
-        # 管理対象とするため、owner がレジストリ owner と異なる場合はスキップする。
-        local registry_owner="${REGISTRY_OWNER:-smkwlab}"
-        if [ "$owner" = "$registry_owner" ]; then
+        # 学生レジストリ（thesis-student-registry）は REGISTRY_OWNER 配下の学生
+        # リポジトリのみを管理対象とするため、owner が一致しない場合はスキップする。
+        if [ "$owner" = "$REGISTRY_OWNER" ]; then
             update_student_lists "$repo_name"
         else
-            log "owner '$owner' は学生レジストリ（$registry_owner）の管理対象外のため、registry 更新をスキップします"
+            log "owner '$owner' は学生レジストリ（$REGISTRY_OWNER）の管理対象外のため、registry 更新をスキップします"
         fi
 
         return 0
@@ -406,7 +416,7 @@ main() {
         owner="${input%%/*}"
         repo_name="${input#*/}"
     else
-        owner="${REPO_OWNER:-smkwlab}"
+        owner="$DEFAULT_OWNER"
         repo_name="$input"
     fi
 
