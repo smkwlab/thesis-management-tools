@@ -234,14 +234,16 @@ setup_protection() {
     fi
     
     # リポジトリ存在確認
-    # 注: verify_admin_permissions は GitHub Actions 環境では権限チェックを
-    # スキップする（早期 return する）ため、存在確認はこのパスで必ず行う。
-    # ローカル実行時は verify_admin_permissions の API 呼び出しと一部重複するが、
-    # Actions 経路での存在保証のため意図的に残している。
-    if ! gh repo view "$owner/$repo_name" >/dev/null 2>&1; then
-        error "Repository not found or no read access: $owner/$repo_name"
-        error "Please ensure the repository exists and is accessible before setting up protection"
-        return 1
+    # ローカル経路では verify_admin_permissions が gh api で存在＋権限を確認済み
+    # のため、ここでの再確認は行わない（同一リポジトリへの二重 API 呼び出しを回避）。
+    # 一方 GitHub Actions 経路では verify_admin_permissions が権限チェックを
+    # スキップ（早期 return）するため、存在確認はこのパスで実施する。
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        if ! gh repo view "$owner/$repo_name" >/dev/null 2>&1; then
+            error "Repository not found or no read access: $owner/$repo_name"
+            error "Please ensure the repository exists and is accessible before setting up protection"
+            return 1
+        fi
     fi
 
     # ブランチ存在確認
@@ -423,14 +425,14 @@ main() {
     fi
 
     # owner / repo_name の妥当性チェック
-    # ここでは「許可文字の集合」だけを GitHub の命名規則に合わせて検証する。
-    #   - owner（ユーザー/組織名）: 英数字とハイフン（'.' '_' は不可）
+    # GitHub の命名規則に合わせて検証する。
+    #   - owner（ユーザー/組織名）: 英数字とハイフン。先頭は英数字（先頭ハイフン不可）。
     #   - repo_name（リポジトリ名）: 英数字と '.' '_' '-'
     # これにより空文字・多重スラッシュ（例: owner//repo, a/b/c）・先頭/末尾スラッシュ・
-    # 空白などの不正文字をまとめて弾く。
-    # 注: 文字集合のみを検査し、ハイフンの位置規則（先頭/末尾/連続の禁止）までは
-    # 検証しない。そうした値はここを通過しても最終的に GitHub API 側でエラーとなる。
-    if [[ ! "$owner" =~ ^[A-Za-z0-9-]+$ ]] || [[ ! "$repo_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    # 先頭ハイフンの owner（例: -badowner）・空白などの不正文字をまとめて弾く。
+    # 注: 末尾ハイフン・連続ハイフンの禁止までは検証しない。そうした値はここを通過
+    # しても最終的に GitHub API 側でエラーとなる。
+    if [[ ! "$owner" =~ ^[A-Za-z0-9][A-Za-z0-9-]*$ ]] || [[ ! "$repo_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
         error "Invalid repository specification: $input"
         error "Expected '<repository_name>' or '<owner>/<repository_name>'"
         error "  e.g. 'k21rs001-sotsuron' or 'smkwlab/k21rs001-sotsuron'"
