@@ -105,8 +105,15 @@ verify_admin_permissions() {
         echo
         return 1
     else
-        error "権限確認に失敗しました（対象リポジトリ: $test_repo）"
-        error "リポジトリが存在しないか、アクセス権限がない可能性があります"
+        # has_admin が true/false 以外（空）の場合は、リポジトリ未作成か
+        # アクセス不可のどちらか。原因を切り分けて具体的なメッセージを出す。
+        if ! gh repo view "$test_repo" >/dev/null 2>&1; then
+            error "リポジトリが見つかりません: $test_repo"
+            error "リポジトリを作成してから再実行してください"
+        else
+            error "権限確認に失敗しました（対象リポジトリ: $test_repo）"
+            error "このアカウントには $test_repo への管理者権限がない可能性があります"
+        fi
         return 1
     fi
 }
@@ -181,6 +188,10 @@ update_student_lists() {
 
     if [ -n "$registry_manager_path" ]; then
         log "registry-manager を使用して保護状態を更新: $registry_manager_path"
+        # registry-manager はレジストリ owner（smkwlab）配下の owner なしリポジトリ名で
+        # 学生リポジトリを引くため、owner は付けず "$repo_name" のみを渡すのが正しい。
+        # （owner != registry_owner の場合は上のガードで既に return 済み）
+        #
         # set -e 下でも registry 更新失敗でスクリプト全体が終了しないよう、
         # コマンド置換を if 条件で評価して終了コードを安全に判定する
         local output
@@ -387,10 +398,14 @@ main() {
         repo_name="$input"
     fi
 
-    # owner / repo_name の妥当性チェック（空・多重スラッシュを拒否）
-    if [ -z "$owner" ] || [ -z "$repo_name" ] || [[ "$repo_name" == */* ]]; then
+    # owner / repo_name の妥当性チェック
+    # GitHub のユーザー/組織名・リポジトリ名として有効な文字（英数字・ '.' '_' '-'）のみ許可する。
+    # これにより空文字・多重スラッシュ（例: owner//repo）・先頭/末尾スラッシュ・
+    # 空白などの不正文字をまとめて弾く。
+    if [[ ! "$owner" =~ ^[A-Za-z0-9._-]+$ ]] || [[ ! "$repo_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
         error "Invalid repository specification: $input"
         error "Expected '<repository_name>' or '<owner>/<repository_name>'"
+        error "(owner and repository name may contain only letters, digits, '.', '_' and '-')"
         exit 1
     fi
 
