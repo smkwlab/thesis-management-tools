@@ -303,6 +303,8 @@ setup_protection() {
                 local api_exit_code=$?
                 error "❌ ブランチ '$branch' の保護設定に失敗しました (exit code: $api_exit_code)"
                 error "GitHub Actions環境でのAPI エラーです。詳細は上記のエラーメッセージを確認してください。"
+                error "ヒント: Actions では権限チェックをスキップするため、GITHUB_TOKEN に"
+                error "      'administration: write'（ブランチ保護の管理権限）が付与されているか確認してください。"
             fi
         else
             # ローカル環境では従来通り
@@ -421,13 +423,13 @@ main() {
     fi
 
     # owner / repo_name の妥当性チェック
-    # GitHub の命名規則に合わせ、owner と repo_name で許可文字を分ける。
-    #   - owner（ユーザー/組織名）: 英数字とハイフンのみ（'.' '_' は不可）
+    # ここでは「許可文字の集合」だけを GitHub の命名規則に合わせて検証する。
+    #   - owner（ユーザー/組織名）: 英数字とハイフン（'.' '_' は不可）
     #   - repo_name（リポジトリ名）: 英数字と '.' '_' '-'
     # これにより空文字・多重スラッシュ（例: owner//repo, a/b/c）・先頭/末尾スラッシュ・
     # 空白などの不正文字をまとめて弾く。
-    # 注: GitHub の完全な命名規則（先頭/末尾ハイフン禁止・連続ハイフン禁止等）までは
-    # 検証しない。そうした値は最終的に GitHub API 側でエラーとなる。
+    # 注: 文字集合のみを検査し、ハイフンの位置規則（先頭/末尾/連続の禁止）までは
+    # 検証しない。そうした値はここを通過しても最終的に GitHub API 側でエラーとなる。
     if [[ ! "$owner" =~ ^[A-Za-z0-9-]+$ ]] || [[ ! "$repo_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
         error "Invalid repository specification: $input"
         error "Expected '<repository_name>' or '<owner>/<repository_name>'"
