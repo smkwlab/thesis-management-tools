@@ -430,7 +430,8 @@ main() {
     #   - repo_name（リポジトリ名）: 英数字と '.' '_' '-'
     # これにより空文字・多重スラッシュ（例: owner//repo, a/b/c）・先頭/末尾スラッシュ・
     # 先頭ハイフンの owner（例: -badowner）・空白などの不正文字をまとめて弾く。
-    # 注: 末尾ハイフン・連続ハイフンの禁止までは検証しない。そうした値はここを通過
+    # 注: 1 文字の owner（例: a）は許可する。末尾/連続ハイフンの owner や、
+    # '.'/'..' のような病的な repo_name の禁止までは検証せず、それらはここを通過
     # しても最終的に GitHub API 側でエラーとなる。
     if [[ ! "$owner" =~ ^[A-Za-z0-9][A-Za-z0-9-]*$ ]] || [[ ! "$repo_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
         error "Invalid repository specification: $input"
