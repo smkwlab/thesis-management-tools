@@ -87,11 +87,19 @@ verify_admin_permissions() {
     # ローカル環境でのみadmin権限をチェック（対象リポジトリそのものを確認）
     local test_repo="$owner/$repo_name"
     local has_admin
-    
+
     log "権限確認対象: $test_repo"
-    
-    has_admin=$(gh api "repos/$test_repo" --jq '.permissions.admin' 2>/dev/null)
-    
+
+    # 単一の API 呼び出しで存在確認と権限取得を兼ねる。
+    #   - 呼び出し自体が失敗 → リポジトリ未作成 or 参照権限なし
+    #   - 成功して .permissions.admin が true/false → 権限の有無
+    #   - 成功したが値が空 → トークンのスコープ不足等で権限情報を取得できず
+    if ! has_admin=$(gh api "repos/$test_repo" --jq '.permissions.admin' 2>/dev/null); then
+        error "リポジトリが見つからないか、参照権限がありません: $test_repo"
+        error "リポジトリ名・owner・アカウントのアクセス権限を確認してください"
+        return 1
+    fi
+
     if [ "$has_admin" = "true" ]; then
         success "✅ 管理者権限を確認しました"
         return 0
@@ -105,15 +113,8 @@ verify_admin_permissions() {
         echo
         return 1
     else
-        # has_admin が true/false 以外（空）の場合は、リポジトリ未作成か
-        # アクセス不可のどちらか。原因を切り分けて具体的なメッセージを出す。
-        if ! gh repo view "$test_repo" >/dev/null 2>&1; then
-            error "リポジトリが見つかりません: $test_repo"
-            error "リポジトリを作成してから再実行してください"
-        else
-            error "権限確認に失敗しました（対象リポジトリ: $test_repo）"
-            error "このアカウントには $test_repo への管理者権限がない可能性があります"
-        fi
+        error "権限情報の取得に失敗しました（対象リポジトリ: $test_repo）"
+        error "トークンのスコープが不足している可能性があります"
         return 1
     fi
 }
@@ -157,17 +158,9 @@ setup_enforce_admins() {
 
 # 学生リストの更新（pending → completed）
 update_student_lists() {
-    local owner="$1"
-    local repo_name="$2"
+    local repo_name="$1"
     # データは thesis-student-registry で管理されるため、ローカルファイル操作は不要
-
-    # 学生レジストリ（thesis-student-registry）は smkwlab の学生リポジトリのみを管理対象とする。
-    # smkwlab 以外の owner（個人アカウント等）はレジストリ対象外なので更新をスキップする。
-    local registry_owner="${REGISTRY_OWNER:-smkwlab}"
-    if [ "$owner" != "$registry_owner" ]; then
-        log "owner '$owner' は学生レジストリ（$registry_owner）の管理対象外のため、registry 更新をスキップします"
-        return 0
-    fi
+    # 注: レジストリ対象 owner かどうかの判定は呼び出し元で行う（本関数はレジストリ更新に専念）。
 
     log "ブランチ保護設定の記録中..."
 
@@ -326,7 +319,14 @@ setup_protection() {
         fi
 
         # 学生リストの更新（pending → completed）
-        update_student_lists "$owner" "$repo_name"
+        # 学生レジストリ（thesis-student-registry）は smkwlab の学生リポジトリのみを
+        # 管理対象とするため、owner がレジストリ owner と異なる場合はスキップする。
+        local registry_owner="${REGISTRY_OWNER:-smkwlab}"
+        if [ "$owner" = "$registry_owner" ]; then
+            update_student_lists "$repo_name"
+        else
+            log "owner '$owner' は学生レジストリ（$registry_owner）の管理対象外のため、registry 更新をスキップします"
+        fi
 
         return 0
     else
@@ -399,13 +399,16 @@ main() {
     fi
 
     # owner / repo_name の妥当性チェック
-    # GitHub のユーザー/組織名・リポジトリ名として有効な文字（英数字・ '.' '_' '-'）のみ許可する。
-    # これにより空文字・多重スラッシュ（例: owner//repo）・先頭/末尾スラッシュ・
+    # GitHub の命名規則に合わせ、owner と repo_name で許可文字を分ける。
+    #   - owner（ユーザー/組織名）: 英数字とハイフンのみ（'.' '_' は不可）
+    #   - repo_name（リポジトリ名）: 英数字と '.' '_' '-'
+    # これにより空文字・多重スラッシュ（例: owner//repo, a/b/c）・先頭/末尾スラッシュ・
     # 空白などの不正文字をまとめて弾く。
-    if [[ ! "$owner" =~ ^[A-Za-z0-9._-]+$ ]] || [[ ! "$repo_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    if [[ ! "$owner" =~ ^[A-Za-z0-9-]+$ ]] || [[ ! "$repo_name" =~ ^[A-Za-z0-9._-]+$ ]]; then
         error "Invalid repository specification: $input"
         error "Expected '<repository_name>' or '<owner>/<repository_name>'"
-        error "(owner and repository name may contain only letters, digits, '.', '_' and '-')"
+        error "  e.g. 'k21rs001-sotsuron' or 'smkwlab/k21rs001-sotsuron'"
+        error "  (multi-slash like 'a/b/c', empty parts, or spaces are not allowed)"
         exit 1
     fi
 
