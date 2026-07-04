@@ -182,10 +182,12 @@ update_student_lists() {
     # 1. コマンドとして利用可能かチェック
     if command -v registry-manager >/dev/null 2>&1; then
         registry_manager_path="registry-manager"
-    # 2. 相対パスで探す（thesis-management-tools から registry-manager checkout へ）
+    # 2. スクリプト位置基準で探す（リポジトリルートの親にある sibling checkout）
     elif [ -x "$SCRIPT_DIR/../../registry-manager/registry-manager" ]; then
         registry_manager_path="$SCRIPT_DIR/../../registry-manager/registry-manager"
-    # 3. 絶対パスで探す（GitHub Actions 環境）
+    # 3. カレントディレクトリ基準のフォールバック
+    #    （実行時 CWD がリポジトリルートで、その親に checkout がある場合のみ有効。
+    #      CWD に依存するため 2. が失敗した場合の補助として残している）
     elif [ -x "$PWD/../registry-manager/registry-manager" ]; then
         registry_manager_path="$PWD/../registry-manager/registry-manager"
     # 4. 旧配置（thesis-student-registry 内、移行期間中のフォールバック）
