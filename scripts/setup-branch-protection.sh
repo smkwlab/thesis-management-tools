@@ -176,16 +176,21 @@ update_student_lists() {
     log "ブランチ保護設定の記録中..."
 
     # registry-manager で保護状態を更新
-    # thesis-student-registry/registry_manager/registry-manager を探す
+    # ツールは smkwlab/registry-manager リポジトリ（sibling checkout）に分離された
     local registry_manager_path=""
 
     # 1. コマンドとして利用可能かチェック
     if command -v registry-manager >/dev/null 2>&1; then
         registry_manager_path="registry-manager"
-    # 2. 相対パスで探す（thesis-management-tools から thesis-student-registry へ）
+    # 2. 相対パスで探す（thesis-management-tools から registry-manager checkout へ）
+    elif [ -x "$SCRIPT_DIR/../../registry-manager/registry-manager" ]; then
+        registry_manager_path="$SCRIPT_DIR/../../registry-manager/registry-manager"
+    # 3. 絶対パスで探す（GitHub Actions 環境）
+    elif [ -x "$PWD/../registry-manager/registry-manager" ]; then
+        registry_manager_path="$PWD/../registry-manager/registry-manager"
+    # 4. 旧配置（thesis-student-registry 内、移行期間中のフォールバック）
     elif [ -x "$SCRIPT_DIR/../../thesis-student-registry/registry_manager/registry-manager" ]; then
         registry_manager_path="$SCRIPT_DIR/../../thesis-student-registry/registry_manager/registry-manager"
-    # 3. 絶対パスで探す（GitHub Actions 環境）
     elif [ -x "$PWD/../thesis-student-registry/registry_manager/registry-manager" ]; then
         registry_manager_path="$PWD/../thesis-student-registry/registry_manager/registry-manager"
     fi
