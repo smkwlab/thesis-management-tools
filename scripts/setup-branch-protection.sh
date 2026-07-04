@@ -176,16 +176,23 @@ update_student_lists() {
     log "ブランチ保護設定の記録中..."
 
     # registry-manager で保護状態を更新
-    # thesis-student-registry/registry_manager/registry-manager を探す
+    # ツールは smkwlab/registry-manager リポジトリ（sibling checkout）に分離された
     local registry_manager_path=""
 
     # 1. コマンドとして利用可能かチェック
     if command -v registry-manager >/dev/null 2>&1; then
         registry_manager_path="registry-manager"
-    # 2. 相対パスで探す（thesis-management-tools から thesis-student-registry へ）
+    # 2. スクリプト位置基準で探す（リポジトリルートの親にある sibling checkout）
+    elif [ -x "$SCRIPT_DIR/../../registry-manager/registry-manager" ]; then
+        registry_manager_path="$SCRIPT_DIR/../../registry-manager/registry-manager"
+    # 3. カレントディレクトリ基準のフォールバック
+    #    （実行時 CWD がリポジトリルートで、その親に checkout がある場合のみ有効。
+    #      CWD に依存するため 2. が失敗した場合の補助として残している）
+    elif [ -x "$PWD/../registry-manager/registry-manager" ]; then
+        registry_manager_path="$PWD/../registry-manager/registry-manager"
+    # 4. 旧配置（thesis-student-registry 内、移行期間中のフォールバック）
     elif [ -x "$SCRIPT_DIR/../../thesis-student-registry/registry_manager/registry-manager" ]; then
         registry_manager_path="$SCRIPT_DIR/../../thesis-student-registry/registry_manager/registry-manager"
-    # 3. 絶対パスで探す（GitHub Actions 環境）
     elif [ -x "$PWD/../thesis-student-registry/registry_manager/registry-manager" ]; then
         registry_manager_path="$PWD/../thesis-student-registry/registry_manager/registry-manager"
     fi

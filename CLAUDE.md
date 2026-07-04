@@ -90,11 +90,13 @@ scripts/
 
 **IMPORTANT**: Student data management has been consolidated into `thesis-student-registry`:
 
-- **Student registry**: `thesis-student-registry/data/repositories.json`
-- **Management tool**: `registry-manager` (Elixir escript)
-- **Monitoring tool**: `thesis-monitor` (Elixir escript)
+- **Student registry (data)**: `thesis-student-registry/data/repositories.json` (private repo)
+- **Management tool**: [smkwlab/registry-manager](https://github.com/smkwlab/registry-manager) (Elixir escript, separate repo)
+- **Monitoring tool**: [smkwlab/thesis-monitor](https://github.com/smkwlab/thesis-monitor) (Elixir escript, separate repo)
 
 All operations now use GitHub API for safe, atomic data management instead of local files.
+The tools read the data repository location from `~/.config/registry-manager/config.json`
+(`data_repo`) or a thesis-monitor YAML config (`data_dir`).
 
 ## Document Type Configuration
 
@@ -149,18 +151,21 @@ docker build -f create-repo/Dockerfile -t test-creator .
 
 ### Data Management (Registry Manager Integration)
 ```bash
-# View repository registry status
-cd thesis-student-registry
-./thesis_monitor/thesis-monitor status
+# Build the tools (each in its own checkout)
+(cd registry-manager && mix escript.build)
+(cd thesis-monitor && mix escript.build)
+
+# View repository status
+./thesis-monitor/thesis-monitor status
 
 # Add new repository to registry
-./registry_manager/registry-manager add k21rs001-sotsuron k21rs001 sotsuron active thesis
+./registry-manager/registry-manager add k21rs001-sotsuron
 
 # Mark branch protection complete
-./registry_manager/registry-manager protect k21rs001-sotsuron
+./registry-manager/registry-manager protect k21rs001-sotsuron
 
 # Update repository status
-./registry_manager/registry-manager update k21rs001-sotsuron status completed
+./registry-manager/registry-manager update k21rs001-sotsuron status completed
 ```
 
 ### Debug Authentication Issues
