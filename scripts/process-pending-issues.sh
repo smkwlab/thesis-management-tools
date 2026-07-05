@@ -274,9 +274,9 @@ prepare_registry() {
         return 1
     fi
     
-    # 書き込み権限の具体的確認（repositories.jsonファイルアクセステスト）
-    if ! gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json >/dev/null 2>&1; then
-        log_error "repositories.jsonへのアクセスに失敗しました"
+    # 書き込み権限の具体的確認（registry.jsonファイルアクセステスト）
+    if ! gh api repos/smkwlab/thesis-student-registry/contents/data/registry.json >/dev/null 2>&1; then
+        log_error "registry.jsonへのアクセスに失敗しました"
         log_error "ファイルの読み取り権限を確認してください"
         return 1
     fi
@@ -1656,10 +1656,10 @@ update_thesis_student_registry() {
     # Issue作成者のGitHub usernameを取得
     local github_username="${CURRENT_ISSUE_AUTHOR:-unknown}"
     
-    # 現在のrepositories.jsonを取得
+    # 現在のregistry.jsonを取得
     local current_json
-    if ! current_json=$(gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json --jq '.content' | base64 -d 2>/dev/null); then
-        log_error "repositories.json の取得に失敗: $repo_name"
+    if ! current_json=$(gh api repos/smkwlab/thesis-student-registry/contents/data/registry.json --jq '.content' | base64 -d 2>/dev/null); then
+        log_error "registry.json の取得に失敗: $repo_name"
         return 1
     fi
     
@@ -1695,7 +1695,7 @@ EOF
     
     # GitHub APIで更新
     local sha
-    if ! sha=$(gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json --jq '.sha'); then
+    if ! sha=$(gh api repos/smkwlab/thesis-student-registry/contents/data/registry.json --jq '.sha'); then
         log_error "SHA取得に失敗: $repo_name"
         return 1
     fi
@@ -1719,7 +1719,7 @@ Processed via automated issue processor with GitHub username."
         return 1
     fi
     
-    if gh api repos/smkwlab/thesis-student-registry/contents/data/repositories.json \
+    if gh api repos/smkwlab/thesis-student-registry/contents/data/registry.json \
         --method PUT \
         --field message="$commit_message" \
         --field content="$encoded_content" \
