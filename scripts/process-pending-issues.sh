@@ -28,17 +28,25 @@ LOG_DIR="${LOG_DIR:-$DEFAULT_LOG_DIR}"
 BACKUP_DIR="${BACKUP_DIR:-$DEFAULT_BACKUP_DIR}"
 
 #
+# デプロイ org の解決（Organization-Scoped Deployment: 1 org = 1 デプロイ単位）
+# 学生リポジトリ操作とレジストリ規約の両方がこの単一の org 文脈を参照する。
+# GitHub Actions では GITHUB_REPOSITORY_OWNER、ローカルでは --repo の owner 部分
+#
+DEPLOY_ORG=""
+resolve_deploy_org() {
+    DEPLOY_ORG="${GITHUB_REPOSITORY_OWNER:-${REPO%%/*}}"
+}
+
+#
 # レジストリリポジトリの解決
 # 優先順位: --registry-repo フラグ / env REGISTRY_REPO > 規約 <org>/thesis-student-registry
-# org は GitHub Actions では GITHUB_REPOSITORY_OWNER、ローカルでは --repo の owner 部分
 #
 resolve_registry_repo() {
     if [ -n "$REGISTRY_REPO" ]; then
         return 0
     fi
 
-    local org="${GITHUB_REPOSITORY_OWNER:-${REPO%%/*}}"
-    REGISTRY_REPO="${org}/${REGISTRY_REPO_NAME}"
+    REGISTRY_REPO="${DEPLOY_ORG}/${REGISTRY_REPO_NAME}"
 }
 
 # モード設定
@@ -419,25 +427,33 @@ extract_issue_info() {
     CURRENT_ISSUE_CREATED=$(echo "$issue_json" | jq -r '.createdAt')
     CURRENT_ISSUE_AUTHOR=$(echo "$issue_json" | jq -r '.author.login // "unknown"')
     
-    # リポジトリ名抽出（複数パターン対応）
+    # リポジトリ名抽出（org 非依存。<org>/<k##...-repo> 形式を title → body の順で探す）
     CURRENT_REPO_NAME=""
-    
-    # パターン1: smkwlab/k##xxx-yyy 形式（数字を含む名前に対応）
-    if [[ "$CURRENT_ISSUE_TITLE" =~ smkwlab/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+) ]]; then
-        CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
-    # パターン2: Issue本文からリポジトリ名を抽出
-    elif [[ "$CURRENT_ISSUE_BODY" =~ smkwlab/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+) ]]; then
-        CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 本文からリポジトリ名を抽出: $CURRENT_REPO_NAME"
-    # パターン3: より柔軟なパターン（バックティック囲み等）
-    elif [[ "$CURRENT_ISSUE_TITLE$CURRENT_ISSUE_BODY" =~ \`([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+)\` ]]; then
-        CURRENT_REPO_NAME="${BASH_REMATCH[1]}"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: バックティック囲みからリポジトリ名を抽出: $CURRENT_REPO_NAME"
+    CURRENT_ISSUE_ORG=""
+
+    # パターン1: タイトルの <org>/k##xxx-yyy 形式
+    if [[ "$CURRENT_ISSUE_TITLE" =~ ([A-Za-z0-9][A-Za-z0-9-]*)/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+) ]]; then
+        CURRENT_ISSUE_ORG="${BASH_REMATCH[1]}"
+        CURRENT_REPO_NAME="${BASH_REMATCH[2]}"
+    # パターン2: Issue本文から抽出
+    elif [[ "$CURRENT_ISSUE_BODY" =~ ([A-Za-z0-9][A-Za-z0-9-]*)/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+) ]]; then
+        CURRENT_ISSUE_ORG="${BASH_REMATCH[1]}"
+        CURRENT_REPO_NAME="${BASH_REMATCH[2]}"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 本文からリポジトリ名を抽出: $CURRENT_ISSUE_ORG/$CURRENT_REPO_NAME"
+    # 旧パターン3（バックティック囲み）は org を持てず、自動生成 Issue では
+    # 一度も emit されない死にパターンだったため削除（issue #475）
     else
         log_error "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名を抽出できませんでした"
         log_debug "タイトル: $CURRENT_ISSUE_TITLE"
         log_debug "本文（先頭200文字）: ${CURRENT_ISSUE_BODY:0:200}"
         return 2  # 情報抽出エラーとして区別
+    fi
+
+    # org 検証: パイプラインはデプロイ org 内のみを操作する
+    # （Organization-Scoped Deployment。他 org を指す依頼は抽出エラー扱い）
+    if [ "$CURRENT_ISSUE_ORG" != "$DEPLOY_ORG" ]; then
+        log_error "Issue #${CURRENT_ISSUE_NUMBER}: org 不一致のため処理しません（依頼: $CURRENT_ISSUE_ORG, デプロイ: $DEPLOY_ORG）"
+        return 2
     fi
     
     # 学生ID抽出（Issue本文とリポジトリ名の両方から試行）
@@ -528,11 +544,11 @@ extract_issue_info() {
 check_repository_exists() {
     local repo_name="$1"
     
-    if gh repo view "smkwlab/$repo_name" >/dev/null 2>&1; then
-        log_debug "リポジトリ存在確認: smkwlab/$repo_name ✓"
+    if gh repo view "${DEPLOY_ORG}/$repo_name" >/dev/null 2>&1; then
+        log_debug "リポジトリ存在確認: ${DEPLOY_ORG}/$repo_name ✓"
         return 0
     else
-        log_debug "リポジトリ存在確認: smkwlab/$repo_name ✗"
+        log_debug "リポジトリ存在確認: ${DEPLOY_ORG}/$repo_name ✗"
         return 1
     fi
 }
@@ -543,11 +559,11 @@ check_repository_exists() {
 check_branch_protection() {
     local repo_name="$1"
     
-    if gh api "repos/smkwlab/$repo_name/branches/main/protection" >/dev/null 2>&1; then
-        log_debug "ブランチ保護確認: smkwlab/$repo_name ✓"
+    if gh api "repos/${DEPLOY_ORG}/$repo_name/branches/main/protection" >/dev/null 2>&1; then
+        log_debug "ブランチ保護確認: ${DEPLOY_ORG}/$repo_name ✓"
         return 0
     else
-        log_debug "ブランチ保護確認: smkwlab/$repo_name ✗"
+        log_debug "ブランチ保護確認: ${DEPLOY_ORG}/$repo_name ✗"
         return 1
     fi
 }
@@ -629,7 +645,7 @@ process_issues_automatic() {
         if ! check_repository_exists "$CURRENT_REPO_NAME"; then
             # 見つからない repo は放置すると green のまま滞留するため失敗として扱う（issue #473）
             log_error "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリが見つかりません: $CURRENT_REPO_NAME"
-            add_issue_comment "$CURRENT_ISSUE_NUMBER" "⚠️ リポジトリが見つかりません: smkwlab/$CURRENT_REPO_NAME"
+            add_issue_comment "$CURRENT_ISSUE_NUMBER" "⚠️ リポジトリが見つかりません: ${DEPLOY_ORG}/$CURRENT_REPO_NAME"
             ((FAILED_COUNT++))
             FAILED_ISSUES+=("$CURRENT_ISSUE_NUMBER")
             continue
@@ -893,7 +909,7 @@ show_issue_summary() {
     
     echo "  発行者: ${CURRENT_ISSUE_AUTHOR:-'不明'}"
     echo "  学生ID: ${CURRENT_STUDENT_ID:-'不明'}"
-    echo "  リポジトリ: smkwlab/${CURRENT_REPO_NAME}"
+    echo "  リポジトリ: ${DEPLOY_ORG}/${CURRENT_REPO_NAME}"
     
     # リポジトリ存在確認
     if check_repository_exists "$CURRENT_REPO_NAME"; then
@@ -960,8 +976,8 @@ execute_issue_processing() {
     
     # リポジトリ存在確認
     if ! check_repository_exists "$CURRENT_REPO_NAME"; then
-        echo "❌ リポジトリが見つかりません: smkwlab/$CURRENT_REPO_NAME"
-        add_issue_comment "$CURRENT_ISSUE_NUMBER" "⚠️ リポジトリが見つかりません: smkwlab/$CURRENT_REPO_NAME"
+        echo "❌ リポジトリが見つかりません: ${DEPLOY_ORG}/$CURRENT_REPO_NAME"
+        add_issue_comment "$CURRENT_ISSUE_NUMBER" "⚠️ リポジトリが見つかりません: ${DEPLOY_ORG}/$CURRENT_REPO_NAME"
         echo
         echo "続行するには Enter を押してください..."
         read -r
@@ -1083,7 +1099,7 @@ execute_issue_delete() {
     echo "  作成日時: $(echo "$CURRENT_ISSUE_CREATED" | sed 's/T/ /' | sed 's/Z/ UTC/')"
     echo "  URL: ${CURRENT_ISSUE_URL}"
     echo
-    echo "  関連リポジトリ: smkwlab/${CURRENT_REPO_NAME}"
+    echo "  関連リポジトリ: ${DEPLOY_ORG}/${CURRENT_REPO_NAME}"
     echo "  リポジトリタイプ: ${CURRENT_REPO_TYPE}"
     echo "  学生ID: ${CURRENT_STUDENT_ID}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -1127,14 +1143,14 @@ execute_repository_delete() {
     echo "🚨 危険: リポジトリ完全削除"
     echo "⚠️  この操作は取り消しできません"
     echo
-    echo "削除対象リポジトリ: smkwlab/${CURRENT_REPO_NAME}"
+    echo "削除対象リポジトリ: ${DEPLOY_ORG}/${CURRENT_REPO_NAME}"
     echo "Issue: #${CURRENT_ISSUE_NUMBER} - ${CURRENT_ISSUE_TITLE}"
     echo "発行者: ${CURRENT_ISSUE_AUTHOR}"
     echo
     
     # リポジトリ情報の詳細確認
     echo "リポジトリの詳細情報を確認中..."
-    if gh --no-pager repo view "smkwlab/$CURRENT_REPO_NAME" --json name,description,createdAt,isPrivate --jq '{name: .name, description: .description, created: .createdAt, private: .isPrivate}' 2>/dev/null; then
+    if gh --no-pager repo view "${DEPLOY_ORG}/$CURRENT_REPO_NAME" --json name,description,createdAt,isPrivate --jq '{name: .name, description: .description, created: .createdAt, private: .isPrivate}' 2>/dev/null; then
         echo
     else
         echo "❌ リポジトリ情報の取得に失敗しました"
@@ -1182,17 +1198,17 @@ execute_repository_delete() {
         echo
         
         # GitHub CLIでリポジトリ削除（要管理者権限）
-        if gh repo delete "smkwlab/$CURRENT_REPO_NAME" --confirm >/dev/null 2>&1; then
-            echo "✅ リポジトリ smkwlab/${CURRENT_REPO_NAME} を削除しました"
+        if gh repo delete "${DEPLOY_ORG}/$CURRENT_REPO_NAME" --confirm >/dev/null 2>&1; then
+            echo "✅ リポジトリ ${DEPLOY_ORG}/${CURRENT_REPO_NAME} を削除しました"
             
             # Issueも自動的にクローズ
             echo "📝 関連Issueをクローズ中..."
             if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ テストリポジトリ削除完了
 
-リポジトリ **smkwlab/${CURRENT_REPO_NAME}** を削除しました。
+リポジトリ **${DEPLOY_ORG}/${CURRENT_REPO_NAME}** を削除しました。
 
 ## 削除内容
-- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
 - **削除日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 - **操作者**: 管理者による手動削除
 
@@ -1251,7 +1267,7 @@ process_weekly_report_with_feedback() {
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 週報リポジトリの登録が完了しました
 
 ## 登録内容
-- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
 - **学生ID**: $CURRENT_STUDENT_ID
 - **登録日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
@@ -1274,7 +1290,7 @@ process_thesis_with_feedback() {
     
     # 1. ブランチ保護設定
     echo "  ブランチ保護設定を適用中..."
-    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
+    if REPO_OWNER="$DEPLOY_ORG" REGISTRY_OWNER="${REGISTRY_REPO%%/*}" "$SCRIPT_DIR/setup-branch-protection.sh" "${DEPLOY_ORG}/${CURRENT_REPO_NAME}"; then
         echo "  ✅ ブランチ保護設定完了"
     else
         echo "  ❌ ブランチ保護設定失敗"
@@ -1295,7 +1311,7 @@ process_thesis_with_feedback() {
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 論文リポジトリの設定が完了しました
 
 ## 設定内容
-- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
 - **学生ID**: $CURRENT_STUDENT_ID
 - **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
@@ -1307,7 +1323,7 @@ process_thesis_with_feedback() {
 - **ブランチ削除**: 禁止
 
 ## 確認
-リポジトリ設定: https://github.com/smkwlab/$CURRENT_REPO_NAME/settings/branches"; then
+リポジトリ設定: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/settings/branches"; then
         echo "  ✅ Issue #${CURRENT_ISSUE_NUMBER} をクローズしました"
     else
         echo "  ❌ Issue クローズに失敗しました"
@@ -1333,7 +1349,7 @@ process_ise_with_feedback() {
     
     # 1. ブランチ保護設定（PR学習目的）
     echo "  ブランチ保護設定を適用中..."
-    if "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
+    if REPO_OWNER="$DEPLOY_ORG" REGISTRY_OWNER="${REGISTRY_REPO%%/*}" "$SCRIPT_DIR/setup-branch-protection.sh" "${DEPLOY_ORG}/${CURRENT_REPO_NAME}"; then
         echo "  ✅ ブランチ保護設定完了"
     else
         echo "  ❌ ブランチ保護設定失敗"
@@ -1354,7 +1370,7 @@ process_ise_with_feedback() {
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 情報科学演習レポートの設定が完了しました
 
 ## 設定内容
-- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
 - **学生ID**: $CURRENT_STUDENT_ID
 - **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
@@ -1370,7 +1386,7 @@ process_ise_with_feedback() {
 3. Pull Request を作成して提出
 4. レビューフィードバックを確認・対応
 
-リポジトリ設定: https://github.com/smkwlab/$CURRENT_REPO_NAME/settings/branches"; then
+リポジトリ設定: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/settings/branches"; then
         echo "  ✅ Issue #${CURRENT_ISSUE_NUMBER} をクローズしました"
     else
         echo "  ❌ Issue クローズに失敗しました"
@@ -1409,7 +1425,7 @@ process_latex_with_feedback() {
     if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 汎用LaTeXリポジトリの登録が完了しました
 
 ## 設定内容
-- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
 - **学生ID**: $CURRENT_STUDENT_ID
 - **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
@@ -1423,7 +1439,7 @@ process_latex_with_feedback() {
 2. git add, commit, push で変更を保存
 3. GitHub Actions で自動的に PDF が生成されます
 
-リポジトリURL: https://github.com/smkwlab/$CURRENT_REPO_NAME"; then
+リポジトリURL: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME"; then
         echo "  ✅ Issue #${CURRENT_ISSUE_NUMBER} をクローズしました"
     else
         echo "  ❌ Issue クローズに失敗しました"
@@ -1508,14 +1524,14 @@ process_weekly_report_issue() {
     if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 週報リポジトリの登録が完了しました
 
 ## 登録内容
-- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
 - **学生ID**: $CURRENT_STUDENT_ID
 - **登録日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
 週報リポジトリは登録のみで管理されます。ブランチ保護設定は不要です。
 
 論文執筆は以下のガイドを参照してください：
-https://github.com/smkwlab/$CURRENT_REPO_NAME/blob/main/WRITING-GUIDE.md"; then
+https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/blob/main/WRITING-GUIDE.md"; then
         log_error "Issue クローズに失敗: #$CURRENT_ISSUE_NUMBER"
         return 1
     fi
@@ -1531,7 +1547,7 @@ process_thesis_issue() {
     log_info "論文リポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. ブランチ保護設定
-    if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
+    if ! REPO_OWNER="$DEPLOY_ORG" REGISTRY_OWNER="${REGISTRY_REPO%%/*}" "$SCRIPT_DIR/setup-branch-protection.sh" "${DEPLOY_ORG}/${CURRENT_REPO_NAME}"; then
         log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME (学生ID: $CURRENT_STUDENT_ID)"
         return 1
     fi
@@ -1547,7 +1563,7 @@ process_thesis_issue() {
     if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 論文リポジトリの設定が完了しました
 
 ## 設定内容
-- **リポジトリ**: smkwlab/$CURRENT_REPO_NAME
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
 - **学生ID**: $CURRENT_STUDENT_ID
 - **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
@@ -1559,10 +1575,10 @@ process_thesis_issue() {
 - **ブランチ削除**: 禁止
 
 ## 確認
-リポジトリ設定: https://github.com/smkwlab/$CURRENT_REPO_NAME/settings/branches
+リポジトリ設定: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/settings/branches
 
 論文執筆は以下のガイドを参照してください：
-https://github.com/smkwlab/$CURRENT_REPO_NAME/blob/main/WRITING-GUIDE.md"; then
+https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/blob/main/WRITING-GUIDE.md"; then
         log_error "Issue クローズに失敗: #$CURRENT_ISSUE_NUMBER"
         return 1
     fi
@@ -1584,7 +1600,7 @@ process_ise_issue() {
     fi
     
     # 2. ブランチ保護設定
-    if ! "$SCRIPT_DIR/setup-branch-protection.sh" "$CURRENT_REPO_NAME"; then
+    if ! REPO_OWNER="$DEPLOY_ORG" REGISTRY_OWNER="${REGISTRY_REPO%%/*}" "$SCRIPT_DIR/setup-branch-protection.sh" "${DEPLOY_ORG}/${CURRENT_REPO_NAME}"; then
         log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME (学生ID: $CURRENT_STUDENT_ID)"
         return 1
     fi
@@ -1593,7 +1609,7 @@ process_ise_issue() {
     if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ ISEリポジトリの登録とブランチ保護設定が完了しました
 
 ## 処理内容
-- **リポジトリ登録**: [smkwlab/$CURRENT_REPO_NAME](https://github.com/smkwlab/$CURRENT_REPO_NAME) ✓
+- **リポジトリ登録**: [${DEPLOY_ORG}/$CURRENT_REPO_NAME](https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME) ✓
 - **ブランチ保護設定**: 完了 ✓
 - **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
@@ -1605,7 +1621,7 @@ process_ise_issue() {
 - **ブランチ削除**: 禁止
 
 ## 確認
-リポジトリ設定: https://github.com/smkwlab/$CURRENT_REPO_NAME/settings/branches
+リポジトリ設定: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/settings/branches
 
 Pull Requestベースの学習を開始してください。"; then
         log_error "Issue クローズに失敗: #$CURRENT_ISSUE_NUMBER"
@@ -1632,7 +1648,7 @@ process_latex_issue() {
     if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ LaTeXリポジトリの登録が完了しました
 
 ## 処理内容
-- **リポジトリ登録**: [smkwlab/$CURRENT_REPO_NAME](https://github.com/smkwlab/$CURRENT_REPO_NAME) ✓
+- **リポジトリ登録**: [${DEPLOY_ORG}/$CURRENT_REPO_NAME](https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME) ✓
 - **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
 ## 汎用LaTeXリポジトリについて
@@ -1922,7 +1938,8 @@ write_step_summary() {
 # オプション解析
 parse_options "$@"
 
-# レジストリリポジトリを解決（フラグ/env > 規約）
+# デプロイ org とレジストリリポジトリを解決（フラグ/env > 規約）
+resolve_deploy_org
 resolve_registry_repo
 
 # メイン処理実行
