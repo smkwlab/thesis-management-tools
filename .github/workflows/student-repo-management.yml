@@ -103,6 +103,8 @@ jobs:
             else
               echo "❌ Issue処理失敗"
               echo "PROTECTION_SUCCESS=false" >> "$GITHUB_ENV"
+              # 失敗を run の結論に反映する（issue #473）
+              exit 1
             fi
           else
             # 一括処理モード
@@ -113,12 +115,20 @@ jobs:
             else
               echo "❌ 一括処理失敗"
               echo "PROTECTION_SUCCESS=false" >> "$GITHUB_ENV"
+              # 失敗を run の結論に反映する（issue #473）
+              exit 1
             fi
           fi
 
       - name: Summary
-        if: env.PROTECTION_SUCCESS == 'true'
+        # 失敗時もサマリを出す（step 失敗で後続が skip されないよう always）
+        if: always() && env.PROTECTION_SUCCESS != ''
         run: |
+          if [ "${PROTECTION_SUCCESS}" != "true" ]; then
+            echo "❌ 処理に失敗しました。詳細は Process repository request のログと job summary を参照してください。"
+            echo "対象Issue: #${{ github.event.issue.number }}"
+            exit 0
+          fi
           echo "✅ 処理完了サマリー"
           echo "処理されたIssue: #${{ github.event.issue.number }}"
           echo "学生ID: ${{ env.STUDENT_ID }}"
