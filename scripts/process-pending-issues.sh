@@ -511,7 +511,8 @@ extract_issue_info() {
     elif [[ "$CURRENT_ISSUE_BODY" =~ 卒業論文|undergraduate|sotsuron ]]; then
         CURRENT_REPO_TYPE="sotsuron"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから卒論タイプを判定"
-    elif [[ "$CURRENT_ISSUE_BODY" =~ 修士論文|graduate|master ]]; then
+    elif [[ "$CURRENT_ISSUE_BODY" =~ 修士論文|graduate|thesis|master ]]; then
+        # 英語 thesis も修論キーワードとして受理（type としては master を書く）
         CURRENT_REPO_TYPE="master"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから修論タイプを判定"
     # パターン3: リポジトリ名から判定（フォールバック）
@@ -534,7 +535,7 @@ extract_issue_info() {
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名からlatexタイプを判定"
     # 旧パターン4（学生 ID からの推測 rs→sotsuron / gjk→thesis）は誤分類の
     # 主因だったため廃止（issue #471）。卒論・修論は命名規約 *-sotsuron /
-    # *-thesis で必ずパターン3までに判定される
+    # *-master（防御的別名 *-thesis）で必ずパターン3までに判定される
     # パターン5: その他のパターンは latex と推測
     # setup-latex.sh は様々な命名規則のリポジトリに対応するため、
     # 明示的なタイプ情報がない場合は LaTeX リポジトリとして扱う
@@ -1651,6 +1652,8 @@ Pull Requestベースの学習を開始してください。"; then
 #
 # LaTeXリポジトリ処理
 #
+# latex と other の両タイプを処理する（どちらもブランチ保護なし・registry 登録
+# + Issue クローズのみ。登録タイプは解決済みの CURRENT_REPO_TYPE を使用）
 process_latex_issue() {
     log_info "LaTeXリポジトリ処理: $CURRENT_REPO_NAME"
     
