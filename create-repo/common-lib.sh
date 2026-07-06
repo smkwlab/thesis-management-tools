@@ -19,6 +19,11 @@ readonly NC='\033[0m'
 
 # デフォルト設定
 readonly DEFAULT_ORG="smkwlab"
+# リポジトリ名の規約（org 部分は実行時に導出。ECOSYSTEM.md の
+# Organization-Scoped Deployment 原則を参照）。env で上書き可能
+REGISTRY_REPO_NAME="${REGISTRY_REPO_NAME:-thesis-student-registry}"
+TOOLS_REPO_NAME="${TOOLS_REPO_NAME:-thesis-management-tools}"
+readonly REGISTRY_REPO_NAME TOOLS_REPO_NAME
 readonly STUDENT_ID_PATTERN='^k[0-9]{2}(rs|jk|gjk)[0-9]+$'
 
 # ================================
@@ -473,7 +478,7 @@ create_repository_issue() {
     
     local issue_number
     if issue_number=$(gh issue create \
-        --repo "${organization}/thesis-management-tools" \
+        --repo "${organization}/${TOOLS_REPO_NAME}" \
         --title "📋 リポジトリ登録依頼: ${organization}/${repo_name}" \
         --body "$issue_body" 2>&1 | grep -oE '[0-9]+$'); then
         
@@ -509,7 +514,7 @@ generate_issue_body() {
 ### 一括処理オプション
 複数の学生を一括処理する場合：
 \`\`\`bash
-cd thesis-management-tools/scripts
+cd ${TOOLS_REPO_NAME}/scripts
 # GitHub Actionsの自動処理を利用
 # または手動で一括実行
 ./bulk-setup-protection.sh
@@ -763,10 +768,13 @@ run_registry_integration() {
 
     # 条件: Registryリポジトリがアクセス可能
     # 注: INDIVIDUAL_MODE のチェックは呼び出し側の責任
-    if gh repo view "${ORGANIZATION}/thesis-student-registry" &>/dev/null; then
+    if gh repo view "${ORGANIZATION}/${REGISTRY_REPO_NAME}" &>/dev/null; then
         if ! create_repository_issue "$REPO_NAME" "$STUDENT_ID" "$doc_type" "$ORGANIZATION"; then
             log_warn "Registry Manager登録でエラーが発生しました。手動で登録が必要な場合があります。"
         fi
+    else
+        # 従来はここで無言 return しており、登録漏れに誰も気づけなかった
+        log_warn "レジストリ ${ORGANIZATION}/${REGISTRY_REPO_NAME} にアクセスできないため、登録依頼をスキップしました。手動登録が必要です。"
     fi
 }
 
