@@ -98,7 +98,8 @@ All operations now use GitHub API for safe, atomic data management instead of lo
 The tools read the registry location from `~/.config/registry-manager/config.json`
 (`registry_repo`); thesis-monitor reads the registry via the GitHub contents
 API using the same `registry_repo` key (or the `<org>/thesis-student-registry`
-convention when unset).
+convention when unset, with `<org>` taken from the `github_org` config key,
+default `smkwlab`).
 
 ## Document Type Configuration
 
