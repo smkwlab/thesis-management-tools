@@ -20,7 +20,8 @@ DEFAULT_LOG_DIR="$PROJECT_ROOT/logs"
 DEFAULT_BACKUP_DIR="$PROJECT_ROOT/backups"
 
 # 実行時設定
-REPO="${REPO:-$DEFAULT_REPO}"
+# Actions では GITHUB_REPOSITORY（自 repo）から導出、ローカルのみ既定値へ fallback
+REPO="${REPO:-${GITHUB_REPOSITORY:-$DEFAULT_REPO}}"
 # 空 = 規約で解決（resolve_registry_repo）。env / --registry-repo は明示 override
 REGISTRY_REPO="${REGISTRY_REPO:-}"
 LOG_DIR="${LOG_DIR:-$DEFAULT_LOG_DIR}"
