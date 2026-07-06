@@ -511,8 +511,9 @@ extract_issue_info() {
     elif [[ "$CURRENT_ISSUE_BODY" =~ 卒業論文|undergraduate|sotsuron ]]; then
         CURRENT_REPO_TYPE="sotsuron"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから卒論タイプを判定"
-    elif [[ "$CURRENT_ISSUE_BODY" =~ 修士論文|graduate|thesis|master ]]; then
-        # 英語 thesis も修論キーワードとして受理（type としては master を書く）
+    elif [[ "$CURRENT_ISSUE_BODY" =~ 修士論文|修論|graduate|thesis ]]; then
+        # 英語 thesis も修論キーワードとして受理（type としては master を書く）。
+        # 単語 master は「masterブランチ」等で頻出のためキーワードにしない
         CURRENT_REPO_TYPE="master"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから修論タイプを判定"
     # パターン3: リポジトリ名から判定（フォールバック）
