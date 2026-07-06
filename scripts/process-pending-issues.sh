@@ -13,15 +13,33 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # デフォルト設定
 DEFAULT_REPO="smkwlab/thesis-management-tools"
-DEFAULT_REGISTRY_REPO="smkwlab/thesis-student-registry"
+# レジストリリポジトリ名の規約（org 部分は実行時に導出する。ECOSYSTEM.md の
+# Organization-Scoped Deployment 原則を参照）
+REGISTRY_REPO_NAME="thesis-student-registry"
 DEFAULT_LOG_DIR="$PROJECT_ROOT/logs"
 DEFAULT_BACKUP_DIR="$PROJECT_ROOT/backups"
 
 # 実行時設定
-REPO="${REPO:-$DEFAULT_REPO}"
-REGISTRY_REPO="${REGISTRY_REPO:-$DEFAULT_REGISTRY_REPO}"
+# Actions では GITHUB_REPOSITORY（自 repo）から導出、ローカルのみ既定値へ fallback
+REPO="${REPO:-${GITHUB_REPOSITORY:-$DEFAULT_REPO}}"
+# 空 = 規約で解決（resolve_registry_repo）。env / --registry-repo は明示 override
+REGISTRY_REPO="${REGISTRY_REPO:-}"
 LOG_DIR="${LOG_DIR:-$DEFAULT_LOG_DIR}"
 BACKUP_DIR="${BACKUP_DIR:-$DEFAULT_BACKUP_DIR}"
+
+#
+# レジストリリポジトリの解決
+# 優先順位: --registry-repo フラグ / env REGISTRY_REPO > 規約 <org>/thesis-student-registry
+# org は GitHub Actions では GITHUB_REPOSITORY_OWNER、ローカルでは --repo の owner 部分
+#
+resolve_registry_repo() {
+    if [ -n "$REGISTRY_REPO" ]; then
+        return 0
+    fi
+
+    local org="${GITHUB_REPOSITORY_OWNER:-${REPO%%/*}}"
+    REGISTRY_REPO="${org}/${REGISTRY_REPO_NAME}"
+}
 
 # モード設定
 INTERACTIVE_MODE=false
@@ -106,7 +124,8 @@ OPTIONS:
     --type TYPE            処理対象タイプ指定 (wr|sotsuron|thesis)
     --limit NUM            最大処理数制限
     --repo REPO            対象リポジトリ (default: $DEFAULT_REPO)
-    --registry-repo REPO   レジストリリポジトリ (default: $DEFAULT_REGISTRY_REPO)
+    --registry-repo REPO   レジストリリポジトリ (default: <org>/thesis-student-registry、
+                           org は GITHUB_REPOSITORY_OWNER または --repo の owner 部分)
     --log-dir DIR          ログディレクトリ (default: $DEFAULT_LOG_DIR)
     --backup-dir DIR       バックアップディレクトリ (default: $DEFAULT_BACKUP_DIR)
     -h, --help             このヘルプを表示
@@ -265,17 +284,17 @@ create_backup() {
 # thesis-student-registry の準備（GitHub API使用時は不要）
 #
 prepare_registry() {
-    log_info "GitHub API経由でthesis-student-registryを更新します"
+    log_info "GitHub API経由で $REGISTRY_REPO を更新します"
     
     # GitHub APIアクセステスト（読み取り＋書き込み権限確認）
-    if ! gh api repos/smkwlab/thesis-student-registry >/dev/null 2>&1; then
-        log_error "thesis-student-registryへのアクセスに失敗しました"
+    if ! gh api "repos/$REGISTRY_REPO" >/dev/null 2>&1; then
+        log_error "$REGISTRY_REPO へのアクセスに失敗しました"
         log_error "GitHub CLI認証またはリポジトリ権限を確認してください"
         return 1
     fi
     
     # 書き込み権限の具体的確認（registry.jsonファイルアクセステスト）
-    if ! gh api repos/smkwlab/thesis-student-registry/contents/data/registry.json >/dev/null 2>&1; then
+    if ! gh api "repos/$REGISTRY_REPO/contents/data/registry.json" >/dev/null 2>&1; then
         log_error "registry.jsonへのアクセスに失敗しました"
         log_error "ファイルの読み取り権限を確認してください"
         return 1
@@ -283,7 +302,7 @@ prepare_registry() {
     
     # 実際の書き込み権限確認（現在のユーザーの権限レベルをチェック）
     local user_permission
-    if user_permission=$(gh api repos/smkwlab/thesis-student-registry --jq '.permissions.push' 2>/dev/null); then
+    if user_permission=$(gh api "repos/$REGISTRY_REPO" --jq '.permissions.push' 2>/dev/null); then
         if [ "$user_permission" != "true" ]; then
             log_error "リポジトリへの書き込み権限がありません"
             log_error "管理者にpush権限の付与を依頼してください"
@@ -1658,7 +1677,7 @@ update_thesis_student_registry() {
     
     # 現在のregistry.jsonを取得
     local current_json
-    if ! current_json=$(gh api repos/smkwlab/thesis-student-registry/contents/data/registry.json --jq '.content' | base64 -d 2>/dev/null); then
+    if ! current_json=$(gh api "repos/$REGISTRY_REPO/contents/data/registry.json" --jq '.content' | base64 -d 2>/dev/null); then
         log_error "registry.json の取得に失敗: $repo_name"
         return 1
     fi
@@ -1695,7 +1714,7 @@ EOF
     
     # GitHub APIで更新
     local sha
-    if ! sha=$(gh api repos/smkwlab/thesis-student-registry/contents/data/registry.json --jq '.sha'); then
+    if ! sha=$(gh api "repos/$REGISTRY_REPO/contents/data/registry.json" --jq '.sha'); then
         log_error "SHA取得に失敗: $repo_name"
         return 1
     fi
@@ -1719,7 +1738,7 @@ Processed via automated issue processor with GitHub username."
         return 1
     fi
     
-    if gh api repos/smkwlab/thesis-student-registry/contents/data/registry.json \
+    if gh api "repos/$REGISTRY_REPO/contents/data/registry.json" \
         --method PUT \
         --field message="$commit_message" \
         --field content="$encoded_content" \
@@ -1830,6 +1849,9 @@ main() {
 
 # オプション解析
 parse_options "$@"
+
+# レジストリリポジトリを解決（フラグ/env > 規約）
+resolve_registry_repo
 
 # メイン処理実行
 main

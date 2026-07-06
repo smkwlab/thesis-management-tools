@@ -90,13 +90,13 @@ scripts/
 
 **IMPORTANT**: Student data management has been consolidated into `thesis-student-registry`:
 
-- **Student registry (data)**: `thesis-student-registry/data/repositories.json` (private repo)
+- **Student registry (data)**: `thesis-student-registry/data/registry.json` (private repo)
 - **Management tool**: [smkwlab/registry-manager](https://github.com/smkwlab/registry-manager) (Elixir escript, separate repo)
 - **Monitoring tool**: [smkwlab/thesis-monitor](https://github.com/smkwlab/thesis-monitor) (Elixir escript, separate repo)
 
 All operations now use GitHub API for safe, atomic data management instead of local files.
-The tools read the data repository location from `~/.config/registry-manager/config.json`
-(`data_repo`) or a thesis-monitor YAML config (`data_dir`).
+The tools read the registry location from `~/.config/registry-manager/config.json`
+(`registry_repo`) or a thesis-monitor YAML config (`registry_dir`).
 
 ## Document Type Configuration
 

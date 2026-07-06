@@ -382,6 +382,24 @@ cd "$ORIGINAL_DIR"
 # 動作モード情報と環境変数を渡す
 DOCKER_ENV_VARS="-e USER_TYPE=$USER_TYPE -e TARGET_ORG=$TARGET_ORG"
 
+# リポジトリ名規約の override をコンテナへ転送（未設定なら渡さない = 規約デフォルト）
+# DOCKER_ENV_VARS は既存慣習どおり無引用展開されるため、安全な文字のみ許可する
+valid_repo_name() {
+    case "$1" in
+        *[!A-Za-z0-9._-]*) return 1 ;;
+        "") return 1 ;;
+        *) return 0 ;;
+    esac
+}
+if [ -n "${REGISTRY_REPO_NAME:-}" ]; then
+    valid_repo_name "$REGISTRY_REPO_NAME" || { echo "❌ REGISTRY_REPO_NAME に使用できない文字が含まれています: $REGISTRY_REPO_NAME" >&2; exit 1; }
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e REGISTRY_REPO_NAME=$REGISTRY_REPO_NAME"
+fi
+if [ -n "${TOOLS_REPO_NAME:-}" ]; then
+    valid_repo_name "$TOOLS_REPO_NAME" || { echo "❌ TOOLS_REPO_NAME に使用できない文字が含まれています: $TOOLS_REPO_NAME" >&2; exit 1; }
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e TOOLS_REPO_NAME=$TOOLS_REPO_NAME"
+fi
+
 # 文書タイプ固有の環境変数を渡す
 case "$DETECTED_DOC_TYPE" in
     latex)
