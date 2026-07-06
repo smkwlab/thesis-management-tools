@@ -286,7 +286,8 @@ create_backup() {
 prepare_registry() {
     log_info "GitHub API経由で $REGISTRY_REPO を更新します"
     
-    # GitHub APIアクセステスト（読み取り＋書き込み権限確認）
+    # GitHub APIアクセステスト（read 系 + リポジトリ push 権限の確認。
+    # fine-grained PAT の Contents write スコープ欠落までは検出できない点に注意）
     if ! gh api "repos/$REGISTRY_REPO" >/dev/null 2>&1; then
         log_error "$REGISTRY_REPO へのアクセスに失敗しました"
         log_error "GitHub CLI認証またはリポジトリ権限を確認してください"
@@ -312,7 +313,7 @@ prepare_registry() {
         log_warn "権限レベルの確認に失敗しましたが、処理を続行します"
     fi
     
-    log_success "GitHub API経由での thesis-student-registry アクセス確認完了"
+    log_success "レジストリ $REGISTRY_REPO のアクセス確認完了（read + push 権限。token の write スコープは実書き込みまで保証されない）"
     return 0
 }
 
@@ -605,12 +606,17 @@ process_issues_automatic() {
     for i in $(seq 0 $((TOTAL_ISSUES - 1))); do
         local issue=$(echo "$issues_json" | jq ".[$i]")
         
-        if ! extract_issue_info "$issue"; then
-            local extract_exit_code=$?
+        # 注意: `if ! f; then rc=$?` では rc が negation 後の 0 になるため、
+        # 戻り値は if の外で捕捉する（issue #473 レビューで発覚した既存バグ）
+        extract_issue_info "$issue"
+        local extract_exit_code=$?
+
+        if [ "$extract_exit_code" -ne 0 ]; then
             if [ "$extract_exit_code" = "2" ]; then
                 log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 情報抽出エラー、エラーカウントに追加"
                 ((EXTRACTION_ERROR_COUNT++))
                 EXTRACTION_ERROR_ISSUES+=("$CURRENT_ISSUE_NUMBER")
+                comment_processing_failure "$CURRENT_ISSUE_NUMBER" "Issue から情報を抽出できませんでした"
             else
                 log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 一般的な抽出失敗、スキップします"
                 ((SKIPPED_COUNT++))
@@ -621,9 +627,11 @@ process_issues_automatic() {
         log_info "処理中 ($((i + 1))/$TOTAL_ISSUES): Issue #${CURRENT_ISSUE_NUMBER} - $CURRENT_REPO_NAME"
         
         if ! check_repository_exists "$CURRENT_REPO_NAME"; then
-            log_warn "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリが見つかりません: $CURRENT_REPO_NAME"
+            # 見つからない repo は放置すると green のまま滞留するため失敗として扱う（issue #473）
+            log_error "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリが見つかりません: $CURRENT_REPO_NAME"
             add_issue_comment "$CURRENT_ISSUE_NUMBER" "⚠️ リポジトリが見つかりません: smkwlab/$CURRENT_REPO_NAME"
-            ((SKIPPED_COUNT++))
+            ((FAILED_COUNT++))
+            FAILED_ISSUES+=("$CURRENT_ISSUE_NUMBER")
             continue
         fi
         
@@ -634,6 +642,7 @@ process_issues_automatic() {
             ((FAILED_COUNT++))
             FAILED_ISSUES+=("$CURRENT_ISSUE_NUMBER")
             log_error "Issue #${CURRENT_ISSUE_NUMBER}: 処理失敗"
+            comment_processing_failure "$CURRENT_ISSUE_NUMBER" "ブランチ保護またはレジストリ登録の処理でエラー"
         fi
     done
     
@@ -659,12 +668,15 @@ process_issues_interactive() {
     for i in $(seq 0 $((TOTAL_ISSUES - 1))); do
         local issue=$(echo "$issues_json" | jq ".[$i]")
         
-        if ! extract_issue_info "$issue"; then
-            local extract_exit_code=$?
+        extract_issue_info "$issue"
+        local extract_exit_code=$?
+
+        if [ "$extract_exit_code" -ne 0 ]; then
             if [ "$extract_exit_code" = "2" ]; then
                 log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 情報抽出エラー、エラーカウントに追加"
                 ((EXTRACTION_ERROR_COUNT++))
                 EXTRACTION_ERROR_ISSUES+=("$CURRENT_ISSUE_NUMBER")
+                comment_processing_failure "$CURRENT_ISSUE_NUMBER" "Issue から情報を抽出できませんでした"
             else
                 log_warn "Issue #${CURRENT_ISSUE_NUMBER}: 一般的な抽出失敗、スキップします"
                 ((SKIPPED_COUNT++))
@@ -682,6 +694,7 @@ process_issues_interactive() {
             1) # 処理失敗
                 ((FAILED_COUNT++))
                 FAILED_ISSUES+=("$CURRENT_ISSUE_NUMBER")
+                comment_processing_failure "$CURRENT_ISSUE_NUMBER" "ブランチ保護またはレジストリ登録の処理でエラー"
                 ;;
             2) # ユーザーが終了を選択
                 log_info "ユーザーによる処理終了"
@@ -1639,6 +1652,26 @@ process_latex_issue() {
 #
 # Issueコメント追加
 #
+# 処理失敗を依頼者にも見えるようにする（issue #473: 無言の滞留防止）
+comment_processing_failure() {
+    local issue_number="$1"
+    local reason="$2"
+    local run_url=""
+
+    # 再実行のたびに同文コメントが積もるのを防ぐ（冪等ガード）
+    if gh issue view "$issue_number" --repo "$REPO" --json comments \
+        --jq '.comments[].body' 2>/dev/null | grep -q "自動処理に失敗しました"; then
+        log_debug "Issue #${issue_number}: 失敗コメントは投稿済みのためスキップ"
+        return 0
+    fi
+
+    if [ -n "${GITHUB_RUN_ID:-}" ]; then
+        run_url=" 実行ログ: ${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-$REPO}/actions/runs/${GITHUB_RUN_ID}"
+    fi
+
+    add_issue_comment "$issue_number" "⚠️ 自動処理に失敗しました（${reason}）。管理者が対応するまでこの Issue は open のままです。${run_url}"
+}
+
 add_issue_comment() {
     local issue_number="$1"
     local comment="$2"
@@ -1738,15 +1771,18 @@ Processed via automated issue processor with GitHub username."
         return 1
     fi
     
-    if gh api "repos/$REGISTRY_REPO/contents/data/registry.json" \
+    local api_error
+    if api_error=$(gh api "repos/$REGISTRY_REPO/contents/data/registry.json" \
         --method PUT \
         --field message="$commit_message" \
         --field content="$encoded_content" \
-        --field sha="$sha" >/dev/null 2>&1; then
+        --field sha="$sha" 2>&1 >/dev/null); then
         log_debug "thesis-student-registry 更新成功: $repo_name"
         return 0
     else
         log_error "GitHub API更新に失敗: $repo_name"
+        # 権限不足(403)等の切り分けに必須のため API エラーを残す（issue #473）
+        log_error "APIエラー詳細: ${api_error}"
         return 1
     fi
 }
@@ -1845,6 +1881,42 @@ main() {
             echo "  - Issue #${error_issue}"
         done
     fi
+
+    write_step_summary
+
+    # 1 件でも失敗があれば非 0 で終了し、呼び出し側（Actions）の run を赤にする（issue #473）
+    if [ $((FAILED_COUNT + EXTRACTION_ERROR_COUNT)) -gt 0 ]; then
+        log_error "失敗 ${FAILED_COUNT} 件 / 情報抽出エラー ${EXTRACTION_ERROR_COUNT} 件のため exit 1"
+        exit 1
+    fi
+}
+
+#
+# GitHub Actions の job summary へ集計を出力（ローカル実行では no-op）
+#
+write_step_summary() {
+    [ -z "${GITHUB_STEP_SUMMARY:-}" ] && return 0
+
+    {
+        echo "## 登録処理サマリ"
+        echo ""
+        echo "| 結果 | 件数 |"
+        echo "|---|---|"
+        echo "| 処理済み | ${PROCESSED_COUNT} |"
+        echo "| スキップ | ${SKIPPED_COUNT} |"
+        echo "| 失敗 | ${FAILED_COUNT} |"
+        echo "| 情報抽出エラー | ${EXTRACTION_ERROR_COUNT} |"
+
+        if [ ${FAILED_COUNT} -gt 0 ]; then
+            echo ""
+            echo "**失敗した Issue**: $(printf '#%s ' "${FAILED_ISSUES[@]}")"
+        fi
+
+        if [ ${EXTRACTION_ERROR_COUNT} -gt 0 ]; then
+            echo ""
+            echo "**情報抽出エラーの Issue**: $(printf '#%s ' "${EXTRACTION_ERROR_ISSUES[@]}")"
+        fi
+    } >> "$GITHUB_STEP_SUMMARY"
 }
 
 # オプション解析
