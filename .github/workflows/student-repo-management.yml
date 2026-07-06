@@ -18,6 +18,11 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.issue.title || '', 'リポジトリ登録依頼')
+    env:
+      # 規約: <org>/thesis-student-registry。逸脱時のみ org/repo variable
+      # REGISTRY_REPO で override（ECOSYSTEM.md: Organization-Scoped Deployment）。
+      # checkout と script の両方がこの単一定義を参照する
+      REGISTRY_REPO: ${{ vars.REGISTRY_REPO || format('{0}/thesis-student-registry', github.repository_owner) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -26,9 +31,7 @@ jobs:
       - name: Checkout registry data repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
-          # 規約: <org>/thesis-student-registry。逸脱時のみ org/repo variable
-          # REGISTRY_REPO で override（ECOSYSTEM.md: Organization-Scoped Deployment）
-          repository: ${{ vars.REGISTRY_REPO || format('{0}/thesis-student-registry', github.repository_owner) }}
+          repository: ${{ env.REGISTRY_REPO }}
           path: thesis-student-registry
           token: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
 
@@ -70,7 +73,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
           ISSUE_BODY: ${{ github.event.issue.body }}
-          REGISTRY_REPO: ${{ vars.REGISTRY_REPO || format('{0}/thesis-student-registry', github.repository_owner) }}
         run: |
           if [ "${{ github.event_name }}" = "issues" ]; then
             # 単一Issue処理
