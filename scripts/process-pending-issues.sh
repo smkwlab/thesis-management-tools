@@ -34,7 +34,14 @@ BACKUP_DIR="${BACKUP_DIR:-$DEFAULT_BACKUP_DIR}"
 #
 DEPLOY_ORG=""
 resolve_deploy_org() {
+    [ -n "$DEPLOY_ORG" ] && return 0
+
     DEPLOY_ORG="${GITHUB_REPOSITORY_OWNER:-${REPO%%/*}}"
+
+    if [ -z "$DEPLOY_ORG" ]; then
+        log_error "デプロイ org を解決できません（GITHUB_REPOSITORY_OWNER / --repo を確認してください）"
+        exit 1
+    fi
 }
 
 #
@@ -46,6 +53,8 @@ resolve_registry_repo() {
         return 0
     fi
 
+    # 呼び出し順に依存しないよう、未解決なら先に deploy org を解決する
+    resolve_deploy_org
     REGISTRY_REPO="${DEPLOY_ORG}/${REGISTRY_REPO_NAME}"
 }
 
@@ -431,14 +440,18 @@ extract_issue_info() {
     CURRENT_REPO_NAME=""
     CURRENT_ISSUE_ORG=""
 
+    # org の直前が英数・ドット・ハイフンの場合は除外し、URL のドメイン断片
+    # （example.com/k22... の "com" 等）を org として誤捕捉しない
+    local org_repo_re='(^|[^A-Za-z0-9.-])([A-Za-z0-9][A-Za-z0-9-]*)/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+)'
+
     # パターン1: タイトルの <org>/k##xxx-yyy 形式
-    if [[ "$CURRENT_ISSUE_TITLE" =~ ([A-Za-z0-9][A-Za-z0-9-]*)/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+) ]]; then
-        CURRENT_ISSUE_ORG="${BASH_REMATCH[1]}"
-        CURRENT_REPO_NAME="${BASH_REMATCH[2]}"
+    if [[ "$CURRENT_ISSUE_TITLE" =~ $org_repo_re ]]; then
+        CURRENT_ISSUE_ORG="${BASH_REMATCH[2]}"
+        CURRENT_REPO_NAME="${BASH_REMATCH[3]}"
     # パターン2: Issue本文から抽出
-    elif [[ "$CURRENT_ISSUE_BODY" =~ ([A-Za-z0-9][A-Za-z0-9-]*)/([k][0-9]{2}[a-z0-9]+-[a-zA-Z0-9_-]+) ]]; then
-        CURRENT_ISSUE_ORG="${BASH_REMATCH[1]}"
-        CURRENT_REPO_NAME="${BASH_REMATCH[2]}"
+    elif [[ "$CURRENT_ISSUE_BODY" =~ $org_repo_re ]]; then
+        CURRENT_ISSUE_ORG="${BASH_REMATCH[2]}"
+        CURRENT_REPO_NAME="${BASH_REMATCH[3]}"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 本文からリポジトリ名を抽出: $CURRENT_ISSUE_ORG/$CURRENT_REPO_NAME"
     # 旧パターン3（バックティック囲み）は org を持てず、自動生成 Issue では
     # 一度も emit されない死にパターンだったため削除（issue #475）
