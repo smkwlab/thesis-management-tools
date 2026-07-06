@@ -90,7 +90,12 @@ commit_and_push "Initial setup for ${THESIS_TYPE}" "0th-draft" || exit 1
 
 # Registry Manager連携（INDIVIDUAL_MODEでない場合のみ）
 if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
-    run_registry_integration "$THESIS_TYPE"
+    # registry の正式語彙へ変換（内部値 shuuron はテンプレート整理用、issue #471）
+    if [ "$THESIS_TYPE" = "shuuron" ]; then
+        run_registry_integration "master"
+    else
+        run_registry_integration "$THESIS_TYPE"
+    fi
 fi
 
 # 完了メッセージ

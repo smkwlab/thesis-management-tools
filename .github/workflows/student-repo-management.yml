@@ -97,8 +97,8 @@ jobs:
                 echo "REPO_TYPE=wr" >> "$GITHUB_ENV"
               elif [[ "$issue_title" == *"-sotsuron"* ]]; then
                 echo "REPO_TYPE=sotsuron" >> "$GITHUB_ENV"
-              elif [[ "$issue_title" == *"-thesis"* ]]; then
-                echo "REPO_TYPE=thesis" >> "$GITHUB_ENV"
+              elif [[ "$issue_title" == *"-master"* || "$issue_title" == *"-thesis"* ]]; then
+                echo "REPO_TYPE=master" >> "$GITHUB_ENV"
               fi
             else
               echo "❌ Issue処理失敗"

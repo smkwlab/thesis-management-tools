@@ -492,6 +492,11 @@ extract_issue_info() {
     # パターン1: Issue本文から直接抽出（最も信頼性が高い）
     if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[[:space:]]*:[[:space:]]*([a-zA-Z0-9]+) ]]; then
         CURRENT_REPO_TYPE="${BASH_REMATCH[1]}"
+        # 旧語彙・別表記を registry の正式語彙へ正規化（issue #471）
+        case "$CURRENT_REPO_TYPE" in
+            shuuron|thesis) CURRENT_REPO_TYPE="master" ;;
+            poster) CURRENT_REPO_TYPE="other" ;;
+        esac
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から直接タイプを抽出: $CURRENT_REPO_TYPE"
     # パターン2: Issue本文のキーワードから判定
     elif [[ "$CURRENT_ISSUE_BODY" =~ 週報|weekly ]]; then
@@ -506,8 +511,8 @@ extract_issue_info() {
     elif [[ "$CURRENT_ISSUE_BODY" =~ 卒業論文|undergraduate|sotsuron ]]; then
         CURRENT_REPO_TYPE="sotsuron"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから卒論タイプを判定"
-    elif [[ "$CURRENT_ISSUE_BODY" =~ 修士論文|graduate|thesis ]]; then
-        CURRENT_REPO_TYPE="thesis"
+    elif [[ "$CURRENT_ISSUE_BODY" =~ 修士論文|graduate|master ]]; then
+        CURRENT_REPO_TYPE="master"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文キーワードから修論タイプを判定"
     # パターン3: リポジトリ名から判定（フォールバック）
     elif [[ "$CURRENT_REPO_NAME" == *"-wr" ]]; then
@@ -519,19 +524,17 @@ extract_issue_info() {
     elif [[ "$CURRENT_REPO_NAME" == *"-sotsuron" ]]; then
         CURRENT_REPO_TYPE="sotsuron"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名から卒論タイプを判定"
-    elif [[ "$CURRENT_REPO_NAME" == *"-thesis" ]]; then
-        CURRENT_REPO_TYPE="thesis"
+    elif [[ "$CURRENT_REPO_NAME" == *"-master" || "$CURRENT_REPO_NAME" == *"-thesis" ]]; then
+        # 修論 repo の実命名は *-master（*-thesis は防御的別名）。repository_type は
+        # master（issue #471: thesis は type の語彙ではない）
+        CURRENT_REPO_TYPE="master"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名から修論タイプを判定"
     elif [[ "$CURRENT_REPO_NAME" == *"-latex" ]]; then
         CURRENT_REPO_TYPE="latex"
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリ名からlatexタイプを判定"
-    # パターン4: 学生IDパターンから推測（最後の手段）
-    elif [[ "$CURRENT_STUDENT_ID" =~ ^k[0-9]{2}rs[0-9]+ ]]; then
-        CURRENT_REPO_TYPE="sotsuron"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDパターンから卒論タイプを推測"
-    elif [[ "$CURRENT_STUDENT_ID" =~ ^k[0-9]{2}gjk[0-9]+ ]]; then
-        CURRENT_REPO_TYPE="thesis"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 学生IDパターンから修論タイプを推測"
+    # 旧パターン4（学生 ID からの推測 rs→sotsuron / gjk→thesis）は誤分類の
+    # 主因だったため廃止（issue #471）。卒論・修論は命名規約 *-sotsuron /
+    # *-thesis で必ずパターン3までに判定される
     # パターン5: その他のパターンは latex と推測
     # setup-latex.sh は様々な命名規則のリポジトリに対応するため、
     # 明示的なタイプ情報がない場合は LaTeX リポジトリとして扱う
@@ -912,7 +915,7 @@ show_issue_summary() {
         sotsuron)
             echo "  種別: 論文リポジトリ（卒業論文）"
             ;;
-        thesis)
+        master)
             echo "  種別: 論文リポジトリ（修士論文）"
             ;;
         *)
@@ -967,7 +970,7 @@ show_issue_details() {
             echo "  1. thesis-student-registry への登録"
             echo "  2. Issue クローズ"
             ;;
-        ise|sotsuron|thesis)
+        ise|sotsuron|master)
             echo "  1. ブランチ保護設定 (main, review-branch)"
             echo "  2. thesis-student-registry への登録"
             echo "  3. Issue クローズ"
@@ -1034,7 +1037,7 @@ execute_issue_processing() {
                 return 1
             fi
             ;;
-        sotsuron|thesis)
+        sotsuron|master)
             echo "→ 論文リポジトリの処理を実行中..."
             if process_thesis_with_feedback; then
                 echo "✅ 処理が完了しました"
@@ -1504,13 +1507,13 @@ process_single_issue() {
         wr)
             process_weekly_report_issue
             ;;
-        sotsuron|thesis)
+        sotsuron|master)
             process_thesis_issue
             ;;
         ise)
             process_ise_issue
             ;;
-        latex)
+        latex|other)
             process_latex_issue
             ;;
         *)
@@ -1652,7 +1655,7 @@ process_latex_issue() {
     log_info "LaTeXリポジトリ処理: $CURRENT_REPO_NAME"
     
     # 1. thesis-student-registry への登録のみ（ブランチ保護なし）
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "latex"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
