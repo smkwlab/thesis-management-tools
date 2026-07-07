@@ -318,19 +318,21 @@ prepare_registry() {
         return 1
     fi
     
-    # 実際の書き込み権限確認（現在のユーザーの権限レベルをチェック）
-    local user_permission
-    if user_permission=$(gh api "repos/$REGISTRY_REPO" --jq '.permissions.push' 2>/dev/null); then
-        if [ "$user_permission" != "true" ]; then
-            log_error "リポジトリへの書き込み権限がありません"
-            log_error "管理者にpush権限の付与を依頼してください"
-            return 1
+    # 書き込み権限の目安確認（参考情報。実際の write は下流の API 呼び出しで検証される）。
+    # 注意: .permissions.push は collaborator（ユーザー）権限を表すフィールドで、
+    # GitHub App の installation token では true を返さない（App は installation 権限で
+    # 書き込むため）。したがって非 true を「権限なし」と断定できない。非 true は警告に留め、
+    # 実書き込みの成否に判定を委ねる（失敗すれば下流でエラーになり run が赤くなる）。
+    local push_permission
+    if push_permission=$(gh api "repos/$REGISTRY_REPO" --jq '.permissions.push' 2>/dev/null); then
+        if [ "$push_permission" != "true" ]; then
+            log_warn "push 権限フラグが true ではありません（GitHub App token では通常この表示）。実書き込みで検証されます"
         fi
     else
         log_warn "権限レベルの確認に失敗しましたが、処理を続行します"
     fi
     
-    log_success "レジストリ $REGISTRY_REPO のアクセス確認完了（read + push 権限。token の write スコープは実書き込みまで保証されない）"
+    log_success "レジストリ $REGISTRY_REPO のアクセス確認完了（read 確認済み。write は実書き込みで検証）"
     return 0
 }
 
