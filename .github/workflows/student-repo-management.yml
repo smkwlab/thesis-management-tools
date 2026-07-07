@@ -24,20 +24,31 @@ jobs:
       # checkout と script の両方がこの単一定義を参照する
       REGISTRY_REPO: ${{ vars.REGISTRY_REPO || format('{0}/thesis-student-registry', github.repository_owner) }}
     steps:
+      # GitHub App の installation token を毎回発行する（PAT の無通知失効を排除）。
+      # owner 指定で org 内の全アクセス可能リポジトリ（this repo / registry / 学生
+      # リポジトリ）に効く cross-repo token を得る。
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
-          token: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
       - name: Checkout registry data repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           repository: ${{ env.REGISTRY_REPO }}
           path: thesis-student-registry
-          token: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup GitHub CLI
         env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           type -p gh >/dev/null || (
             curl -fsSL \
@@ -50,28 +61,14 @@ jobs:
             sudo apt update
             sudo apt install gh jq
           )
-          # GitHub CLI認証確認とトークン権限検証
+          # GitHub CLI認証確認
           echo "Verifying GitHub CLI authentication..."
           gh auth status
-          echo "Validating token permissions..."
-
-          # より正確なトークン使用検出
-          if [ -n "${{ secrets.ORG_ADMIN_TOKEN }}" ] && \
-             [ "$GH_TOKEN" = "${{ secrets.ORG_ADMIN_TOKEN }}" ]; then
-            echo "✅ Using ORG_ADMIN_TOKEN for enhanced permissions"
-            echo "TOKEN_TYPE=ORG_ADMIN" >> "$GITHUB_ENV"
-          else
-            echo "⚠️ Using GITHUB_TOKEN (limited permissions)"
-            echo "Note: Cross-repository operations may fail" \
-                 "without ORG_ADMIN_TOKEN"
-            echo "Consider setting ORG_ADMIN_TOKEN secret" \
-                 "for full functionality"
-            echo "TOKEN_TYPE=GITHUB_DEFAULT" >> "$GITHUB_ENV"
-          fi
+          echo "✅ Using GitHub App installation token (cross-repo enabled)"
 
       - name: Process repository request
         env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           if [ "${{ github.event_name }}" = "issues" ]; then
