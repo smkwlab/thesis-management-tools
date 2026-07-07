@@ -2,87 +2,108 @@
 
 ## 📋 概要
 
-thesis-management-toolsのGitHub Actionsワークフローが学生リポジトリにアクセスできるようにするための管理者向けセットアップガイドです。
+thesis-management-tools の GitHub Actions ワークフロー（`student-repo-management.yml`）が
+学生リポジトリにアクセスできるようにするための管理者向けセットアップガイドです。
 
-## ⚡ クイックセットアップ
+認証には **GitHub App の installation token** を使用します。従来の個人 PAT
+（`ORG_ADMIN_TOKEN`）は、無通知で失効して自動化が静かに止まる運用リスクがあったため
+廃止しました（背景: Issue #472）。App トークンはワークフロー実行のたびに自動発行され、
+約 1 時間で失効するため、失効管理や定期更新が不要です。
 
-### 必要な権限
-- **`repo`スコープのみ** - 最小限の必要権限
+## ⚡ 概要フロー
 
-### 設定手順（2分で完了）
-1. [Personal Access Token作成](#1-personal-access-token-pat-の作成)
-2. [Repository Secretsに追加](#2-repository-secretsへの追加)
-3. [動作確認](#3-動作確認)
+1. [GitHub App を作成](#1-github-app-の作成)（org オーナー権限が必要）
+2. [App を org にインストール](#2-app-の-org-へのインストール)
+3. [App ID と秘密鍵を Secrets に登録](#3-app-id-と秘密鍵の登録)
+4. [動作確認](#4-動作確認)
+
+初回のみ管理者が実施します。以降はトークンの更新作業は不要です。
 
 ---
 
 ## 🔧 詳細設定手順
 
-### 1. Personal Access Token (PAT) の作成
+### 1. GitHub App の作成
 
-1. GitHubの[Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)にアクセス
-2. "Generate new token (classic)" をクリック
-3. **最小権限設定**：
-   - **Note**: `thesis-management-tools-admin`
-   - **Expiration**: 1年（推奨）
-   - **Select scopes**: **`repo`のみにチェック**
-4. "Generate token"をクリックし、トークンをコピー
+1. [Organization settings > Developer settings > GitHub Apps](https://github.com/organizations/smkwlab/settings/apps)
+   にアクセスし、**New GitHub App** をクリック
+2. 基本設定：
+   - **GitHub App name**: 例 `smkwlab-thesis-automation`（org 内で一意）
+   - **Homepage URL**: 任意（例: リポジトリの URL）
+   - **Webhook**: **Active のチェックを外す**（本用途では不要）
+3. **Repository permissions**（必要最小セット。2026-07 の障害復旧で実証済み）：
+   - **Contents**: Read and write（レジストリ更新・チェックアウト）
+   - **Issues**: Read and write（登録依頼 Issue のクローズ）
+   - **Administration**: Read and write（ブランチ保護設定）
+   - **Metadata**: Read-only（自動で必須）
+4. **Where can this GitHub App be installed?**: Only on this account
+5. **Create GitHub App** をクリック
 
-> ⚠️ **重要**: `repo`以外の権限は不要です。他の権限を追加すると不要なセキュリティリスクが発生します。
+> ⚠️ **重要**: 上記以外の権限は付与しないでください。最小権限の原則に従います。
 
-### 2. Repository Secretsへの追加
+### 2. App の org へのインストール
 
-1. [thesis-management-tools リポジトリ](https://github.com/smkwlab/thesis-management-tools)にアクセス
-2. Settings > Secrets and variables > Actions に移動
-3. "New repository secret"をクリック
-4. 以下を入力：
-   - **Name**: `ORG_ADMIN_TOKEN`
-   - **Secret**: コピーしたPATを貼り付け
-5. "Add secret"をクリック
+1. 作成した App の設定画面 左メニュー **Install App** をクリック
+2. smkwlab org に **Install**
+3. **Repository access**: **All repositories** を選択
 
-### 3. 動作確認
+> 学生リポジトリは登録のたびに動的に作成され、それぞれにブランチ保護
+> （Administration 権限）が必要なため、All repositories が適切です。
+
+### 3. App ID と秘密鍵の登録
+
+1. App 設定画面で **App ID**（数値）を控える
+2. **Generate a private key** で `.pem` ファイルをダウンロード
+3. [thesis-management-tools リポジトリ](https://github.com/smkwlab/thesis-management-tools)の
+   Settings > Secrets and variables > Actions で、以下の 2 つの **Repository secret** を追加：
+   - **`APP_ID`**: 控えた App ID（数値）
+   - **`APP_PRIVATE_KEY`**: `.pem` ファイルの全文
+     （`-----BEGIN...` から `-----END...` まで、改行を含めそのまま貼り付け）
+
+### 4. 動作確認
 
 設定後、学生が新しいリポジトリを作成すると：
-1. 自動的にIssueが作成される
-2. GitHub Actionsが起動し、ブランチ保護設定を実行
-3. 設定完了後、Issueが自動クローズされる
+
+1. 自動的に Issue が作成される
+2. GitHub Actions が起動し、`create-github-app-token` で installation token を発行
+3. ブランチ保護設定・レジストリ更新・Issue クローズが実行される
+
+手動で確認する場合は、Actions タブから `Student Repository Management` ワークフローを
+`workflow_dispatch`（一括処理モード）で実行し、成功することを確認してください。
 
 ## 🔒 セキュリティ考慮事項
 
-### 権限の最小化原則
-- **使用権限**: `repo`スコープのみ（最小限）
-- **アクセス範囲**: Organization内のプライベートリポジトリ
-- **実際の操作**: ブランチ保護設定とIssue管理のみ
+### GitHub App を採用する理由
 
-### 運用管理ベストプラクティス
-- **定期更新**: 3-6ヶ月毎のトークン更新
-- **監査**: GitHub Audit logでの使用状況確認
-- **即座対応**: 不要時・侵害時の迅速な削除
-- **権限確認**: 定期的な権限使用状況の監査
+- **無通知失効の排除**: installation token は実行のたびに自動発行・約 1 時間で失効。
+  個人 PAT のように「気付かないうちに失効して自動化が止まる」ことがない
+- **最小権限**: リポジトリ単位の細粒度権限（Contents / Issues / Administration / Metadata）
+  のみを付与。組織全体の広い `repo` スコープを持つ classic PAT より安全
+- **監査性**: App の操作は Bot として記録され、Audit log で追跡しやすい
+- **個人非依存**: 特定個人のアカウントに紐づかないため、担当者の異動・退職の影響を受けない
 
-### リスク評価と軽減策
+### 秘密鍵の管理
 
-#### リスクレベル: 低〜中
-- **潜在リスク**: Organization内全プライベートリポジトリへのアクセス
-- **実際の影響**: 学生thesis関連リポジトリのブランチ保護設定のみ
-- **軽減策**:
-  - コードベースでの操作制限（ブランチ保護のみ）
-  - 定期的なアクセスログ確認
-  - トークンの短期更新サイクル
-
-#### Fine-grained Token vs Classic Token
-- **Fine-grained**: より細かい制御可能だが、新リポジトリ作成時に手動更新必要
-- **Classic (`repo`)**: 管理オーバーヘッドが少なく、運用に適している
-- **選択理由**: 運用効率とセキュリティのバランスでClassic tokenを採用
+- `APP_PRIVATE_KEY` は GitHub Actions Secrets にのみ保存し、リポジトリにコミットしない
+- 鍵の漏洩が疑われる場合は App 設定画面で該当鍵を revoke し、新しい鍵を発行して
+  `APP_PRIVATE_KEY` を差し替える
 
 ## トラブルシューティング
 
-### "Repository not found"エラーが発生する場合
-- `ORG_ADMIN_TOKEN`が正しく設定されているか確認
-- トークンの権限が適切か確認
-- トークンの有効期限が切れていないか確認
+### ワークフローが `create-github-app-token` ステップで失敗する場合
 
-### ワークフローが失敗する場合
-- Actions > 該当のワークフロー > ログを確認
-- `gh auth status`の出力を確認
-- トークンがOrganizationへのアクセス権限を持っているか確認
+- `APP_ID` / `APP_PRIVATE_KEY` の secret が正しく設定されているか確認
+- `APP_PRIVATE_KEY` に `.pem` の全文（BEGIN/END 行を含む）が貼られているか確認
+- App が smkwlab org に **All repositories** でインストールされているか確認
+
+### `Resource not accessible by integration`（403）が発生する場合
+
+- App の Repository permissions に不足がないか確認
+  （Contents / Issues / Administration の write、Metadata の read）
+- 権限を追加した場合、org の Install 画面で新しい権限の承認が必要なことがある
+
+### 対象リポジトリにアクセスできない場合
+
+- App の installation の Repository access が **All repositories** になっているか確認
+- 個別選択にしている場合、対象の学生リポジトリ・`thesis-student-registry` が
+  含まれているか確認
