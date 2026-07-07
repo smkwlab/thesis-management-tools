@@ -326,7 +326,7 @@ prepare_registry() {
     local push_permission
     if push_permission=$(gh api "repos/$REGISTRY_REPO" --jq '.permissions.push' 2>/dev/null); then
         if [ "$push_permission" != "true" ]; then
-            log_warn "push 権限フラグが true ではありません（GitHub App token では通常この表示）。実書き込みで検証されます"
+            log_warn "push 権限フラグが true ではありません（GitHub App トークンでは通常この表示になります）。実際の書き込み権限は下流の API 呼び出しで検証されます"
         fi
     else
         log_warn "権限レベルの確認に失敗しましたが、処理を続行します"
