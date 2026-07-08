@@ -1785,10 +1785,11 @@ update_thesis_student_registry() {
     # Issue作成者のGitHub usernameを取得
     local github_username="${CURRENT_ISSUE_AUTHOR:-unknown}"
     
-    # GET-mutate-PUT を SHA競合(409/422)に備えてリトライする（Bug #496: 並行 PUT で
+    # GET-mutate-PUT を SHA競合(409)に備えてリトライする（Bug #496: 並行 PUT で
     # 登録が失われる）。競合時は最新の content+sha を取り直し mutation を再適用して再 PUT。
     # content と sha は同一レスポンスから取り出し、取得〜PUT の競合窓を狭める。
     local put_retry_count=0
+    # 総試行回数の上限（初回 + (put_max_retries - 1) 回のリトライ = 最大5回 PUT）
     local put_max_retries=5
     while :; do
         # content と sha を1回の取得で得る（別々の GET による窓の拡大を避ける）
@@ -1812,17 +1813,21 @@ update_thesis_student_registry() {
         fi
 
         # 新しいエントリを作成（github_usernameを含む）。既存の created_at は取り直した
-        # 最新 content から拾い、並行更新による created_at の巻き戻しを防ぐ
-        local updated_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        # 最新 content から拾い、並行更新による created_at の巻き戻しを防ぐ。
+        # コマンド置換を含む local は宣言と代入を分離（set -e で終了コードを握り潰さない）。
+        local updated_at
+        updated_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
         local created_at
-        local existing_created_at=$(echo "$current_json" | jq -r --arg repo_name "$repo_name" '.[$repo_name].created_at // empty')
+        local existing_created_at
+        existing_created_at=$(echo "$current_json" | jq -r --arg repo_name "$repo_name" '.[$repo_name].created_at // empty')
         if [ -n "$existing_created_at" ] && [ "$existing_created_at" != "null" ]; then
             created_at="$existing_created_at"
         else
             created_at="$updated_at"
         fi
 
-        local new_entry=$(cat <<EOF
+        local new_entry
+        new_entry=$(cat <<EOF
 {
   "student_id": "$student_id",
   "repository_type": "$repo_type",
@@ -1877,7 +1882,7 @@ Processed via automated issue processor with GitHub username."
         put_retry_count=$((put_retry_count + 1))
         if echo "$api_error" | grep -qE 'HTTP 409'; then
             if [ "$put_retry_count" -ge "$put_max_retries" ]; then
-                log_error "registry.json 更新がSHA競合で ${put_max_retries} 回失敗: $repo_name"
+                log_error "registry.json 更新が ${put_max_retries} 回の試行すべてSHA競合で失敗: $repo_name"
                 log_error "APIエラー詳細: ${api_error}"
                 return 1
             fi
