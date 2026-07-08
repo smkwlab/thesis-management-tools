@@ -367,13 +367,17 @@ fetch_pending_issues() {
             return 1
         fi
 
-        # 登録依頼/ブランチ保護設定依頼のタイトルに一致するもののみ処理対象
-        local target_json
-        target_json=$(echo "$issue_json" | jq '[select(.title | test("リポジトリ登録依頼|ブランチ保護設定依頼"))]')
-        if [ "$(echo "$target_json" | jq length)" -eq 0 ]; then
-            log_error "Issue #$TARGET_ISSUE_NUMBER は登録依頼Issueではありません（タイトル不一致）"
+        # 登録依頼/ブランチ保護設定依頼のタイトルに一致するもののみ処理対象。
+        # gh issue view は単一オブジェクトを返すため、タイトルを取り出して判定し、
+        # 後続処理が期待する配列形式へ jq '[.]' で包む。
+        local title
+        title=$(echo "$issue_json" | jq -r '.title')
+        if ! echo "$title" | grep -qE 'リポジトリ登録依頼|ブランチ保護設定依頼'; then
+            log_error "Issue #$TARGET_ISSUE_NUMBER は登録依頼Issueではありません（タイトル: $title）"
             return 1
         fi
+        local target_json
+        target_json=$(echo "$issue_json" | jq '[.]')
         echo "$target_json"
         return 0
     fi
@@ -1800,7 +1804,8 @@ update_thesis_student_registry() {
             return 1
         fi
 
-        local sha=$(echo "$contents_json" | jq -r '.sha // empty')
+        local sha
+        sha=$(echo "$contents_json" | jq -r '.sha // empty')
         if [ -z "$sha" ]; then
             log_error "SHA取得に失敗: $repo_name"
             return 1
@@ -1848,8 +1853,9 @@ Updated: $updated_at
 Processed via automated issue processor with GitHub username."
 
         # base64エンコードしてGitHub APIで更新
+        # base64 は環境により76文字ごとに改行を挿入するため tr で除去し1行に揃える
         local encoded_content
-        if ! encoded_content=$(echo "$updated_json" | base64); then
+        if ! encoded_content=$(echo "$updated_json" | base64 | tr -d '\n'); then
             log_error "base64エンコードに失敗: $repo_name"
             return 1
         fi
@@ -1865,10 +1871,11 @@ Processed via automated issue processor with GitHub username."
             return 0
         fi
 
-        # SHA競合(409/422)なら最新を取り直して再試行。gh は非2xx 時に末尾へ
-        # "(HTTP <code>)" を付けるため、その状態コードで競合を判定する。
+        # SHA競合(409)なら最新を取り直して再試行。gh は非2xx 時に末尾へ
+        # "(HTTP <code>)" を付けるため、その状態コードで競合を判定する。422 等の
+        # 検証エラーはリトライで解消しないため即失敗させ、原因特定を遅らせない。
         put_retry_count=$((put_retry_count + 1))
-        if echo "$api_error" | grep -qE 'HTTP 409|HTTP 422'; then
+        if echo "$api_error" | grep -qE 'HTTP 409'; then
             if [ "$put_retry_count" -ge "$put_max_retries" ]; then
                 log_error "registry.json 更新がSHA競合で ${put_max_retries} 回失敗: $repo_name"
                 log_error "APIエラー詳細: ${api_error}"
