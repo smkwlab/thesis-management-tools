@@ -67,6 +67,8 @@ BATCH_CONFIRM_MODE=false
 # フィルター設定
 FILTER_TYPE=""
 LIMIT_COUNT=""
+# 特定Issue指定（Bug #495: トリガーIssueを確実に処理。未指定なら従来の pending スキャン）
+TARGET_ISSUE_NUMBER=""
 
 # ログ設定
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -140,6 +142,7 @@ OPTIONS:
     --batch-confirm        バッチ確認モード（インタラクティブ+一括確認）
     --type TYPE            処理対象タイプ指定 (wr|sotsuron|thesis)
     --limit NUM            最大処理数制限
+    --issue NUM            特定Issue番号のみ処理（未指定時は従来通り未処理Issueを走査）
     --repo REPO            対象リポジトリ (default: $DEFAULT_REPO)
     --registry-repo REPO   レジストリリポジトリ (default: <org>/thesis-student-registry、
                            org は GITHUB_REPOSITORY_OWNER または --repo の owner 部分)
@@ -203,6 +206,14 @@ parse_options() {
                 LIMIT_COUNT="$2"
                 if ! [[ "$LIMIT_COUNT" =~ ^[0-9]+$ ]]; then
                     log_error "無効な制限数: $LIMIT_COUNT"
+                    exit 1
+                fi
+                shift 2
+                ;;
+            --issue)
+                TARGET_ISSUE_NUMBER="$2"
+                if ! [[ "$TARGET_ISSUE_NUMBER" =~ ^[0-9]+$ ]]; then
+                    log_error "無効なIssue番号: $TARGET_ISSUE_NUMBER"
                     exit 1
                 fi
                 shift 2
@@ -343,6 +354,30 @@ fetch_pending_issues() {
     log_info "未処理Issueを検索中..."
     log_debug "対象リポジトリ: $REPO"
     
+    # 特定Issue指定時は list 走査ではなく番号で直接取得する（Bug #495/#496）。
+    # gh issue list は index の eventual consistency で開いた直後の Issue を
+    # 取りこぼすことがあるため、強整合な gh issue view で対象を確実に取得する。
+    if [ -n "$TARGET_ISSUE_NUMBER" ]; then
+        log_debug "特定Issue直接取得: #$TARGET_ISSUE_NUMBER"
+        local issue_json
+        if ! issue_json=$(gh issue view "$TARGET_ISSUE_NUMBER" \
+            --repo "$REPO" \
+            --json number,title,body,createdAt,url,author 2>&1); then
+            log_error "Issue #$TARGET_ISSUE_NUMBER の取得に失敗: $issue_json"
+            return 1
+        fi
+
+        # 登録依頼/ブランチ保護設定依頼のタイトルに一致するもののみ処理対象
+        local target_json
+        target_json=$(echo "$issue_json" | jq '[select(.title | test("リポジトリ登録依頼|ブランチ保護設定依頼"))]')
+        if [ "$(echo "$target_json" | jq length)" -eq 0 ]; then
+            log_error "Issue #$TARGET_ISSUE_NUMBER は登録依頼Issueではありません（タイトル不一致）"
+            return 1
+        fi
+        echo "$target_json"
+        return 0
+    fi
+
     local issues_json
     local gh_error_output
     local retry_count=0
@@ -1746,26 +1781,43 @@ update_thesis_student_registry() {
     # Issue作成者のGitHub usernameを取得
     local github_username="${CURRENT_ISSUE_AUTHOR:-unknown}"
     
-    # 現在のregistry.jsonを取得
-    local current_json
-    if ! current_json=$(gh api "repos/$REGISTRY_REPO/contents/data/registry.json" --jq '.content' | base64 -d 2>/dev/null); then
-        log_error "registry.json の取得に失敗: $repo_name"
-        return 1
-    fi
-    
-    # 新しいエントリを作成（github_usernameを含む）
-    local updated_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
-    
-    # 既存エントリのcreated_atを保持、新規の場合は現在時刻を使用
-    local created_at
-    local existing_created_at=$(echo "$current_json" | jq -r --arg repo_name "$repo_name" '.[$repo_name].created_at // empty')
-    if [ -n "$existing_created_at" ] && [ "$existing_created_at" != "null" ]; then
-        created_at="$existing_created_at"
-    else
-        created_at="$updated_at"
-    fi
-    
-    local new_entry=$(cat <<EOF
+    # GET-mutate-PUT を SHA競合(409/422)に備えてリトライする（Bug #496: 並行 PUT で
+    # 登録が失われる）。競合時は最新の content+sha を取り直し mutation を再適用して再 PUT。
+    # content と sha は同一レスポンスから取り出し、取得〜PUT の競合窓を狭める。
+    local put_retry_count=0
+    local put_max_retries=5
+    while :; do
+        # content と sha を1回の取得で得る（別々の GET による窓の拡大を避ける）
+        local contents_json
+        if ! contents_json=$(gh api "repos/$REGISTRY_REPO/contents/data/registry.json"); then
+            log_error "registry.json の取得に失敗: $repo_name"
+            return 1
+        fi
+
+        local current_json
+        if ! current_json=$(echo "$contents_json" | jq -r '.content' | base64 -d 2>/dev/null); then
+            log_error "registry.json のデコードに失敗: $repo_name"
+            return 1
+        fi
+
+        local sha=$(echo "$contents_json" | jq -r '.sha // empty')
+        if [ -z "$sha" ]; then
+            log_error "SHA取得に失敗: $repo_name"
+            return 1
+        fi
+
+        # 新しいエントリを作成（github_usernameを含む）。既存の created_at は取り直した
+        # 最新 content から拾い、並行更新による created_at の巻き戻しを防ぐ
+        local updated_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        local created_at
+        local existing_created_at=$(echo "$current_json" | jq -r --arg repo_name "$repo_name" '.[$repo_name].created_at // empty')
+        if [ -n "$existing_created_at" ] && [ "$existing_created_at" != "null" ]; then
+            created_at="$existing_created_at"
+        else
+            created_at="$updated_at"
+        fi
+
+        local new_entry=$(cat <<EOF
 {
   "student_id": "$student_id",
   "repository_type": "$repo_type",
@@ -1775,24 +1827,17 @@ update_thesis_student_registry() {
 }
 EOF
 )
-    
-    # JSONを更新
-    local updated_json
-    if ! updated_json=$(echo "$current_json" | jq --indent 2 --arg repo_name "$repo_name" --argjson new_entry "$new_entry" '.[$repo_name] = $new_entry'); then
-        log_error "JSON更新処理に失敗: $repo_name"
-        return 1
-    fi
-    
-    # GitHub APIで更新
-    local sha
-    if ! sha=$(gh api "repos/$REGISTRY_REPO/contents/data/registry.json" --jq '.sha'); then
-        log_error "SHA取得に失敗: $repo_name"
-        return 1
-    fi
-    
-    # 個人情報保護のため学生IDをマスク化
-    local masked_student_id="${student_id:0:3}***${student_id: -2}"
-    local commit_message="Add/update repository: $repo_name
+
+        # JSONを更新
+        local updated_json
+        if ! updated_json=$(echo "$current_json" | jq --indent 2 --arg repo_name "$repo_name" --argjson new_entry "$new_entry" '.[$repo_name] = $new_entry'); then
+            log_error "JSON更新処理に失敗: $repo_name"
+            return 1
+        fi
+
+        # 個人情報保護のため学生IDをマスク化
+        local masked_student_id="${student_id:0:3}***${student_id: -2}"
+        local commit_message="Add/update repository: $repo_name
 
 Repository: $repo_name
 Student ID: $masked_student_id
@@ -1801,28 +1846,46 @@ GitHub Username: $github_username
 Updated: $updated_at
 
 Processed via automated issue processor with GitHub username."
-    
-    # base64エンコードしてGitHub APIで更新
-    local encoded_content
-    if ! encoded_content=$(echo "$updated_json" | base64); then
-        log_error "base64エンコードに失敗: $repo_name"
-        return 1
-    fi
-    
-    local api_error
-    if api_error=$(gh api "repos/$REGISTRY_REPO/contents/data/registry.json" \
-        --method PUT \
-        --field message="$commit_message" \
-        --field content="$encoded_content" \
-        --field sha="$sha" 2>&1 >/dev/null); then
-        log_debug "thesis-student-registry 更新成功: $repo_name"
-        return 0
-    else
+
+        # base64エンコードしてGitHub APIで更新
+        local encoded_content
+        if ! encoded_content=$(echo "$updated_json" | base64); then
+            log_error "base64エンコードに失敗: $repo_name"
+            return 1
+        fi
+
+        # SHA を指定して PUT（楽観ロック）
+        local api_error
+        if api_error=$(gh api "repos/$REGISTRY_REPO/contents/data/registry.json" \
+            --method PUT \
+            --field message="$commit_message" \
+            --field content="$encoded_content" \
+            --field sha="$sha" 2>&1 >/dev/null); then
+            log_debug "thesis-student-registry 更新成功: $repo_name"
+            return 0
+        fi
+
+        # SHA競合(409/422)なら最新を取り直して再試行。gh は非2xx 時に末尾へ
+        # "(HTTP <code>)" を付けるため、その状態コードで競合を判定する。
+        put_retry_count=$((put_retry_count + 1))
+        if echo "$api_error" | grep -qE 'HTTP 409|HTTP 422'; then
+            if [ "$put_retry_count" -ge "$put_max_retries" ]; then
+                log_error "registry.json 更新がSHA競合で ${put_max_retries} 回失敗: $repo_name"
+                log_error "APIエラー詳細: ${api_error}"
+                return 1
+            fi
+            local put_wait_time=$((put_retry_count * 2))
+            log_warn "registry.json 更新の競合を検出 (試行 ${put_retry_count}/${put_max_retries}): $repo_name — ${put_wait_time}秒後に再取得して再試行"
+            log_debug "APIエラー詳細: ${api_error}"
+            sleep "$put_wait_time"
+            continue
+        fi
+
         log_error "GitHub API更新に失敗: $repo_name"
         # 権限不足(403)等の切り分けに必須のため API エラーを残す（issue #473）
         log_error "APIエラー詳細: ${api_error}"
         return 1
-    fi
+    done
 }
 
 #
