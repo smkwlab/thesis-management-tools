@@ -77,8 +77,9 @@ jobs:
             echo "Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}"
 
             # process-pending-issues.shを使用してIssue処理
-            # 制限を1件に設定して該当Issueのみ処理
-            if bash scripts/process-pending-issues.sh --limit 1; then
+            # トリガーとなった Issue 番号を渡して該当Issueのみ確実に処理（Bug #495）。
+            # --limit 1 は pending の先頭を拾うため同時多発時に取り違える。
+            if bash scripts/process-pending-issues.sh --issue "${{ github.event.issue.number }}"; then
               echo "✅ Issue処理完了"
               echo "PROTECTION_SUCCESS=true" >> "$GITHUB_ENV"
 
