@@ -32,13 +32,36 @@ The authentication system provides a secure and user-friendly experience:
 
 **Multiple Account Support:**
 ```bash
-# Automatic account detection with conflict resolution
+# Validate that the current account can create in TARGET_ORG:
+# either it is the user's own account, or the user is a member of that org.
 CURRENT_USER=$(gh api user --jq .login)
-if [ "$CURRENT_USER" != "$TARGET_ORG" ]; then
-    # Provide clear guidance for account switching
-    echo "gh auth switch --user $TARGET_ORG"
+if [ "$TARGET_ORG" != "$CURRENT_USER" ] \
+   && ! gh api "orgs/$TARGET_ORG/members/$CURRENT_USER" >/dev/null 2>&1; then
+    # Not a member (or org does not exist): guide account switching
+    echo "gh auth switch --user <member>"
 fi
 ```
+
+### Organization Configuration (multi-org deployment)
+
+`setup.sh` resolves the target organization without hardcoding `smkwlab`, so
+the tool can be forked and deployed to another org. Override via environment
+variables (defaults preserve smkwlab behavior):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DEFAULT_ORG` | `smkwlab` | Org checked for membership and used as the default creation target for organization members. Forks set this (via env or by editing the embedded default). |
+| `TARGET_ORG` | derived | Explicit creation target. If it is not the user's own account, membership in it is verified. Individual users default to their own account. |
+| `TOOLS_REPO_OWNER` | `$DEFAULT_ORG` | Owner of the `thesis-management-tools` repo cloned internally. Distinct from `TARGET_ORG` (which may be a personal account). |
+| `TOOLS_REPO_NAME` | `thesis-management-tools` | Repo name cloned internally and forwarded to the container for registry integration. |
+| `TOOLS_CLONE_URL` | `https://github.com/<owner>/<repo>.git` | Full override of the clone URL (e.g. GitHub Enterprise / mirror). Must start with `https://` or `git@`. When set alone, also set `TOOLS_REPO_OWNER`/`TOOLS_REPO_NAME` so the usage/releases URLs in help text match the actual clone source. |
+
+`TOOLS_REPO_OWNER` / `TOOLS_REPO_NAME` are validated against a safe character
+set (character class only) before being embedded in the clone URL; GitHub's
+finer naming rules are left to the clone-time error. See the ecosystem-wide
+[Multi-Org Deployment Guide](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/MULTI-ORG-DEPLOYMENT.md)
+(canonical upstream reference; the URL stays on the smkwlab origin repo
+regardless of deployment org).
 
 **Security Features:**
 - No persistent authentication storage in containers

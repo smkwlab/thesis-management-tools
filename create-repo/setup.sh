@@ -11,6 +11,61 @@ if [ "${DEBUG:-0}" = "1" ]; then
 fi
 
 # ================================
+# 組織・ツールリポジトリ設定（他 org 展開対応）
+# ================================
+# デプロイ先の既定組織。smkwlab 以外の org で運用する場合は、この既定値を
+# fork 側で書き換えるか、実行時に DEFAULT_ORG 環境変数で指定する。組織メンバー
+# 判定・組織ユーザーの既定作成先・案内文の URL がこの値に追従する。
+DEFAULT_ORG="${DEFAULT_ORG:-smkwlab}"
+# 組織 / アカウント名は gh api のパス（orgs/<org>/members/...）に埋め込むため、
+# GitHub のログイン/組織名の文字種（英数字とハイフン）で検証する。
+case "$DEFAULT_ORG" in
+    ""|*[!A-Za-z0-9-]*)
+        echo "❌ DEFAULT_ORG に使用できない文字が含まれています: $DEFAULT_ORG" >&2
+        exit 1 ;;
+esac
+# TARGET_ORG が env で明示指定されている場合も、同じく gh api のパスに使う前に検証する
+# （未指定＝空は後段で既定へ解決するのでここでは許容）。
+if [ -n "${TARGET_ORG:-}" ]; then
+    case "$TARGET_ORG" in
+        *[!A-Za-z0-9-]*)
+            echo "❌ TARGET_ORG に使用できない文字が含まれています: $TARGET_ORG" >&2
+            exit 1 ;;
+    esac
+fi
+
+# このスクリプトが内部で clone する thesis-management-tools の取得元。
+# 配布元 org（＝ DEFAULT_ORG）が既定。学生リポジトリの作成先である TARGET_ORG は
+# 個人アカウントにもなり得るためここでは使わない。owner / repo 名は git clone の
+# URL に埋め込むため、安全な文字のみ許可する（文字種のみ検証し、連続ハイフンや
+# 長さ制限など GitHub 側の詳細な命名規則は clone 時のエラーに委ねる）。
+TOOLS_REPO_OWNER="${TOOLS_REPO_OWNER:-$DEFAULT_ORG}"
+# TOOLS_REPO は env 変数 TOOLS_REPO_NAME を解決した内部変数（既定を適用済み）。
+# TOOLS_REPO_NAME 自体は「ユーザーが指定した時のみコンテナへ転送する」判定に
+# 後段（$TOOLS_REPO_NAME の有無チェック）で使うため、別名のまま残す。
+TOOLS_REPO="${TOOLS_REPO_NAME:-thesis-management-tools}"
+case "$TOOLS_REPO_OWNER" in
+    ""|*[!A-Za-z0-9-]*)
+        echo "❌ TOOLS_REPO_OWNER に使用できない文字が含まれています: $TOOLS_REPO_OWNER" >&2
+        exit 1 ;;
+esac
+case "$TOOLS_REPO" in
+    ""|*[!A-Za-z0-9._-]*)
+        echo "❌ TOOLS_REPO_NAME に使用できない文字が含まれています: $TOOLS_REPO" >&2
+        exit 1 ;;
+esac
+TOOLS_CLONE_URL="${TOOLS_CLONE_URL:-https://github.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}.git}"
+# TOOLS_CLONE_URL は完全上書きを許すため、git clone へ渡す前にスキームを検証する。
+# https:// / git@ 以外（ext:: や file:// 等の危険なスキーム、先頭 "-" による git の
+# 引数注入）を拒否する。既定値も https:// で始まるため通常運用に影響はない。
+case "$TOOLS_CLONE_URL" in
+    https://*|git@*) ;;
+    *)
+        echo "❌ TOOLS_CLONE_URL は https:// または git@ で始まる必要があります: $TOOLS_CLONE_URL" >&2
+        exit 1 ;;
+esac
+
+# ================================
 # バージョン固定（再現性・安全性）
 # ================================
 # このスクリプトが内部で clone・利用する thesis-management-tools の参照先（ref）。
@@ -53,17 +108,17 @@ if [ -z "$DOC_TYPE" ]; then
     echo "❌ 文書タイプが指定されていません"
     echo ""
     echo "使用例："
-    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash thesis"
-    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash wr"
-    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash latex"
-    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash ise"
-    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash poster"
+    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash thesis"
+    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash wr"
+    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash latex"
+    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash ise"
+    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash poster"
     echo ""
     echo "学籍番号を指定する場合（環境変数）："
-    echo "  STUDENT_ID=k21rs001 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\" bash thesis"
+    echo "  STUDENT_ID=k21rs001 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash thesis"
     echo ""
     echo "環境変数での指定も可能："
-    echo "  DOC_TYPE=thesis /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)\""
+    echo "  DOC_TYPE=thesis /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\""
     echo ""
     exit 1
 fi
@@ -213,21 +268,26 @@ fi
 echo "✅ GitHub認証済み (ユーザー: $CURRENT_USER)"
 
 # ユーザータイプ判定関数
+# 第2引数で渡された組織のメンバーシップを確認する（既定は DEFAULT_ORG、
+# TARGET_ORG が明示指定されていれば呼び出し側でそちらを渡す）。
 detect_user_type() {
     local current_user="$1"
-    
+    local org="$2"
+
     if [ "${DEBUG:-0}" = "1" ]; then
-        echo "🔍 ユーザータイプを判定中: $current_user"
+        echo "🔍 ユーザータイプを判定中: $current_user (組織: $org)"
     fi
-    
+
     # INDIVIDUAL_MODE環境変数による明示的指定
     if [[ "${INDIVIDUAL_MODE:-false}" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
         echo "individual_user"
         return 0
     fi
-    
-    # smkwlab組織メンバーシップを確認
-    if gh api "orgs/smkwlab/members/$current_user" >/dev/null 2>&1; then
+
+    # 対象組織のメンバーシップを確認する。org が個人アカウント名の場合は
+    # /orgs/<name>/members が 404 となり individual_user と判定される
+    # （個人アカウントを作成先に指定したケースの意図どおりの挙動）。
+    if gh api "orgs/$org/members/$current_user" >/dev/null 2>&1; then
         echo "organization_member"
     else
         echo "individual_user"
@@ -235,7 +295,12 @@ detect_user_type() {
 }
 
 # ユーザータイプの判定
-USER_TYPE=$(detect_user_type "$CURRENT_USER")
+# メンバーシップ確認の対象は、TARGET_ORG が明示指定されていればその組織、
+# 無ければ既定組織 (DEFAULT_ORG)。TARGET_ORG が明示指定されている場合は、
+# ここ（型判定）と後段の作成先妥当性チェックの 2 か所でメンバーシップ API を
+# 呼ぶ。型判定とアクセス検証は別関心なので、冗長 1 回は許容し分離を優先する。
+MEMBERSHIP_ORG="${TARGET_ORG:-$DEFAULT_ORG}"
+USER_TYPE=$(detect_user_type "$CURRENT_USER" "$MEMBERSHIP_ORG")
 
 if [ "${DEBUG:-0}" = "1" ]; then
     echo "🔍 判定結果: $USER_TYPE"
@@ -243,29 +308,47 @@ fi
 
 # TARGET_ORG（対象組織）の設定
 if [ "$USER_TYPE" = "individual_user" ]; then
-    # 個人ユーザーの場合、デフォルトを個人アカウントに設定
-    TARGET_ORG="${TARGET_ORG:-$CURRENT_USER}"
+    # 個人アカウントに作成する。INDIVIDUAL_MODE が明示指定された場合は
+    # 「個人アカウントに作成する」契約を優先し、TARGET_ORG の明示値があっても
+    # 本人アカウントへ上書きする（矛盾した指定を安全側に倒す）。それ以外は
+    # 明示された TARGET_ORG を尊重し、未指定なら本人アカウントを既定にする。
+    if [[ "${INDIVIDUAL_MODE:-false}" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+        # 矛盾指定（INDIVIDUAL_MODE=true かつ TARGET_ORG=組織）は、無視される側を
+        # 明示してからユーザーへ知らせる。
+        if [ -n "${TARGET_ORG:-}" ] && [ "$TARGET_ORG" != "$CURRENT_USER" ]; then
+            echo "⚠️ INDIVIDUAL_MODE が有効なため TARGET_ORG=$TARGET_ORG を無視し、個人アカウント ($CURRENT_USER) を使用します"
+        fi
+        TARGET_ORG="$CURRENT_USER"
+    else
+        TARGET_ORG="${TARGET_ORG:-$CURRENT_USER}"
+    fi
     echo "👤 個人ユーザーモードで実行中"
     echo "   作成先: $TARGET_ORG (個人アカウント)"
 else
-    # 組織ユーザーの場合、従来通り
-    TARGET_ORG="${TARGET_ORG:-smkwlab}"
+    # 組織ユーザーの場合、既定組織 (DEFAULT_ORG) を作成先とする
+    TARGET_ORG="${TARGET_ORG:-$DEFAULT_ORG}"
     echo "🏢 組織ユーザーモードで実行中"
     echo "   作成先: $TARGET_ORG (組織)"
 fi
 
-# TARGET_ORG が指定されている場合、アカウントの整合性をチェック
-if [ -n "$TARGET_ORG" ] && [ "$TARGET_ORG" != "smkwlab" ]; then
-    if [ "$CURRENT_USER" != "$TARGET_ORG" ]; then
-        echo "⚠️ アカウント不整合が検出されました"
+# 作成先の妥当性チェック：
+# TARGET_ORG が本人の個人アカウント (== CURRENT_USER) でも、CURRENT_USER が
+# メンバーである組織でもない場合、そこにはリポジトリを作成できないため停止する。
+# （旧実装は「TARGET_ORG == CURRENT_USER」の等値のみを許可していたため、実在の
+# 組織を指定すると必ず不整合と判定されていた。実メンバーシップ判定に置き換える。）
+# なお INDIVIDUAL_MODE 有効時は上のブロックで TARGET_ORG=$CURRENT_USER に確定する
+# ため、この妥当性チェックは等値で必ずスキップされる。
+if [ "$TARGET_ORG" != "$CURRENT_USER" ]; then
+    if ! gh api "orgs/$TARGET_ORG/members/$CURRENT_USER" >/dev/null 2>&1; then
+        echo "⚠️ 作成先組織にアクセスできません"
         echo "  指定組織: $TARGET_ORG"
         echo "  現在のアカウント: $CURRENT_USER"
         echo ""
-        echo "以下のコマンドでアカウントを切り替えてください："
-        echo "  gh auth switch --user $TARGET_ORG"
+        echo "$CURRENT_USER は $TARGET_ORG のメンバーではないか、組織が存在しません。"
         echo ""
-        echo "または、現在のアカウントで個人リポジトリとして作成："
-        echo "  TARGET_ORG=$CURRENT_USER $0"
+        echo "対処法："
+        echo "  - メンバーのアカウントに切り替える: gh auth switch --user <member>"
+        echo "  - 現在のアカウントで個人リポジトリとして作成: TARGET_ORG=$CURRENT_USER $0"
         exit 1
     fi
 fi
@@ -306,8 +389,8 @@ ORIGINAL_DIR=$(pwd)
 
 echo "📥 リポジトリを取得中..."
 
-if ! git clone https://github.com/smkwlab/thesis-management-tools.git "$TEMP_DIR" 2>/dev/null; then
-    echo "❌ リポジトリのクローンに失敗しました"
+if ! git clone "$TOOLS_CLONE_URL" "$TEMP_DIR" 2>/dev/null; then
+    echo "❌ リポジトリのクローンに失敗しました ($TOOLS_CLONE_URL)"
     exit 1
 fi
 
@@ -342,7 +425,7 @@ if [ "$SETUP_REF" != "main" ]; then
         # フォールバックは再現性・監査性を損なうため、エラーとして終了する。
         echo "❌ 指定された参照 ($SETUP_REF) が見つかりません。"
         echo "   タグ名・コミットSHA・ブランチ名が正しいか確認してください。"
-        echo "   利用可能なバージョン: https://github.com/smkwlab/thesis-management-tools/releases"
+        echo "   利用可能なバージョン: https://github.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/releases"
         exit 1
     fi
 
