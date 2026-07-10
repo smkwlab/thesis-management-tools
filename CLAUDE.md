@@ -129,6 +129,10 @@ ISE_REPORT_NUM=1              # Report number (1 or 2)
 
 ## Student ID Patterns
 
+`setup.sh` does not auto-detect the document type from the student ID. The mapping
+below is the `DOC_TYPE` you should **specify** (positional `bash <type>` argument or
+the `DOC_TYPE` env var) for each case.
+
 ```bash
 # Undergraduate: k##rs### → DOC_TYPE=thesis
 k21rs001, k22rs123, k23rs999
