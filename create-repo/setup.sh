@@ -24,6 +24,9 @@ DEFAULT_ORG="${DEFAULT_ORG:-smkwlab}"
 # URL に埋め込むため、安全な文字のみ許可する（文字種のみ検証し、連続ハイフンや
 # 長さ制限など GitHub 側の詳細な命名規則は clone 時のエラーに委ねる）。
 TOOLS_REPO_OWNER="${TOOLS_REPO_OWNER:-$DEFAULT_ORG}"
+# TOOLS_REPO は env 変数 TOOLS_REPO_NAME を解決した内部変数（既定を適用済み）。
+# TOOLS_REPO_NAME 自体は「ユーザーが指定した時のみコンテナへ転送する」判定に
+# 後段（$TOOLS_REPO_NAME の有無チェック）で使うため、別名のまま残す。
 TOOLS_REPO="${TOOLS_REPO_NAME:-thesis-management-tools}"
 case "$TOOLS_REPO_OWNER" in
     ""|*[!A-Za-z0-9-]*)
@@ -268,7 +271,9 @@ detect_user_type() {
 
 # ユーザータイプの判定
 # メンバーシップ確認の対象は、TARGET_ORG が明示指定されていればその組織、
-# 無ければ既定組織 (DEFAULT_ORG)。
+# 無ければ既定組織 (DEFAULT_ORG)。TARGET_ORG が明示指定されている場合は、
+# ここ（型判定）と後段の作成先妥当性チェックの 2 か所でメンバーシップ API を
+# 呼ぶ。型判定とアクセス検証は別関心なので、冗長 1 回は許容し分離を優先する。
 MEMBERSHIP_ORG="${TARGET_ORG:-$DEFAULT_ORG}"
 USER_TYPE=$(detect_user_type "$CURRENT_USER" "$MEMBERSHIP_ORG")
 
@@ -283,6 +288,11 @@ if [ "$USER_TYPE" = "individual_user" ]; then
     # 本人アカウントへ上書きする（矛盾した指定を安全側に倒す）。それ以外は
     # 明示された TARGET_ORG を尊重し、未指定なら本人アカウントを既定にする。
     if [[ "${INDIVIDUAL_MODE:-false}" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+        # 矛盾指定（INDIVIDUAL_MODE=true かつ TARGET_ORG=組織）は、無視される側を
+        # 明示してからユーザーへ知らせる。
+        if [ -n "${TARGET_ORG:-}" ] && [ "$TARGET_ORG" != "$CURRENT_USER" ]; then
+            echo "⚠️ INDIVIDUAL_MODE が有効なため TARGET_ORG=$TARGET_ORG を無視し、個人アカウント ($CURRENT_USER) を使用します"
+        fi
         TARGET_ORG="$CURRENT_USER"
     else
         TARGET_ORG="${TARGET_ORG:-$CURRENT_USER}"
