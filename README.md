@@ -236,17 +236,8 @@ thesis-monitor pr-stats
 thesis-monitor activity
 thesis-monitor check
 ```
-- **pr-stats**: PRと Issue の統計情報表示
-- **activity**: 最近7日間のコミット活動表示
 
-#### ファイル管理
-
-- `student-repos/pending-protection.txt`: ブランチ保護設定待ちの学生リスト
-- `student-repos/completed-protection.txt`: 設定完了済みの学生リスト
-
-これらのファイルは bulk 処理により自動的に更新されます。
-
-#### 設定される保護ルール
+### 設定される保護ルール
 
 - 1つ以上の承認レビューが必要
 - 新しいコミット時に古いレビューを無効化
