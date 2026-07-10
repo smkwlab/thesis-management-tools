@@ -1,5 +1,12 @@
 # System Status - 現在の実装状況
 
+> ⚠️ **この文書は `registry.json` 移行前の記述で、全般に古い内容を含みます。**
+> 状況確認・監視は [thesis-monitor](https://github.com/smkwlab/thesis-monitor)、
+> リポジトリ登録・ブランチ保護は自動化ワークフロー
+> `.github/workflows/student-repo-management.yml` を参照してください。
+> 旧フラットファイル（`pending-protection.txt` / `completed-protection.txt`）と
+> `thesis-repo-manager.sh` は廃止済みです（[#500](https://github.com/smkwlab/thesis-management-tools/issues/500)）。
+
 ## 🎯 現在の機能状況
 
 ### ✅ 完全実装済み
@@ -12,17 +19,17 @@
 
 #### ブランチ保護管理
 - **setup-branch-protection.sh**: 個別学生のブランチ保護設定
-- **bulk機能統合**: thesis-repo-manager.sh内で一括処理
+- **一括処理**: 登録自動化ワークフロー（`student-repo-management.yml`）で処理
 - **Issue自動クローズ**: 設定完了時の関連Issue自動クローズ
-- **pending/completed自動管理**: ファイル間の自動移動
+- **registry.json 自動更新**: レジストリへの登録・状態反映
 
 #### 管理システム
-- **thesis-repo-manager.sh**: 統合管理ツール
+- **[thesis-monitor](https://github.com/smkwlab/thesis-monitor)**: 状況確認・監視ツール（レジストリ `data/registry.json` を参照）
   - `status`: 全リポジトリ状況表示（GitHub API）
-  - `bulk`: 一括ブランチ保護設定
   - `check`: 保護状況確認
   - `pr-stats`: 統計情報表示
   - `activity`: アクティビティ表示
+- ブランチ保護の一括設定は登録自動化ワークフローが担当（旧 `thesis-repo-manager.sh` は #500 で廃止）
 
 ### ⚠️ 部分実装・制限あり
 
@@ -68,21 +75,19 @@ cd scripts
 
 #### 教員向け一括処理（Level: Production Ready ✅）
 ```bash
-./thesis-repo-manager.sh bulk
+# リポジトリ登録依頼 Issue をトリガに自動実行（student-repo-management.yml）
+# 手動個別設定: scripts/setup-branch-protection.sh k21rs001
 ```
-- pending→completed自動管理
+- registry.json 自動更新
 - Issue自動クローズ
 - レート制限対応
-- 実動作確認済み
 
-#### 管理・監視機能（Level: Limited Utility ⚠️）
+#### 管理・監視機能（Level: Production Ready ✅）
 ```bash
-./thesis-repo-manager.sh status
-./thesis-repo-manager.sh check
+thesis-monitor status
+thesis-monitor check
 ```
-- 基本機能は動作
-- 実用データが不足
-- 手動メンテナンス必要
+- レジストリ（`registry.json`）ベースで実データを参照
 
 ## 🔄 運用フロー
 

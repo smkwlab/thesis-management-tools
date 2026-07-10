@@ -222,31 +222,24 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
 
 ## 📊 管理ツール
 
-### thesis-repo-manager.sh
-
-学生論文リポジトリの一括管理ツールです。
-
-#### 基本的な使用方法
+学生リポジトリの状況確認・PR/Issue 統計・活動状況・ブランチ保護確認は
+**[thesis-monitor](https://github.com/smkwlab/thesis-monitor)**（Elixir escript、
+レジストリ `data/registry.json` を GitHub API で参照）で行います。ブランチ保護の
+一括設定は、リポジトリ登録の自動化ワークフロー
+（`.github/workflows/student-repo-management.yml` + `scripts/setup-branch-protection.sh`）
+が担当します。
 
 ```bash
-# 全学生リポジトリの状況確認
-./thesis-repo-manager.sh status
-
-# 一括ブランチ保護設定
-./thesis-repo-manager.sh bulk
-
-# ブランチ保護状況の確認
-./thesis-repo-manager.sh check
-
-# ヘルプ表示
-./thesis-repo-manager.sh help
+# 全学生リポジトリの状況確認 / 統計 / 活動 / 保護状況
+thesis-monitor status
+thesis-monitor pr-stats
+thesis-monitor activity
+thesis-monitor check
 ```
 
-#### 主要機能
-
-- **status**: 全学生リポジトリの状況をGitHub API経由で取得・表示
-- **bulk**: pending-protection.txt内の学生に一括でブランチ保護設定
-- **check**: 保護設定待ちリポジトリの確認
+> 旧 `thesis-repo-manager.sh`（bash・フラットファイル `pending-protection.txt`
+> ベース）は thesis-monitor へ役割を移譲し廃止しました
+> （[#500](https://github.com/smkwlab/thesis-management-tools/issues/500)）。
 - **pr-stats**: PRと Issue の統計情報表示
 - **activity**: 最近7日間のコミット活動表示
 
