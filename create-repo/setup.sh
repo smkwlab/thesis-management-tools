@@ -502,7 +502,11 @@ if [ -n "${ALDC_URL:-}" ]; then
         https://*) ;;
         *) echo "❌ ALDC_URL は https:// で始まる必要があります: $ALDC_URL" >&2; exit 1 ;;
     esac
-    case "$ALDC_URL" in *[[:space:]]*) echo "❌ ALDC_URL に空白は含められません: $ALDC_URL" >&2; exit 1 ;; esac
+    # 無引用展開（docker run $DOCKER_ENV_VARS）に載るため、URL 安全文字のみ許可し、
+    # 空白（単語分割）と glob 文字（* ? [）を排除する。他の転送変数と同じ流儀。
+    case "$ALDC_URL" in
+        *[!A-Za-z0-9._~:/%-]*) echo "❌ ALDC_URL に使用できない文字が含まれています: $ALDC_URL" >&2; exit 1 ;;
+    esac
     DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ALDC_URL=$ALDC_URL"
 fi
 if [ -n "${SETUP_GIT_EMAIL_DOMAIN:-}" ]; then

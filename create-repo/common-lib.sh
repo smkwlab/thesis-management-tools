@@ -578,7 +578,7 @@ setup_latex_environment() {
     else
         log_warn "LaTeX環境は手動設定が必要"
         log_info "手動セットアップ手順:"
-        log_info "  /bin/bash -c \"\$(curl -fsSL ${aldc_url})\""
+        log_info "  /bin/bash -c \"\$(curl -fsSL \"${aldc_url}\")\""
         return 1
     fi
 }
@@ -646,6 +646,8 @@ setup_auto_assign_for_organization_members() {
         # auto-assign の reviewer/assignee。既定は smkwlab の担当者。他 org では
         # AUTO_ASSIGN_REVIEWER で上書きする（setup.sh がコンテナへ転送する）。
         # プレースホルダを sed 置換するため、GitHub ログイン文字種のみ許可する。
+        # このコンテナ側チェックは、コンテナを setup.sh 経由せず直接実行する場合にも
+        # 効かせるための防御（setup.sh 側にも同等の検証がある）。
         local reviewer="${AUTO_ASSIGN_REVIEWER:-toshi0806}"
         case "$reviewer" in
             ""|*[!A-Za-z0-9-]*)
