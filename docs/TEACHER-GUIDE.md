@@ -43,8 +43,8 @@ initial (初期状態) ← レビュー用PRのベース
 学生は以下のDockerベースのワンライナーでリポジトリを作成します：
 
 ```bash
-# 学生が実行するコマンド（Homebrewスタイル）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+# 学生が実行するコマンド（Homebrewスタイル・論文リポジトリの例）
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 ```
 
 **自動実行される内容**：

@@ -9,7 +9,7 @@
 **WSL上の bash または mac のターミナル上で以下の行を実行し、リポジトリを作成してください：**
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 ```
 
 ### 情報科学演習レポートリポジトリ
@@ -78,14 +78,14 @@ A: デフォルトでは `smkwlab` 組織に作成されます。環境変数 `T
 ### Q: 組織への権限がないエラー
 A: 組織の管理者に招待を依頼するか、個人アカウントに作成してください：
 ```bash
-TARGET_ORG=あなたのユーザー名 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+TARGET_ORG=あなたのユーザー名 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 ```
 
 ### Q: エラーの詳細を確認したい
 A: デバッグモードで実行すると詳細な情報が表示されます：
 
 ```bash
-DEBUG=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+DEBUG=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 ```
 
 ## セットアップ後の作業
