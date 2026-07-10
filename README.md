@@ -237,7 +237,13 @@ thesis-monitor activity
 thesis-monitor check
 ```
 
+> `thesis-monitor` のインストール・設定手順は
+> [thesis-monitor の README](https://github.com/smkwlab/thesis-monitor#readme) を参照してください。
+
 ### 設定される保護ルール
+
+自動化ワークフロー（`student-repo-management.yml`）と `scripts/setup-branch-protection.sh` が
+論文リポジトリに適用するブランチ保護ルールは以下のとおりです。
 
 - 1つ以上の承認レビューが必要
 - 新しいコミット時に古いレビューを無効化
