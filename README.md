@@ -33,12 +33,12 @@ GitHub を使った効率的な論文指導をサポートします。
 
 #### 週間報告用
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup-wr.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash wr
 ```
 
 #### 汎用LaTeX文書用（研究ノート、レポート等）
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup-latex.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
 ```
 
 **実行手順:**
@@ -127,7 +127,7 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
   - クロスプラットフォーム対応
   - ブラウザ認証統合
 
-- **[main.sh](create-repo/main.sh)**: Docker内実行メインスクリプト
+- **main-*.sh**（`main-thesis.sh` / `main-wr.sh` / `main-latex.sh` / `main-ise.sh` / `main-poster.sh`）: 文書タイプ別の Docker 内実行メインスクリプト
   - GitHub認証・リポジトリ作成
   - LaTeX環境自動セットアップ
   - ブランチ構造初期化

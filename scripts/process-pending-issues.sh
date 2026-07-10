@@ -579,7 +579,7 @@ extract_issue_info() {
     # 主因だったため廃止（issue #471）。卒論・修論は命名規約 *-sotsuron /
     # *-master（防御的別名 *-thesis）で必ずパターン3までに判定される
     # パターン5: その他のパターンは latex と推測
-    # setup-latex.sh は様々な命名規則のリポジトリに対応するため、
+    # latex タイプは様々な命名規則のリポジトリに対応するため、
     # 明示的なタイプ情報がない場合は LaTeX リポジトリとして扱う
     elif [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ && ! "$CURRENT_REPO_NAME" == *"-latex" ]]; then
         CURRENT_REPO_TYPE="latex"
