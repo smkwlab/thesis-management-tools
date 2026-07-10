@@ -55,6 +55,14 @@ variables (defaults preserve smkwlab behavior):
 | `TOOLS_REPO_OWNER` | `$DEFAULT_ORG` | Owner of the `thesis-management-tools` repo cloned internally. Distinct from `TARGET_ORG` (which may be a personal account). |
 | `TOOLS_REPO_NAME` | `thesis-management-tools` | Repo name cloned internally and forwarded to the container for registry integration. |
 | `TOOLS_CLONE_URL` | `https://github.com/<owner>/<repo>.git` | Full override of the clone URL (e.g. GitHub Enterprise / mirror). Must start with `https://` or `git@`. When set alone, also set `TOOLS_REPO_OWNER`/`TOOLS_REPO_NAME` so the usage/releases URLs in help text match the actual clone source. |
+| `TEMPLATE_REPO` | per doc type | Source template repo. `thesis`/`ise`/`wr` default to `<org>/…`; `latex`/`poster` default to `smkwlab/…` (shared templates used by individual accounts too). Set to `<org>/<template>` to use your own. |
+| `AUTO_ASSIGN_REVIEWER` | `toshi0806` | GitHub login inserted as the reviewer/assignee in the auto-assign config injected into organization-member repos. Set to a member of your org, or auto-assign will not work. |
+| `ALDC_URL` | `https://raw.githubusercontent.com/smkwlab/aldc/main/aldc` | Source of the aldc LaTeX-devcontainer installer fetched during setup. Must start with `https://`. |
+| `SETUP_GIT_EMAIL_DOMAIN` | `smkwlab.github.io` | Domain for the `setup-*@…` commit-author email used by the container. |
+
+These container-side overrides (`TEMPLATE_REPO`, `AUTO_ASSIGN_REVIEWER`,
+`ALDC_URL`, `SETUP_GIT_EMAIL_DOMAIN`) are forwarded from `setup.sh` into the
+Docker container only when set, each validated against a safe character set.
 
 `TOOLS_REPO_OWNER` / `TOOLS_REPO_NAME` are validated against a safe character
 set (character class only) before being embedded in the clone URL; GitHub's

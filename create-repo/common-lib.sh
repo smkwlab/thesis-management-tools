@@ -196,8 +196,9 @@ setup_git_auth() {
 }
 
 # Gitユーザー設定
+# コミット作者のメールドメインは SETUP_GIT_EMAIL_DOMAIN で上書き可能（既定 smkwlab.github.io）。
 setup_git_user() {
-    local email="${1:-setup@smkwlab.github.io}"
+    local email="${1:-setup@${SETUP_GIT_EMAIL_DOMAIN:-smkwlab.github.io}}"
     local name="${2:-Setup Tool}"
     
     git config user.email "$email"
@@ -566,14 +567,18 @@ setup_review_workflow() {
 setup_latex_environment() {
     log_info "LaTeX環境をセットアップ中..."
     
+    # aldc の取得元。既定は smkwlab の公開 aldc。他 org で独自 aldc を使う場合は
+    # ALDC_URL で上書きする（setup.sh がコンテナへ転送する）。
+    local aldc_url="${ALDC_URL:-https://raw.githubusercontent.com/smkwlab/aldc/main/aldc}"
+
     # curlでaldcスクリプトを実行（メッセージ抑制）
-    if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)" 2>/dev/null; then
+    if ALDC_QUIET=1 /bin/bash -c "$(curl -fsSL "$aldc_url")" 2>/dev/null; then
         log_info "LaTeX環境のセットアップ完了"
         return 0
     else
         log_warn "LaTeX環境は手動設定が必要"
         log_info "手動セットアップ手順:"
-        log_info "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/smkwlab/aldc/main/aldc)\""
+        log_info "  /bin/bash -c \"\$(curl -fsSL \"${aldc_url}\")\""
         return 1
     fi
 }
@@ -638,9 +643,21 @@ setup_auto_assign_for_organization_members() {
             log_warn "  ⚠️ テンプレートファイルが見つかりません: ${template_dir}/autoassignees.yml"
         fi
 
+        # auto-assign の reviewer/assignee。既定は smkwlab の担当者。他 org では
+        # AUTO_ASSIGN_REVIEWER で上書きする（setup.sh がコンテナへ転送する）。
+        # プレースホルダを sed 置換するため、GitHub ログイン文字種のみ許可する。
+        # このコンテナ側チェックは、コンテナを setup.sh 経由せず直接実行する場合にも
+        # 効かせるための防御（setup.sh 側にも同等の検証がある）。
+        local reviewer="${AUTO_ASSIGN_REVIEWER:-toshi0806}"
+        case "$reviewer" in
+            ""|*[!A-Za-z0-9-]*)
+                log_error "AUTO_ASSIGN_REVIEWER が不正です（英数字とハイフンのみ）: $reviewer"
+                return 1 ;;
+        esac
         if [ -f "${template_dir}/auto_assign_myteams.yml" ]; then
-            cp "${template_dir}/auto_assign_myteams.yml" .github/
-            log_info "  ✓ .github/auto_assign_myteams.yml を追加"
+            sed "s/__AUTO_ASSIGN_REVIEWER__/${reviewer}/g" \
+                "${template_dir}/auto_assign_myteams.yml" > .github/auto_assign_myteams.yml
+            log_info "  ✓ .github/auto_assign_myteams.yml を追加 (reviewer: ${reviewer})"
         else
             log_warn "  ⚠️ テンプレートファイルが見つかりません: ${template_dir}/auto_assign_myteams.yml"
         fi
@@ -738,7 +755,7 @@ run_standard_setup() {
 
     # Git設定
     setup_git_auth || exit 1
-    setup_git_user "setup-${doc_type}@smkwlab.github.io" "${display_name} Setup Tool"
+    setup_git_user "setup-${doc_type}@${SETUP_GIT_EMAIL_DOMAIN:-smkwlab.github.io}" "${display_name} Setup Tool"
 
     # 注意: テンプレートファイルの整理（CLAUDE.md / docs/ / *-aldc 削除）は
     # ここでは行わない。aldc（setup_latex_environment）が latex-environment 由来の

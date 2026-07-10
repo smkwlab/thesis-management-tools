@@ -11,7 +11,10 @@ init_script_common "汎用LaTeXリポジトリセットアップツール" "📝
 
 # 設定
 ORGANIZATION=$(determine_organization)
-TEMPLATE_REPOSITORY="smkwlab/latex-template"  # 常に固定
+# latex-template は個人ユーザー（ORGANIZATION=個人アカウント）も利用する共有テンプレ
+# のため、org 追従にはせず既定を smkwlab に固定する。他 org で独自テンプレを使う場合は
+# TEMPLATE_REPO で上書きする。
+TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-smkwlab/latex-template}"
 VISIBILITY="private"
 
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"

@@ -9,7 +9,7 @@ addAssignees: true
 
 # Reviewerに設定するメンバを追加します。
 reviewers:
-  - toshi0806
+  - __AUTO_ASSIGN_REVIEWER__
 
 # Reviewersに追加するメンバ数を指定できます。
 # 追加メンバより設定数が少ない場合、ランダムで追加されます。
@@ -18,7 +18,7 @@ numberOfReviewers: 0
 
 # Assigneesに設定するメンバを追加します。
 assignees:
-  - toshi0806
+  - __AUTO_ASSIGN_REVIEWER__
 
 # Assigneesに追加するメンバ数を指定できます。
 # 追加メンバより設定数が少ない場合、ランダムで追加されます。

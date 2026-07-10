@@ -483,6 +483,39 @@ if [ -n "${TOOLS_REPO_NAME:-}" ]; then
     DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e TOOLS_REPO_NAME=$TOOLS_REPO_NAME"
 fi
 
+# 他 org 展開向けの override をコンテナへ転送（未設定なら渡さない = 既定）。
+# いずれも無引用展開に載るため、空白を含まない安全な文字種のみ許可する。
+if [ -n "${TEMPLATE_REPO:-}" ]; then
+    case "$TEMPLATE_REPO" in
+        *[!A-Za-z0-9._/-]*|"") echo "❌ TEMPLATE_REPO に使用できない文字が含まれています: $TEMPLATE_REPO" >&2; exit 1 ;;
+    esac
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e TEMPLATE_REPO=$TEMPLATE_REPO"
+fi
+if [ -n "${AUTO_ASSIGN_REVIEWER:-}" ]; then
+    case "$AUTO_ASSIGN_REVIEWER" in
+        *[!A-Za-z0-9-]*|"") echo "❌ AUTO_ASSIGN_REVIEWER に使用できない文字が含まれています: $AUTO_ASSIGN_REVIEWER" >&2; exit 1 ;;
+    esac
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e AUTO_ASSIGN_REVIEWER=$AUTO_ASSIGN_REVIEWER"
+fi
+if [ -n "${ALDC_URL:-}" ]; then
+    case "$ALDC_URL" in
+        https://*) ;;
+        *) echo "❌ ALDC_URL は https:// で始まる必要があります: $ALDC_URL" >&2; exit 1 ;;
+    esac
+    # 無引用展開（docker run $DOCKER_ENV_VARS）に載るため、URL 安全文字のみ許可し、
+    # 空白（単語分割）と glob 文字（* ? [）を排除する。他の転送変数と同じ流儀。
+    case "$ALDC_URL" in
+        *[!A-Za-z0-9._~:/%-]*) echo "❌ ALDC_URL に使用できない文字が含まれています: $ALDC_URL" >&2; exit 1 ;;
+    esac
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ALDC_URL=$ALDC_URL"
+fi
+if [ -n "${SETUP_GIT_EMAIL_DOMAIN:-}" ]; then
+    case "$SETUP_GIT_EMAIL_DOMAIN" in
+        *[!A-Za-z0-9.-]*|"") echo "❌ SETUP_GIT_EMAIL_DOMAIN に使用できない文字が含まれています: $SETUP_GIT_EMAIL_DOMAIN" >&2; exit 1 ;;
+    esac
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e SETUP_GIT_EMAIL_DOMAIN=$SETUP_GIT_EMAIL_DOMAIN"
+fi
+
 # 文書タイプ固有の環境変数を渡す
 case "$DETECTED_DOC_TYPE" in
     latex)
