@@ -4,8 +4,8 @@
 > 状況確認・監視は [thesis-monitor](https://github.com/smkwlab/thesis-monitor)、
 > リポジトリ登録・ブランチ保護は自動化ワークフロー
 > `.github/workflows/student-repo-management.yml` を参照してください。
-> 旧フラットファイル（`pending-protection.txt` / `completed-protection.txt`）と
-> `thesis-repo-manager.sh` は廃止済みです（[#500](https://github.com/smkwlab/thesis-management-tools/issues/500)）。
+> 旧フラットファイル（`pending-protection.txt` / `completed-protection.txt`）ベースの
+> 管理は廃止済みです。
 
 ## 🎯 現在の機能状況
 
@@ -29,7 +29,7 @@
   - `check`: 保護状況確認
   - `pr-stats`: 統計情報表示
   - `activity`: アクティビティ表示
-- ブランチ保護の一括設定は登録自動化ワークフローが担当（旧 `thesis-repo-manager.sh` は #500 で廃止）
+- ブランチ保護の一括設定は登録自動化ワークフローが担当
 
 ### ⚠️ 部分実装・制限あり
 

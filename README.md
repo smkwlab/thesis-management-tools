@@ -236,10 +236,6 @@ thesis-monitor pr-stats
 thesis-monitor activity
 thesis-monitor check
 ```
-
-> 旧 `thesis-repo-manager.sh`（bash・フラットファイル `pending-protection.txt`
-> ベース）は thesis-monitor へ役割を移譲し廃止しました
-> （[#500](https://github.com/smkwlab/thesis-management-tools/issues/500)）。
 - **pr-stats**: PRと Issue の統計情報表示
 - **activity**: 最近7日間のコミット活動表示
 
