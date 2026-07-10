@@ -39,6 +39,15 @@ case "$TOOLS_REPO" in
         exit 1 ;;
 esac
 TOOLS_CLONE_URL="${TOOLS_CLONE_URL:-https://github.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}.git}"
+# TOOLS_CLONE_URL は完全上書きを許すため、git clone へ渡す前にスキームを検証する。
+# https:// / git@ 以外（ext:: や file:// 等の危険なスキーム、先頭 "-" による git の
+# 引数注入）を拒否する。既定値も https:// で始まるため通常運用に影響はない。
+case "$TOOLS_CLONE_URL" in
+    https://*|git@*) ;;
+    *)
+        echo "❌ TOOLS_CLONE_URL は https:// または git@ で始まる必要があります: $TOOLS_CLONE_URL" >&2
+        exit 1 ;;
+esac
 
 # ================================
 # バージョン固定（再現性・安全性）
@@ -311,6 +320,8 @@ fi
 # メンバーである組織でもない場合、そこにはリポジトリを作成できないため停止する。
 # （旧実装は「TARGET_ORG == CURRENT_USER」の等値のみを許可していたため、実在の
 # 組織を指定すると必ず不整合と判定されていた。実メンバーシップ判定に置き換える。）
+# なお INDIVIDUAL_MODE 有効時は上のブロックで TARGET_ORG=$CURRENT_USER に確定する
+# ため、この妥当性チェックは等値で必ずスキップされる。
 if [ "$TARGET_ORG" != "$CURRENT_USER" ]; then
     if ! gh api "orgs/$TARGET_ORG/members/$CURRENT_USER" >/dev/null 2>&1; then
         echo "⚠️ 作成先組織にアクセスできません"
