@@ -17,6 +17,22 @@ fi
 # fork 側で書き換えるか、実行時に DEFAULT_ORG 環境変数で指定する。組織メンバー
 # 判定・組織ユーザーの既定作成先・案内文の URL がこの値に追従する。
 DEFAULT_ORG="${DEFAULT_ORG:-smkwlab}"
+# 組織 / アカウント名は gh api のパス（orgs/<org>/members/...）に埋め込むため、
+# GitHub のログイン/組織名の文字種（英数字とハイフン）で検証する。
+case "$DEFAULT_ORG" in
+    ""|*[!A-Za-z0-9-]*)
+        echo "❌ DEFAULT_ORG に使用できない文字が含まれています: $DEFAULT_ORG" >&2
+        exit 1 ;;
+esac
+# TARGET_ORG が env で明示指定されている場合も、同じく gh api のパスに使う前に検証する
+# （未指定＝空は後段で既定へ解決するのでここでは許容）。
+if [ -n "${TARGET_ORG:-}" ]; then
+    case "$TARGET_ORG" in
+        *[!A-Za-z0-9-]*)
+            echo "❌ TARGET_ORG に使用できない文字が含まれています: $TARGET_ORG" >&2
+            exit 1 ;;
+    esac
+fi
 
 # このスクリプトが内部で clone する thesis-management-tools の取得元。
 # 配布元 org（＝ DEFAULT_ORG）が既定。学生リポジトリの作成先である TARGET_ORG は

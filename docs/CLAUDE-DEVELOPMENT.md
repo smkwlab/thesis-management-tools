@@ -54,7 +54,7 @@ variables (defaults preserve smkwlab behavior):
 | `TARGET_ORG` | derived | Explicit creation target. If it is not the user's own account, membership in it is verified. Individual users default to their own account. |
 | `TOOLS_REPO_OWNER` | `$DEFAULT_ORG` | Owner of the `thesis-management-tools` repo cloned internally. Distinct from `TARGET_ORG` (which may be a personal account). |
 | `TOOLS_REPO_NAME` | `thesis-management-tools` | Repo name cloned internally and forwarded to the container for registry integration. |
-| `TOOLS_CLONE_URL` | `https://github.com/<owner>/<repo>.git` | Full override of the clone URL (e.g. GitHub Enterprise / mirror). |
+| `TOOLS_CLONE_URL` | `https://github.com/<owner>/<repo>.git` | Full override of the clone URL (e.g. GitHub Enterprise / mirror). Must start with `https://` or `git@`. When set alone, also set `TOOLS_REPO_OWNER`/`TOOLS_REPO_NAME` so the usage/releases URLs in help text match the actual clone source. |
 
 `TOOLS_REPO_OWNER` / `TOOLS_REPO_NAME` are validated against a safe character
 set (character class only) before being embedded in the clone URL; GitHub's
