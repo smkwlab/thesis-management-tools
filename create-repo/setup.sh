@@ -21,7 +21,8 @@ DEFAULT_ORG="${DEFAULT_ORG:-smkwlab}"
 # このスクリプトが内部で clone する thesis-management-tools の取得元。
 # 配布元 org（＝ DEFAULT_ORG）が既定。学生リポジトリの作成先である TARGET_ORG は
 # 個人アカウントにもなり得るためここでは使わない。owner / repo 名は git clone の
-# URL に埋め込むため、安全な文字のみ許可する。
+# URL に埋め込むため、安全な文字のみ許可する（文字種のみ検証し、連続ハイフンや
+# 長さ制限など GitHub 側の詳細な命名規則は clone 時のエラーに委ねる）。
 TOOLS_REPO_OWNER="${TOOLS_REPO_OWNER:-$DEFAULT_ORG}"
 TOOLS_REPO="${TOOLS_REPO_NAME:-thesis-management-tools}"
 case "$TOOLS_REPO_OWNER" in
@@ -255,7 +256,9 @@ detect_user_type() {
         return 0
     fi
 
-    # 対象組織のメンバーシップを確認
+    # 対象組織のメンバーシップを確認する。org が個人アカウント名の場合は
+    # /orgs/<name>/members が 404 となり individual_user と判定される
+    # （個人アカウントを作成先に指定したケースの意図どおりの挙動）。
     if gh api "orgs/$org/members/$current_user" >/dev/null 2>&1; then
         echo "organization_member"
     else
@@ -275,8 +278,15 @@ fi
 
 # TARGET_ORG（対象組織）の設定
 if [ "$USER_TYPE" = "individual_user" ]; then
-    # 個人ユーザーの場合、デフォルトを個人アカウントに設定
-    TARGET_ORG="${TARGET_ORG:-$CURRENT_USER}"
+    # 個人アカウントに作成する。INDIVIDUAL_MODE が明示指定された場合は
+    # 「個人アカウントに作成する」契約を優先し、TARGET_ORG の明示値があっても
+    # 本人アカウントへ上書きする（矛盾した指定を安全側に倒す）。それ以外は
+    # 明示された TARGET_ORG を尊重し、未指定なら本人アカウントを既定にする。
+    if [[ "${INDIVIDUAL_MODE:-false}" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+        TARGET_ORG="$CURRENT_USER"
+    else
+        TARGET_ORG="${TARGET_ORG:-$CURRENT_USER}"
+    fi
     echo "👤 個人ユーザーモードで実行中"
     echo "   作成先: $TARGET_ORG (個人アカウント)"
 else

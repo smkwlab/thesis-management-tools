@@ -57,8 +57,11 @@ variables (defaults preserve smkwlab behavior):
 | `TOOLS_CLONE_URL` | `https://github.com/<owner>/<repo>.git` | Full override of the clone URL (e.g. GitHub Enterprise / mirror). |
 
 `TOOLS_REPO_OWNER` / `TOOLS_REPO_NAME` are validated against a safe character
-set before being embedded in the clone URL. See the ecosystem-wide
-[Multi-Org Deployment Guide](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/MULTI-ORG-DEPLOYMENT.md).
+set (character class only) before being embedded in the clone URL; GitHub's
+finer naming rules are left to the clone-time error. See the ecosystem-wide
+[Multi-Org Deployment Guide](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/MULTI-ORG-DEPLOYMENT.md)
+(canonical upstream reference; the URL stays on the smkwlab origin repo
+regardless of deployment org).
 
 **Security Features:**
 - No persistent authentication storage in containers
