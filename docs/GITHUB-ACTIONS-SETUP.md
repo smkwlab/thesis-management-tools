@@ -2,7 +2,7 @@
 
 ## 📋 概要
 
-thesis-management-tools の GitHub Actions ワークフロー（`student-repo-management.yml`）が
+student-repo-management の GitHub Actions ワークフロー（`student-repo-management.yml`）が
 学生リポジトリにアクセスできるようにするための管理者向けセットアップガイドです。
 
 認証には **GitHub App の installation token** を使用します。従来の個人 PAT
@@ -54,7 +54,7 @@ thesis-management-tools の GitHub Actions ワークフロー（`student-repo-ma
 
 1. App 設定画面で **App ID**（数値）を控える
 2. **Generate a private key** で `.pem` ファイルをダウンロード
-3. [thesis-management-tools リポジトリ](https://github.com/smkwlab/thesis-management-tools)の
+3. [student-repo-management リポジトリ](https://github.com/smkwlab/student-repo-management)の
    Settings > Secrets and variables > Actions で、以下の 2 つの **Repository secret** を追加：
    - **`APP_ID`**: 控えた App ID（数値）
    - **`APP_PRIVATE_KEY`**: `.pem` ファイルの全文

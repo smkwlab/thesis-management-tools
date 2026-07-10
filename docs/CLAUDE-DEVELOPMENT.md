@@ -1,6 +1,6 @@
 # Development Guide
 
-This document provides detailed development guidance for thesis-management-tools.
+This document provides detailed development guidance for student-repo-management.
 
 ## Architecture
 
@@ -52,8 +52,8 @@ variables (defaults preserve smkwlab behavior):
 |----------|---------|---------|
 | `DEFAULT_ORG` | `smkwlab` | Org checked for membership and used as the default creation target for organization members. Forks set this (via env or by editing the embedded default). |
 | `TARGET_ORG` | derived | Explicit creation target. If it is not the user's own account, membership in it is verified. Individual users default to their own account. |
-| `TOOLS_REPO_OWNER` | `$DEFAULT_ORG` | Owner of the `thesis-management-tools` repo cloned internally. Distinct from `TARGET_ORG` (which may be a personal account). |
-| `TOOLS_REPO_NAME` | `thesis-management-tools` | Repo name cloned internally and forwarded to the container for registry integration. |
+| `TOOLS_REPO_OWNER` | `$DEFAULT_ORG` | Owner of the `student-repo-management` repo cloned internally. Distinct from `TARGET_ORG` (which may be a personal account). |
+| `TOOLS_REPO_NAME` | `student-repo-management` | Repo name cloned internally and forwarded to the container for registry integration. |
 | `TOOLS_CLONE_URL` | `https://github.com/<owner>/<repo>.git` | Full override of the clone URL (e.g. GitHub Enterprise / mirror). Must start with `https://` or `git@`. When set alone, also set `TOOLS_REPO_OWNER`/`TOOLS_REPO_NAME` so the usage/releases URLs in help text match the actual clone source. |
 | `TEMPLATE_REPO` | per doc type | Source template repo. `thesis`/`ise`/`wr` default to `<org>/…`; `latex`/`poster` default to `smkwlab/…` (shared templates used by individual accounts too). Set to `<org>/<template>` to use your own. |
 | `AUTO_ASSIGN_REVIEWER` | `toshi0806` | GitHub login inserted as the reviewer/assignee in the auto-assign config injected into organization-member repos. Set to a member of your org, or auto-assign will not work. |

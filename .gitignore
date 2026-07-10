@@ -29,7 +29,7 @@ test-*/
 .act/
 
 # Student registry data files (moved to thesis-student-registry)
-# NOTE: thesis-management-tools/data has been consolidated into thesis-student-registry
+# NOTE: student-repo-management/data has been consolidated into thesis-student-registry
 # Use thesis-student-registry repository for all student data management
 data/
 

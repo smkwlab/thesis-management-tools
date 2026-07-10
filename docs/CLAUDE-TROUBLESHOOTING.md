@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This document provides troubleshooting information for common issues in thesis-management-tools.
+This document provides troubleshooting information for common issues in student-repo-management.
 
 ## Common Issues
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # 統合リポジトリ作成スクリプト (Universal Setup Script)
-# 使用例: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup-universal.sh)"
+# 使用例: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup-universal.sh)"
 
 set -e
 
@@ -34,7 +34,7 @@ if [ -n "${TARGET_ORG:-}" ]; then
     esac
 fi
 
-# このスクリプトが内部で clone する thesis-management-tools の取得元。
+# このスクリプトが内部で clone する student-repo-management の取得元。
 # 配布元 org（＝ DEFAULT_ORG）が既定。学生リポジトリの作成先である TARGET_ORG は
 # 個人アカウントにもなり得るためここでは使わない。owner / repo 名は git clone の
 # URL に埋め込むため、安全な文字のみ許可する（文字種のみ検証し、連続ハイフンや
@@ -43,7 +43,7 @@ TOOLS_REPO_OWNER="${TOOLS_REPO_OWNER:-$DEFAULT_ORG}"
 # TOOLS_REPO は env 変数 TOOLS_REPO_NAME を解決した内部変数（既定を適用済み）。
 # TOOLS_REPO_NAME 自体は「ユーザーが指定した時のみコンテナへ転送する」判定に
 # 後段（$TOOLS_REPO_NAME の有無チェック）で使うため、別名のまま残す。
-TOOLS_REPO="${TOOLS_REPO_NAME:-thesis-management-tools}"
+TOOLS_REPO="${TOOLS_REPO_NAME:-student-repo-management}"
 case "$TOOLS_REPO_OWNER" in
     ""|*[!A-Za-z0-9-]*)
         echo "❌ TOOLS_REPO_OWNER に使用できない文字が含まれています: $TOOLS_REPO_OWNER" >&2
@@ -68,7 +68,7 @@ esac
 # ================================
 # バージョン固定（再現性・安全性）
 # ================================
-# このスクリプトが内部で clone・利用する thesis-management-tools の参照先（ref）。
+# このスクリプトが内部で clone・利用する student-repo-management の参照先（ref）。
 #
 # EMBEDDED_REF はリリース時にタグ（例: v1.0.0）へ書き換えられる。main ブランチ上では
 # "main" のまま。これにより、タグ付き URL から取得した setup.sh は、内部で clone する

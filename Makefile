@@ -1,4 +1,4 @@
-# Makefile for thesis-management-tools
+# Makefile for student-repo-management
 
 .PHONY: help validate-yaml test lint clean
 

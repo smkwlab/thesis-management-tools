@@ -7,25 +7,25 @@ Administrative tools and workflows for thesis supervision at Kyushu Sangyo Unive
 ### Student Repository Creation
 ```bash
 # Universal Setup Script - All document types supported (Recommended)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 
 # With student ID specified (environment variable)
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis
+STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 
 # Document type specific usage
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis   # Thesis repository
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash wr       # Weekly reports
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash latex    # General LaTeX
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash ise      # ISE reports
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis   # Thesis repository
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash wr       # Weekly reports
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex    # General LaTeX
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash ise      # ISE reports
 
 # Environment variable style (Legacy, still supported)
-DOC_TYPE=thesis /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+DOC_TYPE=thesis /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
 
 # Advanced configuration with environment variables
-DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash latex
+DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
 
 # Individual mode for personal LaTeX documents (no student ID required)
-INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash latex
+INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
 ```
 
 **Version pinning (reproducibility & safety)**: The commands above default to `main`
@@ -37,7 +37,7 @@ See [docs/RELEASE.md](docs/RELEASE.md) for the release workflow.
 
 ```bash
 # Pinned version
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh)" bash thesis
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.0.0/create-repo/setup.sh)" bash thesis
 ```
 
 ### Branch Protection Setup
@@ -47,7 +47,7 @@ See [docs/RELEASE.md](docs/RELEASE.md) for the release workflow.
 Branch protection is automatically configured for thesis repositories through the following workflow:
 
 1. Student creates repository using `setup.sh`
-2. Issue is automatically created in `thesis-management-tools`
+2. Issue is automatically created in `student-repo-management`
 3. GitHub Actions (`student-repo-management.yml`) triggers automatically
 4. `process-pending-issues.sh` executes `setup-branch-protection.sh`
 5. Branch protection settings applied and recorded in `thesis-student-registry`

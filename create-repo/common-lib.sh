@@ -22,7 +22,7 @@ readonly DEFAULT_ORG="smkwlab"
 # リポジトリ名の規約（org 部分は実行時に導出。ECOSYSTEM.md の
 # Organization-Scoped Deployment 原則を参照）。env で上書き可能
 REGISTRY_REPO_NAME="${REGISTRY_REPO_NAME:-thesis-student-registry}"
-TOOLS_REPO_NAME="${TOOLS_REPO_NAME:-thesis-management-tools}"
+TOOLS_REPO_NAME="${TOOLS_REPO_NAME:-student-repo-management}"
 readonly REGISTRY_REPO_NAME TOOLS_REPO_NAME
 readonly STUDENT_ID_PATTERN='^k[0-9]{2}(rs|jk|gjk)[0-9]+$'
 
