@@ -108,12 +108,18 @@ Sophisticated GitHub Actions-based supervision:
 ### Repository Structure
 ```
 create-repo/
-├── Dockerfile                  # Main thesis repository creation
-├── Dockerfile-wr               # Weekly report repository creation
-├── main.sh                     # Thesis creation script
+├── setup.sh                    # Universal entry point (all document types)
+├── main-thesis.sh              # Thesis creation script
 ├── main-wr.sh                  # Weekly report creation script
-├── setup.sh                    # Public entry point for thesis
-├── setup-wr.sh                 # Public entry point for weekly reports
+├── main-latex.sh               # General LaTeX creation script
+├── main-ise.sh                 # ISE report creation script
+├── main-poster.sh              # Poster creation script
+├── common-lib.sh               # Shared functions and utilities
+├── Dockerfile-thesis           # Docker image for thesis
+├── Dockerfile-wr               # Docker image for weekly reports
+├── Dockerfile-latex            # Docker image for general LaTeX
+├── Dockerfile-ise              # Docker image for ISE reports
+├── Dockerfile-poster           # Docker image for poster
 └── README.md                   # Usage instructions
 
 scripts/
