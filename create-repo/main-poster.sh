@@ -11,7 +11,10 @@ init_script_common "学会ポスターリポジトリセットアップツール
 
 # 設定
 ORGANIZATION=$(determine_organization)
-TEMPLATE_REPOSITORY="smkwlab/poster-template"  # 常に固定
+# poster-template は個人ユーザー（ORGANIZATION=個人アカウント）も利用する共有テンプレ
+# のため、org 追従にはせず既定を smkwlab に固定する。他 org で独自テンプレを使う場合は
+# TEMPLATE_REPO で上書きする。
+TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-smkwlab/poster-template}"
 VISIBILITY="private"
 
 log_info "テンプレートリポジトリ: $TEMPLATE_REPOSITORY"
