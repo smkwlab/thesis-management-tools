@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # デフォルト設定
-DEFAULT_REPO="smkwlab/thesis-management-tools"
+DEFAULT_REPO="smkwlab/student-repo-management"
 # レジストリリポジトリ名の規約（org 部分は実行時に導出する。ECOSYSTEM.md の
 # Organization-Scoped Deployment 原則を参照）
 REGISTRY_REPO_NAME="thesis-student-registry"

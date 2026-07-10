@@ -1,6 +1,6 @@
 # Workflows and Best Practices
 
-This document covers user workflows and development best practices for thesis-management-tools.
+This document covers user workflows and development best practices for student-repo-management.
 
 ## Student Workflow (Automated)
 

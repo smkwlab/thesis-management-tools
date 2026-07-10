@@ -1,6 +1,6 @@
 # リリース運用ガイド
 
-`thesis-management-tools` のセットアップスクリプト（`create-repo/setup.sh`）の
+`student-repo-management` のセットアップスクリプト（`create-repo/setup.sh`）の
 **再現性・安全性**を高めるためのリリース（バージョン固定）運用をまとめる。
 
 ## 背景
@@ -19,7 +19,7 @@
 セットアップは 2 段階のリモート取得で構成されるため、完全な固定には両方を揃える必要がある。
 
 1. **`setup.sh` 本体の取得**（`curl` の URL）
-   `https://raw.githubusercontent.com/smkwlab/thesis-management-tools/<ref>/create-repo/setup.sh`
+   `https://raw.githubusercontent.com/smkwlab/student-repo-management/<ref>/create-repo/setup.sh`
    - `<ref>` を `main` から `v1.0.0` 等のタグに変えると、本体が固定される。
 2. **本体が内部で `clone` する内容**（`setup.sh` 内の `SETUP_REF`）
    - `setup.sh` には `EMBEDDED_REF` が埋め込まれており、リリース時にタグへ書き換えられる。
@@ -123,12 +123,12 @@ git push origin v1 --force
 
 ```bash
 # タグ付き URL の EMBEDDED_REF がタグ値になっているか
-curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh \
+curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.0.0/create-repo/setup.sh \
   | grep '^EMBEDDED_REF='
 # => EMBEDDED_REF="v1.0.0"
 
 # main 側は "main" のまま
-curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh \
+curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh \
   | grep '^EMBEDDED_REF='
 # => EMBEDDED_REF="main"
 ```
@@ -138,7 +138,7 @@ curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/mai
 ### 既定（最新版 / 利便性重視）
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 ```
 
 ### 固定版（再現性重視）
@@ -147,17 +147,17 @@ URL のブランチ部分をタグに変えるだけで、本体・内部 clone 
 
 ```bash
 # 最新の v1 系（移動タグ。テンプレート README はこちらを採用）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1/create-repo/setup.sh)" bash thesis
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1/create-repo/setup.sh)" bash thesis
 
 # 特定パッチに完全固定（厳密な再現が必要な場合）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/v1.0.0/create-repo/setup.sh)" bash thesis
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.0.0/create-repo/setup.sh)" bash thesis
 ```
 
 ### 参照先を明示的に上書きしたい場合
 
 ```bash
 # タグ / コミットSHA / ブランチを明示指定（内部 clone の参照先を上書き）
-UNIVERSAL_REF=v1.0.0 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)" bash thesis
+UNIVERSAL_REF=v1.0.0 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 ```
 
 ## 安全性に関する注意

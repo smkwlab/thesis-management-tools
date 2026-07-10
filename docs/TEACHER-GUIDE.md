@@ -44,7 +44,7 @@ initial (初期状態) ← レビュー用PRのベース
 
 ```bash
 # 学生が実行するコマンド（Homebrewスタイル）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/thesis-management-tools/main/create-repo/setup.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
 ```
 
 **自動実行される内容**：
