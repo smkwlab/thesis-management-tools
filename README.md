@@ -41,7 +41,7 @@ GitHub を使った効率的な論文指導をサポートします。
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
 ```
 
-> 末尾の `bash thesis` などの `bash` は `bash -c` のダミー引数（`$0`）で、続く `thesis` / `wr` / `latex` / `ise` / `poster` が実際の文書タイプ（`$1`）です。
+> 末尾の `bash thesis` の `bash` は `/bin/bash -c "..."` に渡す内部スクリプト名（`$0`）にあたるダミー引数で、続く `thesis` / `wr` / `latex` / `ise` / `poster` が文書タイプ（`$1`）として `setup.sh` に渡されます。
 
 **実行手順:**
 1. GitHub CLI がある場合：
