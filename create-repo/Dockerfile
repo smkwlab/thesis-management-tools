@@ -1,0 +1,40 @@
+FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
+
+# 必要なツールをインストール
+# nodejs/npm は旧 Dockerfile-ise のみが持っていた追加パッケージ。統合にあたり
+# superset として常時インストールする（実際の要否調査は Issue #518）
+RUN apk add --no-cache \
+    git \
+    curl \
+    bash \
+    ca-certificates \
+    unzip \
+    jq \
+    nodejs \
+    npm
+
+# GitHub CLI をインストール
+RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+    LATEST_VERSION=$(curl -s https://api.github.com/repos/cli/cli/releases/latest | jq -r .tag_name | tr -d 'v') && \
+    curl -fsSL "https://github.com/cli/cli/releases/latest/download/gh_${LATEST_VERSION}_linux_${ARCH}.tar.gz" \
+    | tar -xz -C /tmp && \
+    mv "/tmp/gh_${LATEST_VERSION}_linux_${ARCH}/bin/gh" /usr/local/bin/ && \
+    rm -rf /tmp/gh_*
+
+# 作業ディレクトリを先に設定
+WORKDIR /workspace
+
+# セットアップスクリプトをコピー
+# 文書タイプは docker run -e DOC_TYPE=... で選択する（setup.sh が注入）。
+# 注: 旧 Dockerfile-thesis/-ise が COPY していた protection-config.json は
+# create-repo 内のどのスクリプトからも参照されていないため含めない（Issue #516）
+COPY main.sh ./
+COPY common-lib.sh ./
+COPY templates/ ./templates/
+RUN chmod +x main.sh common-lib.sh
+
+# Docker環境では手動ブラウザアクセスを前提
+ENV DOCKER_ENV=true
+
+# エントリーポイント
+ENTRYPOINT ["./main.sh"]

@@ -127,39 +127,34 @@ fi
 DETECTED_DOC_TYPE="$DOC_TYPE"
 
 # 設定マッピング
+# この case は DOC_TYPE の whitelist 検証を兼ねる（後段で -e DOC_TYPE として
+# 無引用のまま docker run へ渡すため、ここを通過した 5 値以外は流れない）。
+# Dockerfile / 実行スクリプトはタイプ共通（create-repo/Dockerfile + main.sh、
+# タイプは DOC_TYPE 環境変数で選択。Issue #516）。旧構成の ref を指定した
+# 場合のフォールバックは clone 後に判定する。
 configure_document_type() {
     local doc_type="$1"
-    
+
     case "$doc_type" in
         thesis)
             DOC_DESCRIPTION="📚 論文リポジトリ"
-            DOCKERFILE_NAME="Dockerfile-thesis"
             DOCKER_IMAGE_NAME="thesis-setup-alpine"
-            MAIN_SCRIPT="main-thesis.sh"
             ;;
         wr)
             DOC_DESCRIPTION="📝 週間報告リポジトリ"
-            DOCKERFILE_NAME="Dockerfile-wr"
             DOCKER_IMAGE_NAME="wr-setup-alpine"
-            MAIN_SCRIPT="main-wr.sh"
             ;;
         latex)
             DOC_DESCRIPTION="📝 汎用LaTeXリポジトリ"
-            DOCKERFILE_NAME="Dockerfile-latex"
             DOCKER_IMAGE_NAME="latex-setup-alpine"
-            MAIN_SCRIPT="main-latex.sh"
             ;;
         ise)
             DOC_DESCRIPTION="💻 情報科学演習リポジトリ"
-            DOCKERFILE_NAME="Dockerfile-ise"
             DOCKER_IMAGE_NAME="ise-setup-alpine"
-            MAIN_SCRIPT="main-ise.sh"
             ;;
         poster)
             DOC_DESCRIPTION="📊 学会ポスターリポジトリ"
-            DOCKERFILE_NAME="Dockerfile-poster"
             DOCKER_IMAGE_NAME="poster-setup-alpine"
-            MAIN_SCRIPT="main-poster.sh"
             ;;
         *)
             echo "❌ サポートされていない文書タイプ: $doc_type"
@@ -167,6 +162,8 @@ configure_document_type() {
             exit 1
             ;;
     esac
+
+    DOCKERFILE_NAME="Dockerfile"
 }
 
 # 設定の適用
@@ -441,6 +438,21 @@ fi
 
 cd create-repo
 
+# 後方互換: 統合前の旧構成（v1 系タグ等）を UNIVERSAL_REF / UNIVERSAL_BRANCH で
+# 指定した場合は、旧タイプ別 Dockerfile-<type>（ENTRYPOINT main-<type>.sh）で
+# 動作させる（Issue #516）。DOC_TYPE 環境変数は旧 main-<type>.sh では単に
+# 無視されるため、転送されても無害。
+if [ ! -f main.sh ]; then
+    if [ -f "Dockerfile-${DETECTED_DOC_TYPE}" ]; then
+        echo "ℹ️ 統合前の構成を検出: Dockerfile-${DETECTED_DOC_TYPE} を使用します"
+        DOCKERFILE_NAME="Dockerfile-${DETECTED_DOC_TYPE}"
+    else
+        echo "❌ create-repo/main.sh も Dockerfile-${DETECTED_DOC_TYPE} も見つかりません"
+        echo "   UNIVERSAL_REF / UNIVERSAL_BRANCH で古い・不正な参照を指定していないか確認してください"
+        exit 1
+    fi
+fi
+
 echo "🐳 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
     # デバッグモードでは詳細出力を表示
@@ -462,8 +474,9 @@ echo "🚀 セットアップ実行中..."
 cd "$ORIGINAL_DIR"
 
 # Docker実行（TTY対応、GitHub認証トークンをセキュアファイル経由で渡す）
-# 動作モード情報と環境変数を渡す
-DOCKER_ENV_VARS="-e USER_TYPE=$USER_TYPE -e TARGET_ORG=$TARGET_ORG"
+# 動作モード情報と環境変数を渡す。DOC_TYPE は統合 main.sh の文書タイプ選択用
+# （configure_document_type の case で whitelist 済みのため無引用展開でも安全）
+DOCKER_ENV_VARS="-e USER_TYPE=$USER_TYPE -e TARGET_ORG=$TARGET_ORG -e DOC_TYPE=$DETECTED_DOC_TYPE"
 
 # リポジトリ名規約の override をコンテナへ転送（未設定なら渡さない = 規約デフォルト）
 # DOCKER_ENV_VARS は既存慣習どおり無引用展開されるため、安全な文字のみ許可する
