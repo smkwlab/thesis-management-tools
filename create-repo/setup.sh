@@ -540,23 +540,43 @@ if [ -n "${SETUP_GIT_EMAIL_DOMAIN:-}" ]; then
     DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e SETUP_GIT_EMAIL_DOMAIN=$SETUP_GIT_EMAIL_DOMAIN"
 fi
 
+# DOCUMENT_NAME / POSTER_NAME はコンテナ側 main.sh で ^[a-zA-Z0-9_-]+$ を要求する。
+# ここでも無引用展開（docker run $DOCKER_ENV_VARS）に載るため、同じ文字種のみ許可して
+# 単語分割・glob を防ぐ（他の転送変数と同じ流儀）。
+valid_doc_name() {
+    case "$1" in
+        *[!A-Za-z0-9_-]*) return 1 ;;
+        "") return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
 # 文書タイプ固有の環境変数を渡す
+# 注: 旧構成では latex に AUTHOR_NAME、ise に ASSIGNMENT_TYPE も転送していたが、
+# どちらもコンテナ側スクリプトから参照されない死に変数だったため削除した（Issue #519）。
 case "$DETECTED_DOC_TYPE" in
     latex)
         # ドキュメント名が環境変数で指定されている場合は渡す
         if [ -n "$DOCUMENT_NAME" ]; then
+            valid_doc_name "$DOCUMENT_NAME" || { echo "❌ DOCUMENT_NAME に使用できない文字が含まれています: $DOCUMENT_NAME" >&2; exit 1; }
             DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e DOCUMENT_NAME=$DOCUMENT_NAME"
         fi
-        # 作者名が環境変数で指定されている場合は渡す
-        if [ -n "$AUTHOR_NAME" ]; then
-            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e AUTHOR_NAME=$AUTHOR_NAME"
+        ;;
+    poster)
+        # poster は POSTER_NAME を優先し、無ければ DOCUMENT_NAME を使う（main.sh の
+        # read_poster_name と同じ優先順位）。旧 setup.sh は poster でどちらも転送せず、
+        # 常に対話入力になっていた（Issue #519）。
+        if [ -n "$POSTER_NAME" ]; then
+            valid_doc_name "$POSTER_NAME" || { echo "❌ POSTER_NAME に使用できない文字が含まれています: $POSTER_NAME" >&2; exit 1; }
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e POSTER_NAME=$POSTER_NAME"
+        fi
+        if [ -n "$DOCUMENT_NAME" ]; then
+            valid_doc_name "$DOCUMENT_NAME" || { echo "❌ DOCUMENT_NAME に使用できない文字が含まれています: $DOCUMENT_NAME" >&2; exit 1; }
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e DOCUMENT_NAME=$DOCUMENT_NAME"
         fi
         ;;
     ise)
         # ISE固有の環境変数処理
-        if [ -n "$ASSIGNMENT_TYPE" ]; then
-            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ASSIGNMENT_TYPE=$ASSIGNMENT_TYPE"
-        fi
         if [ -n "$ISE_REPORT_NUM" ]; then
             DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ISE_REPORT_NUM=$ISE_REPORT_NUM"
         fi
@@ -575,13 +595,29 @@ if [[ -n "$MSYSTEM" ]] || [[ "$OSTYPE" == "msys" ]] || [[ -n "$MINGW_PREFIX" ]] 
     fi
 fi
 
-# 対話的入力が必要かどうかを判断
+# 対話的入力が必要かどうかを判断。
+# 非対話にできるのは「INDIVIDUAL_MODE（confirm_creation が自動承認）」かつ「名前が env で
+# 指定済み（名前プロンプトが出ない）」の場合のみ。latex は DOCUMENT_NAME、poster は
+# POSTER_NAME か DOCUMENT_NAME があれば非対話にできる（Issue #519 で poster を追加）。
+# poster で DOCUMENT_NAME のみ指定の場合も非対話で問題ない: コンテナ側 read_poster_name は
+# POSTER_NAME 未設定時に DOCUMENT_NAME を poster 名として採用する（フォールバック）ため、
+# 名前プロンプトは出ない。両方指定時は POSTER_NAME が優先される（env 転送・採用とも同順）。
+# 注: set -e 下で `[ ... ] && VAR=...` は左辺 false で終了してしまうため if 構造で書く。
 DOCKER_OPTIONS="--rm"
-if [ "$DOC_TYPE" = "latex" ] && [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]] && [ -n "$DOCUMENT_NAME" ]; then
-    # INDIVIDUAL_MODEでDOCUMENT_NAMEが指定されている場合は非対話的モード
-    echo "📋 非対話的モードで実行（DOCUMENT_NAME: $DOCUMENT_NAME）"
+INTERACTIVE=true
+if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    case "$DOC_TYPE" in
+        latex)
+            if [ -n "$DOCUMENT_NAME" ]; then INTERACTIVE=false; fi
+            ;;
+        poster)
+            if [ -n "$POSTER_NAME" ] || [ -n "$DOCUMENT_NAME" ]; then INTERACTIVE=false; fi
+            ;;
+    esac
+fi
+if [ "$INTERACTIVE" = false ]; then
+    echo "📋 非対話的モードで実行（$DOC_TYPE）"
 else
-    # その他の場合は対話的モード
     DOCKER_OPTIONS="$DOCKER_OPTIONS -it"
 fi
 
