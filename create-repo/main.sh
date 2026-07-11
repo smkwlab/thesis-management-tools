@@ -223,6 +223,9 @@ determine_ise_report_number() {
     # SC2155 回避のため宣言と代入を分離する（他の gh api 呼び出しと同じ流儀）
     local current_month
     current_month=$(TZ='JST-9' date +%m)
+    # date 失敗で空になると後段の `(( 10#$current_month ... ))` が算術構文エラーになるため、
+    # 空でないことを保証する（現実にはまず失敗しないが防御的に）
+    [ -n "$current_month" ] || die "学期判定の日付取得に失敗しました"
     local preferred_num fallback_num
 
     # 10# でゼロ埋め月（08/09）の 8 進誤解釈を防ぐ
