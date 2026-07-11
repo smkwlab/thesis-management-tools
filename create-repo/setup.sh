@@ -599,6 +599,9 @@ fi
 # 非対話にできるのは「INDIVIDUAL_MODE（confirm_creation が自動承認）」かつ「名前が env で
 # 指定済み（名前プロンプトが出ない）」の場合のみ。latex は DOCUMENT_NAME、poster は
 # POSTER_NAME か DOCUMENT_NAME があれば非対話にできる（Issue #519 で poster を追加）。
+# poster で DOCUMENT_NAME のみ指定の場合も非対話で問題ない: コンテナ側 read_poster_name は
+# POSTER_NAME 未設定時に DOCUMENT_NAME を poster 名として採用する（フォールバック）ため、
+# 名前プロンプトは出ない。両方指定時は POSTER_NAME が優先される（env 転送・採用とも同順）。
 # 注: set -e 下で `[ ... ] && VAR=...` は左辺 false で終了してしまうため if 構造で書く。
 DOCKER_OPTIONS="--rm"
 INTERACTIVE=true
