@@ -129,7 +129,7 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
   - クロスプラットフォーム対応
   - ブラウザ認証統合
 
-- **main-*.sh**（`main-thesis.sh` / `main-wr.sh` / `main-latex.sh` / `main-ise.sh` / `main-poster.sh`）: 文書タイプ別の Docker 内実行メインスクリプト
+- **[main.sh](create-repo/main.sh)**: Docker 内実行の統合メインスクリプト（文書タイプは環境変数 `DOC_TYPE` で選択: thesis / wr / latex / ise / poster）
   - GitHub認証・リポジトリ作成
   - LaTeX環境自動セットアップ
   - ブランチ構造初期化

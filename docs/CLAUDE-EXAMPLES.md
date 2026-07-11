@@ -52,16 +52,15 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 
 ### Docker Operations
 ```bash
-# Build and test Docker containers
+# Build and test Docker containers (single image for all document types)
 docker build -f create-repo/Dockerfile -t thesis-creator .
-docker build -f create-repo/Dockerfile-wr -t wr-creator .
 
-# Test repository creation locally
-cd create-repo && docker run --rm -e STUDENT_ID=k21rs001 thesis-creator
+# Test repository creation locally (DOC_TYPE selects the document type)
+cd create-repo && docker run --rm -it -e DOC_TYPE=thesis thesis-creator k21rs001
 
 # Test scripts directly (requires GitHub CLI)
-cd create-repo && ./main.sh k21rs001
-cd create-repo && ./main-wr.sh k21rs001
+cd create-repo && DOC_TYPE=thesis ./main.sh k21rs001
+cd create-repo && DOC_TYPE=wr ./main.sh k21rs001
 ```
 
 ### Manual Repository Management (Emergency Use)
@@ -158,10 +157,10 @@ export GH_TOKEN="$(gh auth token)"
 ### Docker Environment Variables
 ```bash
 # Run with all variables
-docker run --rm \
-  -e STUDENT_ID="k21rs001" \
+docker run --rm -it \
+  -e DOC_TYPE="thesis" \
   -e TARGET_ORG="smkwlab" \
   -e DEBUG=1 \
   -e GH_TOKEN="$(gh auth token)" \
-  thesis-creator
+  thesis-creator k21rs001
 ```
