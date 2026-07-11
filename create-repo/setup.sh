@@ -453,6 +453,15 @@ if [ ! -f main.sh ]; then
     fi
 fi
 
+# 解決した Dockerfile が実在することを確認する。main.sh はあるが Dockerfile が
+# 無い中間状態（不完全なチェックアウト等）を、docker の不明瞭なエラーではなく
+# 明示的なメッセージで停止させる。
+if [ ! -f "$DOCKERFILE_NAME" ]; then
+    echo "❌ ビルド対象の $DOCKERFILE_NAME が create-repo/ に見つかりません"
+    echo "   チェックアウトが不完全な可能性があります。UNIVERSAL_REF / UNIVERSAL_BRANCH を確認してください"
+    exit 1
+fi
+
 echo "🐳 Dockerイメージをビルド中..."
 if [ "${DEBUG:-0}" = "1" ]; then
     # デバッグモードでは詳細出力を表示

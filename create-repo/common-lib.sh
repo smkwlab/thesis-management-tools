@@ -634,6 +634,12 @@ finalize_with_draft_flow() {
     fi
 
     # ドラフトブランチを作成
+    # 内部呼び出しの `|| return 1` は意図的（旧 main-thesis.sh L86/L89 の
+    # `|| exit 1` と同じ「|| 文脈」を保つ）。これらを bare call に「修正」すると
+    # 挙動が変わる: 特に commit_and_push は内部の bare な git commit が変更なしで
+    # 失敗し得るが、|| 文脈では set -e が無効化され push_with_retry へ進む——これが
+    # 旧挙動。bare 化すると git commit 失敗で即中断してしまう。関数の戻り値 1 は
+    # bare 呼び出し元（メインフロー）の set -e で拾われ、旧実装と終了コードも一致する。
     setup_review_workflow "0th-draft" || return 1
 
     # 初期ドラフトをコミット・プッシュ

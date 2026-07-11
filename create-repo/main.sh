@@ -335,6 +335,11 @@ decide_repo_name() {
                 fi
             fi
             ;;
+        *)
+            # 冒頭の case で不正値は die 済みだが、単体テストや将来のタイプ追加時に
+            # REPO_NAME 未設定のまま後続へ進むのを防ぐ（内部整合の防御）
+            die "内部エラー: decide_repo_name が未知の DOC_TYPE を受け取りました: $DOC_TYPE"
+            ;;
     esac
 }
 
@@ -386,6 +391,9 @@ build_commit_message() {
         ise)
             COMMIT_MESSAGE="Initial setup for ISE Report #${ISE_REPORT_NUM}"
             ;;
+        *)
+            die "内部エラー: build_commit_message が未知の DOC_TYPE を受け取りました: $DOC_TYPE"
+            ;;
     esac
 }
 
@@ -430,6 +438,9 @@ print_next_steps() {
   6. レビューフィードバックを確認・対応
 
 📖 詳細な手順: リポジトリの README.md をご確認ください"
+            ;;
+        *)
+            die "内部エラー: print_next_steps が未知の DOC_TYPE を受け取りました: $DOC_TYPE"
             ;;
     esac
 }
