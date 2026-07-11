@@ -30,14 +30,14 @@ INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://r
 
 **Version pinning (reproducibility & safety)**: The commands above default to `main`
 (latest) for convenience. To pin a specific version, replace `main` in the URL with a
-release tag (e.g. `v1.0.0`); the script body and the content it clones internally are
+release tag (e.g. `v1.2.0`); the script body and the content it clones internally are
 both pinned to that tag. The internal ref can also be overridden via `UNIVERSAL_REF`
 (precedence: `UNIVERSAL_REF` > `UNIVERSAL_BRANCH` > embedded default `main`).
 See [docs/RELEASE.md](docs/RELEASE.md) for the release workflow.
 
 ```bash
 # Pinned version
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.0.0/create-repo/setup.sh)" bash thesis
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh)" bash thesis
 ```
 
 ### Branch Protection Setup
