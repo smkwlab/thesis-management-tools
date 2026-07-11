@@ -22,7 +22,7 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 DOC_TYPE=thesis /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
 
 # Advanced configuration with environment variables
-DOCUMENT_NAME=research-note AUTHOR_NAME="Taro Yamada" STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
+DOCUMENT_NAME=research-note STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
 
 # Individual mode for personal LaTeX documents (no student ID required)
 INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
@@ -109,7 +109,6 @@ Universal Setup Script uses `DOC_TYPE` environment variable to specify document 
 ```bash
 # LaTeX document configuration
 DOCUMENT_NAME=research-note    # Custom document name
-AUTHOR_NAME="Taro Yamada"      # Author name
 
 # Individual mode behavior (DOC_TYPE=latex only)
 INDIVIDUAL_MODE=true           # Skip student ID input, create in personal account
@@ -117,7 +116,6 @@ INDIVIDUAL_MODE=true           # Skip student ID input, create in personal accou
 # Note: Individual mode automatically disables Registry Manager integration
 
 # ISE report configuration
-ASSIGNMENT_TYPE=exercise       # Assignment type
 ISE_REPORT_NUM=1              # Report number (1 or 2)
 ```
 
