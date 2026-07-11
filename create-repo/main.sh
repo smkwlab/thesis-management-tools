@@ -179,12 +179,15 @@ read_poster_name() {
     fi
 }
 
-# --- ise: ISE レポート番号の決定とリポジトリ存在チェック（日時ベース、旧 main-ise.sh） ---
-# 注意: `local api_result=$(gh api ...)` 直後の `local api_status=$?` は local の
-# 終了コード（常に 0）を拾うため、「GitHub APIへのアクセスに問題」分岐は実際には
-# 到達しない既知の問題がある（SC2155、Issue #520）。挙動同値のため逐語温存して
-# おり、shellcheck 等による機械的な修正をここで行わないこと（修正するとレート
-# 制限・一時エラー時の挙動が変わる。対応は #520 で行う）。
+# --- ise: ISE レポート番号の決定とリポジトリ存在チェック（日時ベース） ---
+# 実装メモ（Issue #520 で修正）:
+# - 学期判定は日本の学期基準のため JST で行う（`TZ='JST-9'`）。Alpine busybox の date は
+#   tzdata 無しでも POSIX offset 形式 `JST-9`（UTC+9・DST なし）を解釈できる。
+# - `date +%m` はゼロ埋め（08/09）で、算術文脈 `(( ))` では 8 進数と解釈されエラーに
+#   なるため、比較は `10#` で 10 進を強制する。
+# - `local var=$(cmd)` は local 自体の終了コード（常に 0）で `$?` を潰す（SC2155）。
+#   API エラー分岐を機能させるため、宣言と代入を分離して `$?` が gh の終了コードを
+#   拾うようにしている。
 determine_ise_report_number() {
     local student_id="$1"
     local report_num
@@ -193,7 +196,8 @@ determine_ise_report_number() {
     if [ -n "$ISE_REPORT_NUM" ] && [ "$ISE_REPORT_NUM" != "auto" ]; then
         if [ "$ISE_REPORT_NUM" = "1" ] || [ "$ISE_REPORT_NUM" = "2" ]; then
             local target_repo="${ORGANIZATION}/${student_id}-ise-report${ISE_REPORT_NUM}"
-            local api_result=$(gh api "repos/${target_repo}" --jq .name 2>&1)
+            local api_result
+            api_result=$(gh api "repos/${target_repo}" --jq .name 2>&1)
             local api_status=$?
 
             if [ $api_status -eq 0 ]; then
@@ -215,11 +219,17 @@ determine_ise_report_number() {
         fi
     fi
 
-    # 学期判定
-    local current_month=$(date +%m)
+    # 学期判定（日本の学期基準のため JST。busybox は tzdata 無しでも JST-9 を解釈する）
+    # SC2155 回避のため宣言と代入を分離する（他の gh api 呼び出しと同じ流儀）
+    local current_month
+    current_month=$(TZ='JST-9' date +%m)
+    # date 失敗で空になると後段の `(( 10#$current_month ... ))` が算術構文エラーになるため、
+    # 空でないことを保証する（現実にはまず失敗しないが防御的に）
+    [ -n "$current_month" ] || die "学期判定の日付取得に失敗しました"
     local preferred_num fallback_num
 
-    if (( current_month >= 4 && current_month <= 9 )); then
+    # 10# でゼロ埋め月（08/09）の 8 進誤解釈を防ぐ
+    if (( 10#$current_month >= 4 && 10#$current_month <= 9 )); then
         preferred_num=1
         fallback_num=2
         log_debug "前期期間 (${current_month}月): ise-report1 を優先"
@@ -231,7 +241,8 @@ determine_ise_report_number() {
 
     # 優先リポジトリをチェック
     local preferred_repo="${ORGANIZATION}/${student_id}-ise-report${preferred_num}"
-    local api_result=$(gh api "repos/${preferred_repo}" --jq .name 2>&1)
+    local api_result
+    api_result=$(gh api "repos/${preferred_repo}" --jq .name 2>&1)
     local api_status=$?
 
     if [ $api_status -ne 0 ]; then
@@ -249,7 +260,8 @@ determine_ise_report_number() {
     else
         # フォールバックをチェック
         local fallback_repo="${ORGANIZATION}/${student_id}-ise-report${fallback_num}"
-        local fallback_result=$(gh api "repos/${fallback_repo}" --jq .name 2>&1)
+        local fallback_result
+        fallback_result=$(gh api "repos/${fallback_repo}" --jq .name 2>&1)
         local fallback_status=$?
 
         if [ $fallback_status -ne 0 ]; then
