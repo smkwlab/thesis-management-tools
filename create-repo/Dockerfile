@@ -1,17 +1,16 @@
 FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 
 # 必要なツールをインストール
-# nodejs/npm は旧 Dockerfile-ise のみが持っていた追加パッケージ。統合にあたり
-# superset として常時インストールする（実際の要否調査は Issue #518）
+# 注: 旧構成では nodejs/npm も入れていたが、これは #180 当時に aldc を npm 経由で
+# インストールしていた名残。現在 aldc は curl+bash 実行に変わり、作成フロー
+# (main.sh / common-lib.sh) も aldc 本体も node を一切使わないため削除した（Issue #518）。
 RUN apk add --no-cache \
     git \
     curl \
     bash \
     ca-certificates \
     unzip \
-    jq \
-    nodejs \
-    npm
+    jq
 
 # GitHub CLI をインストール
 RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
