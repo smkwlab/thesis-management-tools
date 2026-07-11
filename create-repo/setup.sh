@@ -442,6 +442,8 @@ cd create-repo
 # 指定した場合は、旧タイプ別 Dockerfile-<type>（ENTRYPOINT main-<type>.sh）で
 # 動作させる（Issue #516）。DOC_TYPE 環境変数は旧 main-<type>.sh では単に
 # 無視されるため、転送されても無害。
+# これは暫定措置であり、統合前の ref（v1 系）を指す利用が無くなったら削除してよい。
+# clone 済みツリーの判定なので main.sh の有無で十分（下段で解決先の実在も確認する）。
 if [ ! -f main.sh ]; then
     if [ -f "Dockerfile-${DETECTED_DOC_TYPE}" ]; then
         echo "ℹ️ 統合前の構成を検出: Dockerfile-${DETECTED_DOC_TYPE} を使用します"

@@ -275,7 +275,12 @@ determine_ise_report_number() {
 # --- リポジトリ名の決定（全タイプ。旧 main-<type>.sh の該当ブロックを逐語移設） ---
 # 設定される変数: REPO_NAME、および thesis: THESIS_TYPE / ise: ISE_REPORT_NUM /
 # latex: DOCUMENT_NAME / poster: POSTER_NAME
-# 注意: bare call で呼ぶこと（内部の代入・コマンド失敗を set -e で拾うため）。
+# 注意: bare call で呼ぶこと（`decide_repo_name || ...` にしない）。ise 分岐の
+# `ISE_REPORT_NUM=$(determine_ise_report_number ...)` は、determine_ise_report_number
+# が異常時に呼ぶ `exit 1` がコマンド置換のサブシェルのみを終了させるため、失敗した
+# 代入を set -e が拾って親スクリプトを中断することに依存している（旧 main-ise.sh
+# L123 のトップレベル代入と同じ挙動）。`|| ...` 文脈で呼ぶと関数内の set -e が
+# 無効化され、ISE_REPORT_NUM 空のまま続行してしまう。
 decide_repo_name() {
     case "$DOC_TYPE" in
         wr)
