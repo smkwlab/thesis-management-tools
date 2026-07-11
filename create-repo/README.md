@@ -49,11 +49,11 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1/create-repo/setup.sh)" bash thesis
 
 # 特定パッチに完全固定（厳密な再現が必要な場合）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.0.0/create-repo/setup.sh)" bash thesis
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh)" bash thesis
 ```
 
 > `v1` は「最新の v1 系リリース」を指す移動タグです（GitHub Actions の `@v4` と同様）。
-> 完全に同一の内容を再現したい場合は `v1.0.0` のように具体的なバージョンを指定してください。
+> 完全に同一の内容を再現したい場合は `v1.2.0` のように具体的なバージョンを指定してください。
 
 > 変更するのは **URL 内の `main` の部分だけ**です。コマンド末尾の引数（上の例では
 > `bash thesis`。`bash` は `bash -c` のダミー引数 `$0`、`thesis` が実際の文書タイプ `$1`）や、
@@ -61,7 +61,7 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 
 - スクリプトの内容は公開リポジトリでいつでも確認できます。実行前に内容を確認したい場合は、
   上記 URL をブラウザで開いて確認してください。
-- 利用可能なバージョン（`v1.0.0` などの具体的なリリース）は [Releases](https://github.com/smkwlab/student-repo-management/releases) を参照してください。なお `v1` はそれらの最新を指す移動タグ（ポインタ）であり、Releases 一覧には個別の項目としては現れません。
+- 利用可能なバージョン（`v1.2.0` などの具体的なリリース）は [Releases](https://github.com/smkwlab/student-repo-management/releases) を参照してください。なお `v1` はそれらの最新を指す移動タグ（ポインタ）であり、Releases 一覧には個別の項目としては現れません。
 - リリース運用の詳細は [docs/RELEASE.md](../docs/RELEASE.md) を参照してください。
 
 ## よくある質問
