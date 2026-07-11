@@ -109,17 +109,9 @@ Sophisticated GitHub Actions-based supervision:
 ```
 create-repo/
 ├── setup.sh                    # Universal entry point (all document types)
-├── main-thesis.sh              # Thesis creation script
-├── main-wr.sh                  # Weekly report creation script
-├── main-latex.sh               # General LaTeX creation script
-├── main-ise.sh                 # ISE report creation script
-├── main-poster.sh              # Poster creation script
+├── main.sh                     # Unified creation script (DOC_TYPE: thesis/wr/latex/ise/poster)
 ├── common-lib.sh               # Shared functions and utilities
-├── Dockerfile-thesis           # Docker image for thesis
-├── Dockerfile-wr               # Docker image for weekly reports
-├── Dockerfile-latex            # Docker image for general LaTeX
-├── Dockerfile-ise              # Docker image for ISE reports
-├── Dockerfile-poster           # Docker image for poster
+├── Dockerfile                  # Docker image shared by all document types
 └── README.md                   # Usage instructions
 
 scripts/
@@ -162,15 +154,14 @@ docs/
 
 ### Local Testing
 ```bash
-# Test Docker builds
+# Test Docker builds (single image for all document types)
 docker build -f create-repo/Dockerfile -t test-creator .
-docker build -f create-repo/Dockerfile-wr -t test-wr .
 
-# Test scripts with sample IDs
+# Test scripts with sample IDs (DOC_TYPE selects the document type)
 cd create-repo
-./main.sh k21rs999  # Test undergraduate
-./main.sh k21gjk99  # Test graduate  
-./main-wr.sh k21rs999  # Test weekly report
+DOC_TYPE=thesis ./main.sh k21rs999  # Test undergraduate
+DOC_TYPE=thesis ./main.sh k21gjk99  # Test graduate
+DOC_TYPE=wr ./main.sh k21rs999      # Test weekly report
 
 # Test file cleanup logic
 echo "k21rs001" | grep -E "k[0-9]{2}rs[0-9]{3}"  # Should match
@@ -186,7 +177,7 @@ echo "k21gjk01" | grep -E "k[0-9]{2}gjk[0-9]{2}"  # Should match
 ### Error Handling Testing
 ```bash
 # Test with invalid student IDs
-DEBUG=1 STUDENT_ID=invalid ./main.sh
+DEBUG=1 DOC_TYPE=thesis ./main.sh invalid
 
 # Test without Docker
 STUDENT_ID=k21rs001 ./setup.sh  # Should handle gracefully

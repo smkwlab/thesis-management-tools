@@ -51,11 +51,12 @@ gh auth token | gh auth login --with-token
 
 ### Docker Debugging
 ```bash
-# Test Docker container with token
-docker run -it --rm -e GH_TOKEN="$(gh auth token)" thesis-creator bash
+# Test Docker container with token (image built from create-repo/Dockerfile;
+# override the main.sh entrypoint to get a shell)
+docker run -it --rm --entrypoint bash -e GH_TOKEN="$(gh auth token)" thesis-creator
 
 # Check GitHub CLI in container (with token)
-docker run --rm -e GH_TOKEN="$(gh auth token)" thesis-creator gh auth status
+docker run --rm --entrypoint gh -e GH_TOKEN="$(gh auth token)" thesis-creator auth status
 ```
 
 ### Repository Creation Debugging

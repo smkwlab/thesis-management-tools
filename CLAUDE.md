@@ -71,15 +71,9 @@ gh repo view smkwlab/k21rs001-sotsuron --json branchProtectionRules
 ```
 create-repo/
 ├── setup.sh              # Universal Setup Script - All document types
-├── main-thesis.sh        # Thesis creation script
-├── main-wr.sh            # Weekly report creation script
-├── main-latex.sh         # General LaTeX document creation script
-├── main-ise.sh           # ISE report creation script
+├── main.sh               # Unified creation script (DOC_TYPE: thesis/wr/latex/ise/poster)
 ├── common-lib.sh         # Shared functions and utilities
-├── Dockerfile-thesis     # Docker image for thesis
-├── Dockerfile-wr         # Docker image for weekly reports
-├── Dockerfile-latex      # Docker image for general LaTeX documents
-└── Dockerfile-ise        # Docker image for ISE reports
+└── Dockerfile            # Docker image shared by all document types
 
 scripts/
 ├── setup-branch-protection.sh    # Branch protection for individual student
@@ -149,8 +143,8 @@ k21gjk01, k22gjk15, k23gjk99
 
 ### Test Repository Creation
 ```bash
-# Local testing
-cd create-repo && ./main.sh k21rs999
+# Local testing (DOC_TYPE selects the document type)
+cd create-repo && DOC_TYPE=thesis ./main.sh k21rs999
 
 # Docker testing
 docker build -f create-repo/Dockerfile -t test-creator .
