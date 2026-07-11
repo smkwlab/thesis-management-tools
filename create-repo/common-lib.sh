@@ -632,6 +632,10 @@ cleanup_template_files() {
     rm -f CLAUDE.md 2>/dev/null || true
     rm -rf docs/ 2>/dev/null || true
     find . -name '*-aldc' -exec rm -rf {} + 2>/dev/null || true
+    # 学生リポジトリでは Actions の自動更新は不要（最新化はテンプレート側の dependabot
+    # で管理）。誤マージ防止 CI（prevent-draft-merge）や review 必須保護と dependabot PR
+    # が干渉して溜まるため、生成時に削除する（#514）。
+    rm -f .github/dependabot.yml 2>/dev/null || true
     return 0
 }
 
