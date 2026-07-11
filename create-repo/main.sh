@@ -91,17 +91,22 @@ init_script_common "$SCRIPT_TITLE" "$SCRIPT_EMOJI"
 # ================================
 ORGANIZATION=$(determine_organization)
 
-# テンプレートリポジトリの決定。タイプごとにポリシーが異なる:
-# - thesis: org 追従。他 org で独自テンプレを使う場合は TEMPLATE_REPO で上書き
-# - wr / ise: org 追従固定（TEMPLATE_REPO 非対応。既存挙動の温存 — Issue #517）
-# - latex / poster: 個人ユーザー（ORGANIZATION=個人アカウント）も利用する共有
-#   テンプレのため、org 追従にはせず既定を smkwlab に固定する。他 org で独自
-#   テンプレを使う場合は TEMPLATE_REPO で上書きする。
+# テンプレートリポジトリの決定。全タイプで TEMPLATE_REPO による上書きに対応する
+# （setup.sh はタイプ非依存で TEMPLATE_REPO をコンテナへ転送する）。既定値のみ
+# タイプごとにポリシーが異なり、「既定値の由来」で 2 グループに分かれる（この分類は
+# 下の case の並び順とは独立。case はファイル全体で統一している標準順
+# thesis→wr→latex→ise→poster を維持しているため、latex はグループ間に挟まって見える）:
+# - org 追従（${ORGANIZATION}/<template>） … thesis / wr / ise
+# - smkwlab 固定 … latex / poster（個人ユーザー = ORGANIZATION が個人アカウントでも
+#   利用する共有テンプレのため、org 追従にせず既定を smkwlab に固定する）
+# いずれのグループも、他 org で独自テンプレを使う場合は TEMPLATE_REPO で上書きする。
+# 注意: TEMPLATE_REPO 未設定時の既定は従来と同一（挙動不変）。以前は wr / ise のみ
+# TEMPLATE_REPO を無視していた（silent ignore）が、Issue #517 で全タイプ上書き可に統一。
 case "$DOC_TYPE" in
     thesis) TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-${ORGANIZATION}/sotsuron-template}" ;;
-    wr)     TEMPLATE_REPOSITORY="${ORGANIZATION}/wr-template" ;;
+    wr)     TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-${ORGANIZATION}/wr-template}" ;;
     latex)  TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-smkwlab/latex-template}" ;;
-    ise)    TEMPLATE_REPOSITORY="${ORGANIZATION}/ise-report-template" ;;
+    ise)    TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-${ORGANIZATION}/ise-report-template}" ;;
     poster) TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-smkwlab/poster-template}" ;;
 esac
 VISIBILITY="private"
