@@ -46,6 +46,12 @@ command_exists() { command -v "$1" >/dev/null 2>&1; }
 # 各所に散在する [[ "$INDIVIDUAL_MODE" =~ ... ]] と同一の判定（Issue #516）
 is_individual_mode() { [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; }
 
+# ASSUME_YES 判定（真なら 0 を返す）
+# 確認プロンプト（confirm_creation）を自動承認する非対話フラグ。個人アカウント
+# 作成を意味する INDIVIDUAL_MODE とは独立で、組織フローの非対話実行にも使う
+# （Issue #527）。setup.sh が docker run 時に -e ASSUME_YES=true を注入する。
+is_assume_yes() { [[ "$ASSUME_YES" =~ ^(true|TRUE|1|yes|YES)$ ]]; }
+
 # ================================
 # 初期化・設定関数
 # ================================
@@ -381,7 +387,13 @@ confirm_creation() {
         echo "📋 個人モード: 自動的に続行します"
         return 0
     fi
-    
+
+    # ASSUME_YES の場合も自動承認（組織フローの非対話実行。Issue #527）
+    if is_assume_yes; then
+        echo "📋 ASSUME_YES: 確認を省略して続行します"
+        return 0
+    fi
+
     read -p "続行しますか? [Y/n]: " -n 1 -r
     echo ""
     

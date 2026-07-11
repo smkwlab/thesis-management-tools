@@ -115,8 +115,24 @@ INDIVIDUAL_MODE=true           # Skip student ID input, create in personal accou
 # Note: When INDIVIDUAL_MODE=true, any STUDENT_ID argument is ignored
 # Note: Individual mode automatically disables Registry Manager integration
 
+# Non-interactive execution (auto-approve the confirmation prompt)
+ASSUME_YES=1                   # Skip the "続行しますか?" confirmation; run without a TTY
+# Accepted truthy values: 1 / true / TRUE / yes / YES (setup.sh normalizes to true internally)
+# Works for all document types, independent of INDIVIDUAL_MODE (e.g. bulk creation, CI).
+# setup.sh validates that the inputs needed to avoid any remaining prompt are present
+# and fails fast before launching the container if any are missing:
+#   - thesis/wr/ise : STUDENT_ID required (organization flow)
+#   - latex         : STUDENT_ID (organization flow) + DOCUMENT_NAME
+#   - poster        : STUDENT_ID (organization flow) + POSTER_NAME or DOCUMENT_NAME
+# Under INDIVIDUAL_MODE=true, STUDENT_ID is not required (only the name inputs above).
+
 # ISE report configuration
 ISE_REPORT_NUM=1              # Report number (1 or 2)
+```
+
+```bash
+# Non-interactive organization-flow example (no prompts, no TTY needed)
+STUDENT_ID=k21rs001 ASSUME_YES=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
 ```
 
 ## Student ID Patterns

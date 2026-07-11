@@ -595,17 +595,62 @@ if [[ -n "$MSYSTEM" ]] || [[ "$OSTYPE" == "msys" ]] || [[ -n "$MINGW_PREFIX" ]] 
     fi
 fi
 
-# 対話的入力が必要かどうかを判断。
-# 非対話にできるのは「INDIVIDUAL_MODE（confirm_creation が自動承認）」かつ「名前が env で
-# 指定済み（名前プロンプトが出ない）」の場合のみ。latex は DOCUMENT_NAME、poster は
-# POSTER_NAME か DOCUMENT_NAME があれば非対話にできる（Issue #519 で poster を追加）。
-# poster で DOCUMENT_NAME のみ指定の場合も非対話で問題ない: コンテナ側 read_poster_name は
-# POSTER_NAME 未設定時に DOCUMENT_NAME を poster 名として採用する（フォールバック）ため、
-# 名前プロンプトは出ない。両方指定時は POSTER_NAME が優先される（env 転送・採用とも同順）。
+# 対話的入力が必要かどうかを判断。非対話実行のパスは 2 つ:
+#
+#  1) ASSUME_YES（Issue #527）: 確認プロンプト（コンテナ側 confirm_creation）を
+#     自動承認し、全タイプで非対話実行する。組織フローでも使える汎用フラグで、
+#     INDIVIDUAL_MODE（個人アカウント作成）とは独立。ただし名前・学籍番号の入力
+#     プロンプトは自動承認では消えないため、必要な入力が揃っていることを前提とする
+#     （揃っていなければ下でエラー終了する）。
+#  2) INDIVIDUAL_MODE（従来・Issue #519）: 個人モードでは confirm_creation が
+#     自動承認されるため、「名前が env 指定済み（名前プロンプトが出ない）」なら
+#     非対話にできる。latex は DOCUMENT_NAME、poster は POSTER_NAME か DOCUMENT_NAME が
+#     あればよい（poster は read_poster_name が POSTER_NAME 未設定時に DOCUMENT_NAME を
+#     採用するフォールバックのため。両方指定時は POSTER_NAME 優先）。thesis/wr/ise は
+#     従来どおり -it 付きで実行する（挙動不変）。
 # 注: set -e 下で `[ ... ] && VAR=...` は左辺 false で終了してしまうため if 構造で書く。
+
+# ASSUME_YES 非対話実行に必要な入力の欠落を ", " 区切りで返す（無ければ空文字）。
+# コンテナ側 main.sh が出すプロンプトに対応する:
+#  - 組織モード（INDIVIDUAL_MODE でない）は全タイプで read_student_id_if_needed が
+#    STUDENT_ID を要求する（空だと read_student_id が対話 or GitHub ユーザー名へ誤フォールバック）。
+#  - latex は read_document_name が DOCUMENT_NAME、poster は read_poster_name が
+#    POSTER_NAME/DOCUMENT_NAME を要求する。
+missing_noninteractive_inputs() {
+    local missing=""
+    if ! [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]] && [ -z "$STUDENT_ID" ]; then
+        missing="STUDENT_ID"
+    fi
+    case "$DOC_TYPE" in
+        latex)
+            if [ -z "$DOCUMENT_NAME" ]; then
+                missing="${missing:+$missing, }DOCUMENT_NAME"
+            fi
+            ;;
+        poster)
+            if [ -z "$POSTER_NAME" ] && [ -z "$DOCUMENT_NAME" ]; then
+                missing="${missing:+$missing, }POSTER_NAME/DOCUMENT_NAME"
+            fi
+            ;;
+    esac
+    printf '%s' "$missing"
+}
+
 DOCKER_OPTIONS="--rm"
 INTERACTIVE=true
-if [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+if [[ "${ASSUME_YES:-}" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    # 入力欠落のまま非対話にすると、コンテナ内で EOF が空回答＝Yes と誤解釈されたり
+    # STUDENT_ID が GitHub ユーザー名へ誤フォールバックする。コンテナ起動前に止める。
+    MISSING_INPUTS=$(missing_noninteractive_inputs)
+    if [ -n "$MISSING_INPUTS" ]; then
+        echo "❌ ASSUME_YES での非対話実行には次の入力が必要です（$DOC_TYPE）: $MISSING_INPUTS" >&2
+        echo "   組織フローの例: STUDENT_ID=k21rs001 ASSUME_YES=1 ... bash $DOC_TYPE" >&2
+        exit 1
+    fi
+    # コンテナ側 confirm_creation を自動承認させる（正規化済みの true を転送）
+    DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e ASSUME_YES=true"
+    INTERACTIVE=false
+elif [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
     case "$DOC_TYPE" in
         latex)
             if [ -n "$DOCUMENT_NAME" ]; then INTERACTIVE=false; fi
