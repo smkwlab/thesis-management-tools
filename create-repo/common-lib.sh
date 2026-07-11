@@ -42,6 +42,10 @@ die() { log_error "$*"; exit 1; }
 # コマンド存在確認
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
+# INDIVIDUAL_MODE 判定（真なら 0 を返す）
+# 各所に散在する [[ "$INDIVIDUAL_MODE" =~ ... ]] と同一の判定（Issue #516）
+is_individual_mode() { [[ "$INDIVIDUAL_MODE" =~ ^(true|TRUE|1|yes|YES)$ ]]; }
+
 # ================================
 # 初期化・設定関数
 # ================================
@@ -589,6 +593,51 @@ setup_review_workflow() {
 
     log_info "✅ ドラフトブランチ作成完了"
     return 0
+}
+
+#
+# main ブランチ確定 + ドラフトレビューワークフロー開始
+#
+# main-thesis.sh / main-ise.sh で完全に重複していた「main へのセットアップ
+# コミット → push → 0th-draft ブランチ作成 → 初期ドラフト commit/push」を
+# 逐語で吸収した関数（Issue #516）。
+#
+# 重要: 必ず bare call（`finalize_with_draft_flow "$msg"`）で呼ぶこと。
+# `finalize_with_draft_flow "$msg" || exit 1` のように || / && / if の文脈で
+# 呼ぶと、bash の仕様で関数本体内の set -e が無効化され、git add -u 失敗時の
+# 「即時中断」（旧実装のトップレベル bare call の挙動）が「継続して成功報告」
+# に変わってしまう。bare call なら set -e が関数内にも効き、旧実装と終了
+# コードまで一致する。
+#
+# main コミットのステージングは git add -u + .github/ + .devcontainer/ に
+# 限定する（git add . ではない）。これ以外の未追跡ファイルは 0th-draft 側の
+# commit_and_push（git add .）で初めてコミットされるのが現行挙動。
+# `git commit ... || true` の || true も既存挙動（変更なし等の失敗を許容）の
+# 温存であり、外さないこと。
+#
+# Args:
+#   $1: commit_message - main / 0th-draft 双方のコミットメッセージ
+#
+finalize_with_draft_flow() {
+    local commit_message="$1"
+
+    # main ブランチでの初期セットアップコミット
+    git add -u
+    git add .github/ 2>/dev/null || true
+    git add .devcontainer/ 2>/dev/null || true
+    git commit -m "$commit_message" >/dev/null 2>&1 || true
+
+    if push_with_retry main; then
+        log_info "main ブランチセットアップ完了"
+    else
+        die "main ブランチのプッシュに失敗しました"
+    fi
+
+    # ドラフトブランチを作成
+    setup_review_workflow "0th-draft" || return 1
+
+    # 初期ドラフトをコミット・プッシュ
+    commit_and_push "$commit_message" "0th-draft" || return 1
 }
 
 #
