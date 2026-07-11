@@ -444,6 +444,36 @@ clone_repository() {
 # Note: git add . を使用するのは、セットアップ時に新規作成されるファイル
 # （.devcontainer/, .github/ 等）も含めてステージングする必要があるため。
 # 呼び出し元で git add -u を使用する場合は、事前にステージングを行うこと。
+# git push をリトライする共通ヘルパー（Issue #511）。
+# 一斉作成時の一過性エラー（push 競合・API レート制限・ネットワーク瞬断）を吸収し、
+# ブランチの取りこぼしを防ぐ。線形バックオフ（1 秒, 2 秒, ...）で再試行する。
+# Args:
+#   $1: branch       - push するブランチ名
+#   $2: max_attempts - 最大試行回数（既定 3）
+push_with_retry() {
+    local branch="$1"
+    local max_attempts="${2:-3}"
+    local attempt=1
+    local err
+
+    while true; do
+        # stderr を捨てずに捕捉し、失敗時の原因（rejected / permission / protected
+        # branch など）をログに残す。永続的エラーの事後調査を可能にする（Issue #511）。
+        if err=$(git push origin "$branch" 2>&1); then
+            return 0
+        fi
+        if [ "$attempt" -ge "$max_attempts" ]; then
+            log_error "push に ${max_attempts} 回失敗しました（${branch}）"
+            log_error "  最後のエラー: ${err}"
+            return 1
+        fi
+        log_warn "push 失敗（${branch}, ${attempt}/${max_attempts} 回目）。${attempt} 秒後に再試行します"
+        log_warn "  エラー詳細: ${err}"
+        sleep "$attempt"
+        attempt=$((attempt + 1))
+    done
+}
+
 commit_and_push() {
     local commit_message="$1"
     local branch="${2:-main}"
@@ -452,7 +482,7 @@ commit_and_push() {
     git add . >/dev/null 2>&1
     git commit -m "$commit_message" >/dev/null 2>&1
     
-    if git push origin "$branch" >/dev/null 2>&1; then
+    if push_with_retry "$branch"; then
         log_info "変更をプッシュしました"
         return 0
     else

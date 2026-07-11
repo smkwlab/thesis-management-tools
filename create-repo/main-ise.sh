@@ -150,7 +150,7 @@ git add .github/ 2>/dev/null || true
 git add .devcontainer/ 2>/dev/null || true
 git commit -m "Initial setup for ISE Report #${ISE_REPORT_NUM}" >/dev/null 2>&1 || true
 
-if git push origin main >/dev/null 2>&1; then
+if push_with_retry main; then
     log_info "main ブランチセットアップ完了"
 else
     die "main ブランチのプッシュに失敗しました"
