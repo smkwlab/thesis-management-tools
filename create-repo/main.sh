@@ -93,12 +93,13 @@ ORGANIZATION=$(determine_organization)
 
 # テンプレートリポジトリの決定。全タイプで TEMPLATE_REPO による上書きに対応する
 # （setup.sh はタイプ非依存で TEMPLATE_REPO をコンテナへ転送する）。既定値のみ
-# タイプごとにポリシーが異なる:
-# - thesis / wr / ise: org 追従（${ORGANIZATION}/<template>）。他 org で独自テンプレを
-#   使う場合は TEMPLATE_REPO で上書きする。
-# - latex / poster: 個人ユーザー（ORGANIZATION=個人アカウント）も利用する共有
-#   テンプレのため、org 追従にはせず既定を smkwlab に固定する。他 org で独自
-#   テンプレを使う場合は TEMPLATE_REPO で上書きする。
+# タイプごとにポリシーが異なり、「既定値の由来」で 2 グループに分かれる（この分類は
+# 下の case の並び順とは独立。case はファイル全体で統一している標準順
+# thesis→wr→latex→ise→poster を維持しているため、latex はグループ間に挟まって見える）:
+# - org 追従（${ORGANIZATION}/<template>） … thesis / wr / ise
+# - smkwlab 固定 … latex / poster（個人ユーザー = ORGANIZATION が個人アカウントでも
+#   利用する共有テンプレのため、org 追従にせず既定を smkwlab に固定する）
+# いずれのグループも、他 org で独自テンプレを使う場合は TEMPLATE_REPO で上書きする。
 # 注意: TEMPLATE_REPO 未設定時の既定は従来と同一（挙動不変）。以前は wr / ise のみ
 # TEMPLATE_REPO を無視していた（silent ignore）が、Issue #517 で全タイプ上書き可に統一。
 case "$DOC_TYPE" in
