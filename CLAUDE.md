@@ -117,6 +117,7 @@ INDIVIDUAL_MODE=true           # Skip student ID input, create in personal accou
 
 # Non-interactive execution (auto-approve the confirmation prompt)
 ASSUME_YES=1                   # Skip the "続行しますか?" confirmation; run without a TTY
+# Accepted truthy values: 1 / true / TRUE / yes / YES (setup.sh normalizes to true internally)
 # Works for all document types, independent of INDIVIDUAL_MODE (e.g. bulk creation, CI).
 # setup.sh validates that the inputs needed to avoid any remaining prompt are present
 # and fails fast before launching the container if any are missing:
