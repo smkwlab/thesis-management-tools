@@ -1,8 +1,11 @@
 # 教員向け添削ワークフローガイド
 
+> **本書の位置づけ**: 初期設定・スクリプト・提出プロセス管理・セキュリティは本書が正典です。
+> 日常のレビュー操作（コメント・Suggestion・複数教員レビュー）は [PR-REVIEW-GUIDE.md](PR-REVIEW-GUIDE.md)、初回の全体像は [TEACHER-ONBOARDING.md](TEACHER-ONBOARDING.md) を参照してください。
+
 ## 概要
 
-このガイドは、GitHub を使った論文添削の教員向け操作手順です。
+このガイドは、GitHub を使った論文添削ワークフローの教員向け運用・管理ガイドです。
 ハイブリッドワークフローにより、差分レビューと全体レビューの両方を効率的に実施できます。
 
 ## ワークフロー概要
@@ -78,119 +81,24 @@ initial (初期状態) ← レビュー用PRのベース
 
 ## 日常的な添削作業
 
+日々のレビュー操作の詳細な手順（差分の見方・コメント・Suggestion・レビュー送信）は
+[PR-REVIEW-GUIDE.md](PR-REVIEW-GUIDE.md) が正典です。ここでは運用上の要点のみまとめます。
+
 ### 1. 学生からPRが来たとき
 
-#### A. 差分レビュー（各版のPR）
-
-1. **PR内容の確認**
-   ```bash
-   # PRの詳細を確認
-   gh pr view {pr-number}
-   
-   # 変更差分を確認
-   gh pr diff {pr-number}
-   ```
-
-2. **レビュー実施**
-   - GitHub Web UI でレビューを実施
-   - 直前版からの変更部分にコメント
-   - 必要に応じてSuggestionを使用
-
-3. **Suggestionを使用する場合の注意**
-   ```
-   ✅ Do: Suggestionでコメント後、mergeせずに待機
-   ❌ Don't: Suggestionがあるのに即座にmerge
-   ```
-
-#### B. 全体レビュー（必須）
-
-**重要**: review-branchは GitHub Actions により自動更新されます。
-
-1. **review-branchの自動更新**
-   
-   🔄 **完全自動化**: 学生がPRを作成すると、GitHub Actions が自動的にreview-branchを最新内容で更新します。
-   
-   ```yaml
-   # .github/workflows/update-review-branch.yml で自動実行
-   トリガー: 
-   - PR作成時（opened）
-   - PR更新時（synchronize） 
-   - PR再開時（reopened）
-   
-   動作:
-   1. 学生のPRブランチ内容を取得
-   2. review-branchに自動マージ
-   3. レビュー用PRを自動更新
-   4. PRにコメントで通知
-   ```
-   
-   📝 **教員の作業**: 特別な操作は不要です。学生がPRを作成すると自動的に以下が実行されます：
-   - review-branchの更新
-   - レビュー用PRへの反映
-   - 通知コメントの投稿
-   
-   ⚠️ **トラブル時のみ**: 緊急時は `update-review-branch.sh` （非推奨）が利用可能です。
-
-2. **レビュー用PRで全体レビュー実施**
-   - 論文全体の構成確認
-   - 以前の部分への追加指摘
-   - 章を跨ぐ整合性の確認
-
-#### レビューの使い分け例
-
-```
-0th-draft (目次案) 提出時:
-1. 0th-draft PR: 目次構成のレビュー
-2. GitHub Actions: 自動的にreview-branchを更新 ✅
-3. レビュー用PR: 全体的な構成コメント
-
-1st-draft 提出時:
-1. 1st-draft PR: 0th-draftからの変更点レビュー  
-2. GitHub Actions: 自動的にreview-branchを更新 ✅
-3. レビュー用PR: 論文全体の内容確認（merge済み0th-draft含む）
-
-2nd-draft 提出時:
-1. 2nd-draft PR: 1st-draftからの変更点レビュー
-2. GitHub Actions: 自動的にreview-branchを更新 ✅
-3. レビュー用PR: 論文全体確認（merge済み1st-draft含む）
-```
+- **差分レビュー（各版のPR）**: 直前版からの変更点をレビューします。
+  操作手順は [PR-REVIEW-GUIDE.md](PR-REVIEW-GUIDE.md) の「基本的な添削手順」を参照。
+- **全体レビュー（レビュー用PR）**: review-branch は GitHub Actions
+  （`.github/workflows/update-review-branch.yml`、PR の opened / synchronize / reopened で発火）が
+  自動更新するため、教員側の操作は不要です。レビュー用PRで全体構成・章を跨ぐ整合性・merge済み箇所への
+  追加指摘を行います。使い分けは [PR-REVIEW-GUIDE.md](PR-REVIEW-GUIDE.md) の「レビュー用PRの活用」を参照。
+  トラブル時のみ `update-review-branch.sh`（非推奨、後述の「スクリプト活用」）が利用可能です。
 
 ### 2. Suggestion対応フロー
 
-#### 通常のレビューフロー
-
-```
-1. 教員: PRをレビュー、Suggestionでコメント
-2. 学生: Apply suggestion → Re-request review 🔄
-3. 教員: 確認・承認コメント
-4. 学生: 対応完了後、自分でPRをクローズ ✅
-5. 学生: 次稿執筆開始（並行作業可能）
-```
-
-**重要**: 教員はPRをマージしません。学生が自分でクローズします。
-
-#### Re-request review受信後の対応
-
-1. **通知の確認**
-   ```
-   📧 "Re-requested review on PR #3: 1st-draft"
-   ```
-
-2. **学生の適用内容を確認**
-   ```bash
-   # Commit historyでSuggestion適用を確認
-   gh pr view {pr-number}
-   ```
-
-3. **問題なければ承認コメント**
-   ```bash
-   # Web UIまたはコマンドでコメント
-   gh pr comment {pr-number} --body "修正内容を確認しました。対応完了後、PRをクローズしてください。"
-   ```
-
-4. **学生のPRクローズを待つ**
-   
-   ✅ **学生が自分でクローズ**: 対応完了後、学生が自分でPRをクローズします
+Suggestion 提示後は学生の適用と Re-request review を待ち、確認後に承認コメントします。
+**教員はPRをマージしません。学生が自分でクローズします。**
+詳細フローは [PR-REVIEW-GUIDE.md](PR-REVIEW-GUIDE.md) の「Suggestion対応フロー」を参照。
 
 ### 3. 並行作業時のサポート
 
@@ -252,237 +160,14 @@ cd k21rs001-sotsuron
 
 ## 複数人レビューの運用方法
 
-### パターン1: 役割分担型（推奨）
-
-#### レビュアーの役割分担
-
-```
-主指導教員（Primary Reviewer）:
-- 全体構成・内容の妥当性
-- 研究手法・結果の評価
-- 最終的な合否判断
-
-副指導教員/先輩（Secondary Reviewer）:
-- 文章表現・日本語
-- LaTeX記法・体裁
-- 参考文献の形式
-
-第三者（External Reviewer）※任意:
-- 客観的視点での確認
-- 専門外の人への分かりやすさ
-```
-
-#### 作業手順
-
-1. **学生がPR提出**
-   ```bash
-   # 通常通りPR作成
-   gh pr create --title "1st-draft" --body "第1稿の提出"
-   ```
-
-2. **主指導教員が最初にレビュー**
-   ```bash
-   # Reviewersに副指導教員を追加
-   gh pr edit {pr-number} --add-reviewer {sub-teacher-username}
-   
-   # 内容・構成をレビュー
-   # 「Changes requested」または「Comment」でレビュー実施
-   ```
-
-3. **副指導教員が文章・体裁をレビュー**
-   ```bash
-   # 主指導教員のレビュー後に実施
-   # textlint以外の日本語表現チェック
-   # LaTeX記法の改善提案
-   ```
-
-4. **Suggestionの調整**
-   ```
-   ルール例:
-   - 文章修正のSuggestion: 副指導教員が担当
-   - 内容修正の指示: 主指導教員がコメントのみ
-   - 学生は全Suggestion適用後にRe-request review
-   ```
-
-### パターン2: 段階的レビュー型
-
-#### フェーズ分けでの対応
-
-```
-Phase 1 (構成確認): 主指導教員のみ
-└─ 構成OKなら Phase 2 へ
-
-Phase 2 (詳細確認): 主指導教員 + 副指導教員
-└─ 文章・体裁を並行してレビュー
-
-Phase 3 (最終確認): 全員
-└─ 最終チェック・承認
-```
-
-#### GitHub上での運用
-
-```bash
-# Phase 1: 主指導教員のみをアサイン
-gh pr create --title "1st-draft (Phase1: 構成確認)" 
-
-# Phase 2: 副指導教員を追加
-gh pr edit {pr-number} --add-reviewer {sub-teacher-username}
-gh pr edit {pr-number} --title "1st-draft (Phase2: 詳細確認)"
-
-# Phase 3: 外部レビュアーも追加（必要時）
-gh pr edit {pr-number} --add-reviewer {external-reviewer}
-gh pr edit {pr-number} --title "1st-draft (Phase3: 最終確認)"
-```
-
-### パターン3: 完全並行レビュー型
-
-#### 同時レビューでの効率化
-
-```bash
-# 最初から全レビュアーをアサイン
-gh pr create --title "1st-draft" \
-  --reviewer {primary-teacher},{sub-teacher},{external-reviewer}
-```
-
-#### 競合回避のルール
-
-```
-コメント重複の防止:
-- Primary: 章・節レベルの大きな指摘
-- Secondary: 段落・文レベルの細かい指摘  
-- External: 全体的な分かりやすさ
-
-Suggestionの調整:
-- 内容に関わるもの: Primary のみ
-- 表現・体裁: Secondary のみ
-- 学生への説明: 誰でも可
-```
-
-### 複数人レビュー時の設定
-
-#### 1. GitHub設定の調整
-
-```bash
-# PR作成時のデフォルトレビュアー設定
-# .github/CODEOWNERS に記載
-* @primary-teacher @sub-teacher
-
-# 必要な承認数の設定（2人以上など）
-gh api repos/smkwlab/{repo}/branches/main/protection \
-  --method PUT \
-  --field required_pull_request_reviews='{"required_approving_review_count":2}'
-```
-
-#### 2. GitHub Actions での複数人レビュー
-
-```yaml
-# .github/workflows/update-review-branch.yml
-# 複数人レビュー時も自動更新で対応
-# 特別な設定は不要
-```
-
-#### 3. 通知の管理
-
-```
-効率的な通知管理:
-- GitHub通知設定でPR関連のみ有効化
-- Slack/Teams連携でリアルタイム共有
-- 週次進捗会議での一括確認
-```
-
-### 複数人レビューのベストプラクティス
-
-#### レビュー品質の向上
-
-```
-1. 観点の明確化:
-   各レビュアーが何を見るかを事前に決定
-
-2. 重複排除:
-   同じ指摘が複数人から出ないよう調整
-
-3. 優先順位付け:
-   Critical/Major/Minor での分類
-
-4. 建設的フィードバック:
-   改善案も合わせて提示
-```
-
-#### 学生への配慮
-
-```
-1. 混乱防止:
-   相反する指摘がある場合は教員間で調整
-
-2. 段階的修正:
-   一度に大量の修正を求めない
-
-3. 成長支援:
-   なぜその修正が必要かの説明を重視
-
-4. モチベーション維持:
-   良い点も積極的に評価
-```
-
-### トラブル時の対処法
-
-#### 教員間での意見相違
-
-```bash
-# PR上でのディスカッション
-gh pr comment {pr-number} --body "@sub-teacher この部分についてどう思われますか？"
-
-# 必要に応じてオフラインで議論
-# 学生には統一見解を提示
-```
-
-#### レビュー遅延の対応
-
-```
-対策例:
-- レビュー期限の明確化（48時間以内など）
-- 代理レビュー体制の構築
-- 緊急時の連絡方法確立
-```
+役割分担（主指導・副指導・外部）、順次/並行/段階的レビューの各パターン、CODEOWNERS や必要承認数の
+GitHub 設定、通知管理、レビュー遅延時の対応は、[PR-REVIEW-GUIDE.md](PR-REVIEW-GUIDE.md) の
+「複数教員での添削」を参照してください。教員間で意見が相違した場合は PR 上で協議し、学生には統一見解を提示します。
 
 ## 効率的な添削のコツ
 
-### 1. レビューの使い分けパターン
-
-```
-目次案 (0th-draft):
-→ 0th-draft PR で構成の相談・確認
-
-第1稿 (1st-draft):
-→ 1st-draft PR で新規執筆部分をレビュー
-→ レビュー用PR で全体構成確認
-
-第2稿以降:
-→ 各版PR で変更点をレビュー（効率重視）
-→ レビュー用PR で必要に応じて全体確認
-```
-
-### 2. Suggestionの効果的な使用
-
-```
-効果的なケース:
-- 軽微な修正（誤字、表現改善）
-- 具体的な修正提案がある場合
-
-避けるべきケース:
-- 大幅な構成変更
-- 学生の理解が必要な概念的修正
-```
-
-### 3. 推奨スケジュール
-
-```
-月曜: 学生がPR提出
-火曜: 教員がreview実施
-水曜: 学生がsuggestion適用 + re-request（該当時）
-木曜: 教員がmerge実行 + review-branch更新
-金曜: 学生が次版執筆開始
-```
+差分レビューと全体レビューの使い分け、Suggestion の効果的な使用、優先順位付け、週次の推奨スケジュールは、
+[PR-REVIEW-GUIDE.md](PR-REVIEW-GUIDE.md) の「レビュー用PRの活用」「効率的な添削のコツ」を参照してください。
 
 ## トラブルシューティング
 
@@ -706,3 +391,9 @@ gh repo archive smkwlab/{student-repo}
 - ❌ まだ大きな構成変更の可能性がある
 
 質問がある場合は smkwlabML で共有し、ノウハウを蓄積していきましょう。
+
+## 関連ドキュメント
+
+- [TEACHER-ONBOARDING.md](TEACHER-ONBOARDING.md): 初めての教員向けオンボーディング（最初の1時間で読む文書）
+- [PR-REVIEW-GUIDE.md](PR-REVIEW-GUIDE.md): 日常のレビュー操作の正典（コメント・Suggestion・複数教員レビュー）
+- [PR-REVIEW-GUIDELINES](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/PR-REVIEW-GUIDELINES.md): エコシステム全体の添削ルールの正典

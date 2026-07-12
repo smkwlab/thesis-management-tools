@@ -104,6 +104,7 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
 
 ### `docs/` - ガイドドキュメント
 
+- **[TEACHER-ONBOARDING.md](docs/TEACHER-ONBOARDING.md)**: 初めて論文指導を始める教員向けオンボーディング（最初の1時間で読む文書）
 
 - **[TEACHER-GUIDE.md](docs/TEACHER-GUIDE.md)**: 教員向け添削・管理ガイド
   - レビューワークフローの詳細
@@ -208,6 +209,9 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
 
 ### 教員向け
 
+0. **初めて本エコシステムで論文指導を始める場合**
+   → [TEACHER-ONBOARDING.md](docs/TEACHER-ONBOARDING.md)
+
 1. **初めてGitHub PRを使う場合**
    → [PR-REVIEW-GUIDE.md](docs/PR-REVIEW-GUIDE.md)
 
@@ -301,7 +305,7 @@ git push -u origin {next-branch}
 ```
 
 #### 複数教員での競合
-- [TEACHER-GUIDE.md](docs/TEACHER-GUIDE.md) の「複数人レビューの運用方法」を参照
+- [PR-REVIEW-GUIDE.md](docs/PR-REVIEW-GUIDE.md) の「複数教員での添削」を参照
 
 ## 🤝 コントリビューション
 
