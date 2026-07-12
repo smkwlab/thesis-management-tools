@@ -104,17 +104,13 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
 
 ### `docs/` - ガイドドキュメント
 
-- **[TEACHER-ONBOARDING.md](docs/TEACHER-ONBOARDING.md)**: 初めて論文指導を始める教員向けオンボーディング（最初の1時間で読む文書）
+教員向けガイドは [latex-ecosystem/docs/](https://github.com/smkwlab/latex-ecosystem/tree/main/docs) に集約されています:
 
-- **[TEACHER-GUIDE.md](docs/TEACHER-GUIDE.md)**: 教員向け添削・管理ガイド
-  - レビューワークフローの詳細
-  - 複数教員での協力添削
-  - GitHub Actions 自動化の活用
+- **[TEACHER-ONBOARDING.md](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/TEACHER-ONBOARDING.md)**: 初めて論文指導を始める教員向けオンボーディング（最初の1時間で読む文書）
+- **[PR-REVIEW-GUIDE.md](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/PR-REVIEW-GUIDE.md)**: GitHub PR 初心者向け添削ガイド（コメント・Suggestion・複数教員での連携）
+- **[TEACHER-GUIDE.md](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/TEACHER-GUIDE.md)**: 教員向け添削・管理ガイド（初期設定・スクリプト・提出プロセス管理）
 
-- **[PR-REVIEW-GUIDE.md](docs/PR-REVIEW-GUIDE.md)**: GitHub PR 初心者向け添削ガイド
-  - PR の基本概念
-  - コメント・Suggestion の使い方
-  - 複数教員での効率的な連携
+本リポジトリの docs/ には開発者向け文書（CLAUDE-*.md ほか）が置かれています。
 
 ### `scripts/` - 運用ツール
 
@@ -209,14 +205,16 @@ INDIVIDUAL_MODE=true /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.co
 
 ### 教員向け
 
+教員向けガイドは [latex-ecosystem/docs/](https://github.com/smkwlab/latex-ecosystem/tree/main/docs) に集約されています。
+
 0. **初めて本エコシステムで論文指導を始める場合**
-   → [TEACHER-ONBOARDING.md](docs/TEACHER-ONBOARDING.md)
+   → [TEACHER-ONBOARDING.md](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/TEACHER-ONBOARDING.md)
 
 1. **初めてGitHub PRを使う場合**
-   → [PR-REVIEW-GUIDE.md](docs/PR-REVIEW-GUIDE.md)
+   → [PR-REVIEW-GUIDE.md](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/PR-REVIEW-GUIDE.md)
 
 2. **技術的な詳細・上級操作**
-   → [TEACHER-GUIDE.md](docs/TEACHER-GUIDE.md)
+   → [TEACHER-GUIDE.md](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/TEACHER-GUIDE.md)
 
 3. **リポジトリ管理・一括操作**
    → [管理ツール使用方法](#管理ツール) 参照
@@ -305,7 +303,7 @@ git push -u origin {next-branch}
 ```
 
 #### 複数教員での競合
-- [PR-REVIEW-GUIDE.md](docs/PR-REVIEW-GUIDE.md) の「複数教員での添削」を参照
+- [PR-REVIEW-GUIDE.md](https://github.com/smkwlab/latex-ecosystem/blob/main/docs/PR-REVIEW-GUIDE.md) の「複数教員での添削」を参照
 
 ## 🤝 コントリビューション
 

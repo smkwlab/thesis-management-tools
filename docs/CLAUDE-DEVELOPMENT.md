@@ -119,10 +119,12 @@ scripts/
 └── (other management scripts)
 
 docs/
-├── PR-REVIEW-GUIDE.md          # Faculty review workflow guide
-├── TEACHER-GUIDE.md            # Complete faculty documentation
-└── (other documentation)
+└── (developer documentation: CLAUDE-*.md, RELEASE.md, etc.)
 ```
+
+Faculty-facing guides (TEACHER-ONBOARDING.md, PR-REVIEW-GUIDE.md, TEACHER-GUIDE.md)
+are centralized in
+[latex-ecosystem/docs/](https://github.com/smkwlab/latex-ecosystem/tree/main/docs).
 
 ### Template Integration
 - **sotsuron-template**: Primary template for undergraduate/graduate theses
