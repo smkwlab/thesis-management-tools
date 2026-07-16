@@ -1746,7 +1746,16 @@ comment_processing_failure() {
         run_url=" 実行ログ: ${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-$REPO}/actions/runs/${GITHUB_RUN_ID}"
     fi
 
-    add_issue_comment "$issue_number" "⚠️ 自動処理に失敗しました（${reason}）。管理者が対応するまでこの Issue は open のままです。${run_url}"
+    # リカバリ手順を明記する（issue #530: 復旧前の手動クローズによる取りこぼし防止。
+    # 未復旧のままクローズしても verify-protection-on-close.yml が再オープンする）
+    add_issue_comment "$issue_number" "⚠️ 自動処理に失敗しました（${reason}）。管理者が対応するまでこの Issue は open のままです。${run_url}
+
+## 管理者向けリカバリ手順
+
+1. 上記の実行ログで失敗原因を確認する
+2. ブランチ保護の失敗: \`scripts/setup-branch-protection.sh ${CURRENT_REPO_NAME:-<repo>}\` を再実行する（registry-manager が PATH にあれば registry の protection_status 記録まで自動）
+3. レジストリ登録の失敗: \`registry-manager add ${CURRENT_REPO_NAME:-<repo>}\` で再登録する
+4. 復旧を確認してからこの Issue をクローズする（未復旧のままクローズすると自動で再オープンされます。リポジトリ作成の取りやめ等は **Close as not planned** でクローズしてください）"
 }
 
 add_issue_comment() {
