@@ -35,7 +35,10 @@ set -eu
 
 REGISTRY_REPO="${REGISTRY_REPO:-smkwlab/thesis-student-registry}"
 REPORT_REPO="${REPORT_REPO:-${GITHUB_REPOSITORY:-smkwlab/student-repo-management}}"
-AUDIT_ISSUE_TITLE="🔍 ブランチ保護監査: 乖離を検出"
+# 既存 Issue の検索キーワードと起票タイトルを一元管理する
+# （MARKER は in:title 検索に使うため、検索構文と衝突する記号を含めない）
+AUDIT_ISSUE_MARKER="ブランチ保護監査"
+AUDIT_ISSUE_TITLE="🔍 ${AUDIT_ISSUE_MARKER}: 乖離を検出"
 
 DRY_RUN=false
 if [ "${1:-}" = "--dry-run" ]; then
@@ -52,8 +55,10 @@ log() {
 }
 
 log "レジストリを取得中: ${REGISTRY_REPO}"
+# @base64d で gh (gojq) 内で直接デコードする（外部 base64 コマンドの
+# 実装差に依存しない。折返し改行入りの content も扱える）
 registry=$(gh api "repos/${REGISTRY_REPO}/contents/data/registry.json" \
-    --jq '.content' | base64 -d)
+    --jq '.content | @base64d')
 
 # 保護必須種別（sotsuron / master / ise）のみ監査対象
 mapfile -t repos < <(echo "$registry" | jq -r '
@@ -168,7 +173,7 @@ fi
 
 # 既存の open な監査 Issue があればコメント追記（毎週の重複起票を防ぐ）
 existing=$(gh issue list --repo "$REPORT_REPO" --state open \
-    --search "in:title ブランチ保護監査" \
+    --search "in:title ${AUDIT_ISSUE_MARKER}" \
     --json number --jq '.[0].number // empty')
 
 if [ -n "$existing" ]; then
