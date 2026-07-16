@@ -57,9 +57,14 @@ jobs:
 
           problems=""
 
-          # レジストリ登録の確認
-          repo_type=$(gh api "repos/${REGISTRY_REPO}/contents/data/registry.json" \
-            --jq '.content' | base64 -d | \
+          # レジストリ登録の確認（取得自体の失敗は一時障害の可能性があるため、
+          # 未登録と区別して検証をスキップし、誤リオープンを避ける）
+          if ! reg_content=$(gh api "repos/${REGISTRY_REPO}/contents/data/registry.json" \
+            --jq '.content' 2>&1); then
+            echo "::warning::レジストリの取得に失敗したため検証をスキップします: $reg_content"
+            exit 0
+          fi
+          repo_type=$(echo "$reg_content" | base64 -d | \
             jq -r --arg r "$repo_name" '.[$r].repository_type // empty')
 
           if [ -z "$repo_type" ]; then
@@ -82,11 +87,16 @@ jobs:
           esac
 
           if [ "$needs_protection" = "true" ]; then
-            if gh api "repos/${target}/branches/main/protection" --silent 2>/dev/null; then
+            # 404（未保護）と 403・ネットワーク障害等を区別する。
+            # 一時障害での誤リオープンを避け、判定できないときはスキップする
+            if api_err=$(gh api "repos/${target}/branches/main/protection" 2>&1 >/dev/null); then
               echo "main ブランチ保護: 設定済み"
-            else
+            elif echo "$api_err" | grep -q "HTTP 404"; then
               problems="${problems}- \`${target}\` の main ブランチ保護が未設定です
           "
+            else
+              echo "::warning::ブランチ保護の確認に失敗したため検証をスキップします: $api_err"
+              exit 0
             fi
           fi
 
@@ -96,7 +106,7 @@ jobs:
           fi
 
           echo "::warning::未完了の項目があるため Issue #${ISSUE_NUMBER} を再オープンします"
-          gh issue reopen "$ISSUE_NUMBER" --repo "$THIS_REPO"
+          # 通知を受けた管理者が Issue を開いた時点で理由が見えるよう、コメントを先に投稿する
           gh issue comment "$ISSUE_NUMBER" --repo "$THIS_REPO" --body \
           "⚠️ この登録依頼 Issue はクローズされましたが、未完了の項目があるため自動で再オープンしました。
 
@@ -111,3 +121,4 @@ jobs:
           3. 復旧を確認してから Issue をクローズする
 
           リポジトリ作成の取りやめ等で対応せずにクローズする場合は、クローズ時に **Close as not planned** を選択してください（not_planned ではこのチェックは動作しません）。"
+          gh issue reopen "$ISSUE_NUMBER" --repo "$THIS_REPO"
