@@ -1,0 +1,44 @@
+---
+# ブランチ保護の定期監査（Issue #531）
+#
+# registry（thesis-student-registry）の記録と GitHub の実設定を週次で
+# 突き合わせ、乖離があればレポート Issue を起票する。
+# クローズ時ガード（verify-protection-on-close.yml）のセーフティネット:
+# 登録依頼 Issue を経由しない作成経路や、設定後の保護解除も検出する。
+name: Audit Branch Protection
+
+"on":
+  schedule:
+    # 毎週月曜 09:00 JST（00:00 UTC）
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      # 規約: <org>/thesis-student-registry。逸脱時のみ org/repo variable
+      # REGISTRY_REPO で override（ECOSYSTEM.md: Organization-Scoped Deployment）
+      REGISTRY_REPO: ${{ vars.REGISTRY_REPO || format('{0}/thesis-student-registry', github.repository_owner) }}
+    steps:
+      # GitHub App の installation token を毎回発行する（PAT の無通知失効を排除）。
+      # 学生リポジトリのブランチ保護参照・レジストリ参照・Issue 起票に
+      # cross-repo token が必要
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Audit branch protection
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          bash scripts/audit-branch-protection.sh
