@@ -1,0 +1,124 @@
+---
+# 登録依頼 Issue のクローズ時ガード（Issue #530）
+#
+# 自動処理が失敗した登録依頼 Issue を、リカバリ（ブランチ保護設定・レジストリ
+# 登録）の完了前に手動クローズすると、未保護リポジトリが検出不能になる。
+# クローズ時に実状態を検証し、未完了ならリオープンして警告する。
+#
+# - bot による正常クローズは保護設定済みのため素通しする
+# - 作成取りやめ等で意図的にクローズする場合は「Close as not planned」を
+#   選択する（state_reason=not_planned はこのガードの対象外）
+name: Verify Protection on Close
+
+"on":
+  issues:
+    types: [closed]
+
+jobs:
+  verify-protection:
+    runs-on: ubuntu-latest
+    # リポジトリ登録依頼の Issue のみで実行
+    if: >
+      contains(github.event.issue.title || '', 'リポジトリ登録依頼') &&
+      github.event.issue.state_reason != 'not_planned'
+    env:
+      # 規約: <org>/thesis-student-registry。逸脱時のみ org/repo variable
+      # REGISTRY_REPO で override（ECOSYSTEM.md: Organization-Scoped Deployment）
+      REGISTRY_REPO: ${{ vars.REGISTRY_REPO || format('{0}/thesis-student-registry', github.repository_owner) }}
+    steps:
+      # GitHub App の installation token を毎回発行する（PAT の無通知失効を排除）。
+      # 学生リポジトリのブランチ保護参照とレジストリ参照に cross-repo token が必要
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Verify registration and branch protection
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          set -eu
+
+          # タイトルから対象リポジトリを抽出
+          # 例: 「📋 リポジトリ登録依頼: smkwlab/k24rs001-ise-report1」
+          target=$(echo "$ISSUE_TITLE" | grep -oE '[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9._-]+' | head -1 || true)
+          if [ -z "$target" ]; then
+            echo "::warning::Issue タイトルからリポジトリ名を抽出できないため検証をスキップします: $ISSUE_TITLE"
+            exit 0
+          fi
+          repo_name="${target#*/}"
+          echo "検証対象: $target"
+
+          problems=""
+
+          # レジストリ登録の確認（取得自体の失敗は一時障害の可能性があるため、
+          # 未登録と区別して検証をスキップし、誤リオープンを避ける）
+          if ! reg_content=$(gh api "repos/${REGISTRY_REPO}/contents/data/registry.json" \
+            --jq '.content' 2>&1); then
+            echo "::warning::レジストリの取得に失敗したため検証をスキップします: $reg_content"
+            exit 0
+          fi
+          repo_type=$(echo "$reg_content" | base64 -d | \
+            jq -r --arg r "$repo_name" '.[$r].repository_type // empty')
+
+          if [ -z "$repo_type" ]; then
+            problems="${problems}- レジストリ（${REGISTRY_REPO}）に \`${repo_name}\` が登録されていません
+          "
+          else
+            echo "repository_type: $repo_type"
+          fi
+
+          # ブランチ保護の確認（保護必須の種別のみ。wr / latex / other は保護不要）
+          # 未登録で種別が不明な場合も、保護必須種別の命名規則に一致すれば確認する
+          needs_protection=false
+          case "$repo_type" in
+            sotsuron|master|ise) needs_protection=true ;;
+            "")
+              if echo "$repo_name" | grep -qE -- '-(sotsuron|master|thesis|ise-report[0-9]*)$'; then
+                needs_protection=true
+              fi
+              ;;
+          esac
+
+          if [ "$needs_protection" = "true" ]; then
+            # 404（未保護）と 403・ネットワーク障害等を区別する。
+            # 一時障害での誤リオープンを避け、判定できないときはスキップする
+            if api_err=$(gh api "repos/${target}/branches/main/protection" 2>&1 >/dev/null); then
+              echo "main ブランチ保護: 設定済み"
+            elif echo "$api_err" | grep -q "HTTP 404"; then
+              problems="${problems}- \`${target}\` の main ブランチ保護が未設定です
+          "
+            else
+              echo "::warning::ブランチ保護の確認に失敗したため検証をスキップします: $api_err"
+              exit 0
+            fi
+          fi
+
+          if [ -z "$problems" ]; then
+            echo "✅ 登録とブランチ保護を確認しました。クローズを許可します"
+            exit 0
+          fi
+
+          echo "::warning::未完了の項目があるため Issue #${ISSUE_NUMBER} を再オープンします"
+          # 通知を受けた管理者が Issue を開いた時点で理由が見えるよう、コメントを先に投稿する
+          gh issue comment "$ISSUE_NUMBER" --repo "$THIS_REPO" --body \
+          "⚠️ この登録依頼 Issue はクローズされましたが、未完了の項目があるため自動で再オープンしました。
+
+          ## 未完了の項目
+
+          ${problems}
+          ## 管理者向けリカバリ手順
+
+          1. ブランチ保護: \`scripts/setup-branch-protection.sh ${repo_name}\` を実行
+             （registry-manager が PATH にあれば registry の protection_status 記録まで自動）
+          2. レジストリ登録: \`registry-manager add ${repo_name}\` で再登録
+          3. 復旧を確認してから Issue をクローズする
+
+          リポジトリ作成の取りやめ等で対応せずにクローズする場合は、クローズ時に **Close as not planned** を選択してください（not_planned ではこのチェックは動作しません）。"
+          gh issue reopen "$ISSUE_NUMBER" --repo "$THIS_REPO"
