@@ -7,45 +7,45 @@ This document provides detailed command examples and usage samples for student-r
 ### Basic Usage
 ```bash
 # Self-service repository creation (zero dependencies required)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 # With student ID (specify thesis explicitly; setup.sh does not auto-detect the type)
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 # For weekly reports
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash wr
+STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) wr
 ```
 
 ### Universal Setup Script with Document Types
 ```bash
 # Thesis repository
-DOC_TYPE=thesis STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+DOC_TYPE=thesis STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net)
 
 # Weekly reports
-DOC_TYPE=wr STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+DOC_TYPE=wr STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net)
 
 # General LaTeX documents (organization mode)
-DOC_TYPE=latex STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+DOC_TYPE=latex STUDENT_ID=k21rs001 DOCUMENT_NAME=research-note bash <(curl -fsSL https://repo-setup.smkwlab.net)
 
 # General LaTeX documents (individual mode - no student ID required)
-INDIVIDUAL_MODE=true DOC_TYPE=latex DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+INDIVIDUAL_MODE=true DOC_TYPE=latex DOCUMENT_NAME=my-paper bash <(curl -fsSL https://repo-setup.smkwlab.net)
 
 # ISE reports
-DOC_TYPE=ise STUDENT_ID=k21rs001 ISE_REPORT_NUM=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+DOC_TYPE=ise STUDENT_ID=k21rs001 ISE_REPORT_NUM=1 bash <(curl -fsSL https://repo-setup.smkwlab.net)
 ```
 
 ### Advanced Usage
 ```bash
 # Debug mode for troubleshooting
-DEBUG=1 STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+DEBUG=1 STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 # Multiple GitHub accounts support
 # Create repository in personal account instead of smkwlab organization
-TARGET_ORG=your-github-username STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+TARGET_ORG=your-github-username STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 # Switch GitHub CLI account before running (if multiple accounts exist)
 gh auth switch --user target-username
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
 ## Development and Testing Examples

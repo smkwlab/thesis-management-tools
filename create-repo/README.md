@@ -9,7 +9,7 @@
 **WSL上の bash または mac のターミナル上で以下の行を実行し、リポジトリを作成してください：**
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
 ### 情報科学演習レポートリポジトリ
@@ -17,7 +17,7 @@
 **情報科学演習I・II用のレポートリポジトリを作成する場合：**
 
 ```bash
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash ise
+STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) ise
 ```
 
 ※ `k21rs001` の部分を自分の学籍番号に変更してください。
@@ -27,7 +27,7 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 **研究週報用のリポジトリを作成する場合：**
 
 ```bash
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash wr
+STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) wr
 ```
 
 **前提条件:**
@@ -36,31 +36,28 @@ STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com
 
 ## 再現性・安全性（固定版の利用）
 
-これまでの `setup.sh` 実行コマンドは利便性を重視し、URL の `main`（最新版）から
-スクリプトを取得します。ある時点の手順を確実に再現したい場合や、内容を固定して
-実行したい場合は、**タグ（バージョン）で固定した版**を利用できます。
+上記の `setup.sh` 実行コマンドは、短縮 URL から**最新の安定版**を取得します。
+公開済みのリリースだけが配信されるため、未検証の変更がそのまま実行されることはありません。
 
-`setup.sh` の URL のブランチ部分（`main`）をタグに変えるだけで、スクリプト本体・
-内部で取得する内容ともに同じバージョンに固定されます（文書タイプ引数の指定方法は
-これまでと同じで、以下は論文 `thesis` の例です）。
+ある時点の手順を厳密に再現したい場合は、**特定のバージョンに固定した版**を利用できます。
+その場合だけ、短縮 URL の代わりにタグ付きの URL を指定してください（文書タイプ引数の
+指定方法は同じで、以下は論文 `thesis` の例です）。
 
 ```bash
-# 最新の v1 系（移動タグ。安定版を使いたい場合の推奨。テンプレート README もこちら）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1/create-repo/setup.sh)" bash thesis
-
 # 特定パッチに完全固定（厳密な再現が必要な場合）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh)" bash thesis
+bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh) thesis
 ```
 
-> `v1` は「最新の v1 系リリース」を指す移動タグです（GitHub Actions の `@v4` と同様）。
-> 完全に同一の内容を再現したい場合は `v1.2.0` のように具体的なバージョンを指定してください。
+> 短縮 URL は「最新の `v1` 系リリース」を配信します（`v1` は GitHub Actions の `@v4` と
+> 同様の移動タグです）。完全に同一の内容を再現したい場合のみ、`v1.2.0` のように具体的な
+> バージョンを指定してください。
 
-> 変更するのは **URL 内の `main` の部分だけ**です。コマンド末尾の引数（上の例では
-> `bash thesis`。`bash` は `bash -c` のダミー引数 `$0`、`thesis` が実際の文書タイプ `$1`）や、
+> 変更するのは **URL の部分だけ**です。コマンド末尾の文書タイプ（上の例では `thesis`）や、
 > 各コマンド先頭の環境変数（`STUDENT_ID=...` など）はそのまま残してください。
 
 - スクリプトの内容は公開リポジトリでいつでも確認できます。実行前に内容を確認したい場合は、
-  上記 URL をブラウザで開いて確認してください。
+  [v1 の setup.sh](https://github.com/smkwlab/student-repo-management/blob/v1/create-repo/setup.sh)
+  を開いてください（短縮 URL が配信しているものと同じ内容です）。
 - 利用可能なバージョン（`v1.2.0` などの具体的なリリース）は [Releases](https://github.com/smkwlab/student-repo-management/releases) を参照してください。なお `v1` はそれらの最新を指す移動タグ（ポインタ）であり、Releases 一覧には個別の項目としては現れません。
 - リリース運用の詳細は [docs/RELEASE.md](../docs/RELEASE.md) を参照してください。
 
@@ -78,14 +75,14 @@ A: デフォルトでは `smkwlab` 組織に作成されます。環境変数 `T
 ### Q: 組織への権限がないエラー
 A: 組織の管理者に招待を依頼するか、個人アカウントに作成してください：
 ```bash
-TARGET_ORG=あなたのユーザー名 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+TARGET_ORG=あなたのユーザー名 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
 ### Q: エラーの詳細を確認したい
 A: デバッグモードで実行すると詳細な情報が表示されます：
 
 ```bash
-DEBUG=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+DEBUG=1 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
 ## セットアップ後の作業
