@@ -1,6 +1,6 @@
 #!/bin/bash
 # 統合リポジトリ作成スクリプト (Universal Setup Script)
-# 使用例: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+# 使用例: bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 set -e
 

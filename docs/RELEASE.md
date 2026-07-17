@@ -150,33 +150,32 @@ curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/mai
 
 ## 利用側（学生・教員）での使い方
 
-### 既定（最新版 / 利便性重視）
+### 既定（短縮 URL / 最新の安定版）
+
+ドキュメントで案内するのはこの形。短縮 URL は `v1` を配信するため、常に最新の安定版が実行される。
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
 ### 固定版（再現性重視）
 
-URL のブランチ部分をタグに変えるだけで、本体・内部 clone とも当該タグに固定される。
+URL をタグ付きの raw URL に変えるだけで、本体・内部 clone とも当該タグに固定される。
 
 ```bash
-# 最新の v1 系（移動タグ。テンプレート README はこちらを採用）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1/create-repo/setup.sh)" bash thesis
-
 # 特定パッチに完全固定（厳密な再現が必要な場合）
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh)" bash thesis
+bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh) thesis
 ```
 
 ### 参照先を明示的に上書きしたい場合
 
 ```bash
 # タグ / コミットSHA / ブランチを明示指定（内部 clone の参照先を上書き）
-UNIVERSAL_REF=v1.0.0 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+UNIVERSAL_REF=v1.0.0 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
 ## 安全性に関する注意
 
 - スクリプトの内容は公開リポジトリでいつでも確認できる。
-  実行前に内容を確認したい場合は、上記の URL をブラウザ等で開いて確認できる。
-- 再現性・監査性が必要な運用（手順書への記載など）では、`main` ではなく固定版（タグ）を推奨する。
+  実行前に内容を確認したい場合は、<https://repo-setup.smkwlab.net> をブラウザ等で開いて確認できる。
+- 再現性・監査性が必要な運用（手順書への記載など）では、短縮 URL ではなく固定版（タグ）を推奨する。

@@ -7,37 +7,38 @@ Administrative tools and workflows for thesis supervision at Kyushu Sangyo Unive
 ### Student Repository Creation
 ```bash
 # Universal Setup Script - All document types supported (Recommended)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 # With student ID specified (environment variable)
-STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 # Document type specific usage
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis   # Thesis repository
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash wr       # Weekly reports
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex    # General LaTeX
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash ise      # ISE reports
+bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis   # Thesis repository
+bash <(curl -fsSL https://repo-setup.smkwlab.net) wr       # Weekly reports
+bash <(curl -fsSL https://repo-setup.smkwlab.net) latex    # General LaTeX
+bash <(curl -fsSL https://repo-setup.smkwlab.net) ise      # ISE reports
 
 # Environment variable style (Legacy, still supported)
-DOC_TYPE=thesis /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)"
+DOC_TYPE=thesis bash <(curl -fsSL https://repo-setup.smkwlab.net)
 
 # Advanced configuration with environment variables
-DOCUMENT_NAME=research-note STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
+DOCUMENT_NAME=research-note STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) latex
 
 # Individual mode for personal LaTeX documents (no student ID required)
-INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash latex
+INDIVIDUAL_MODE=true DOCUMENT_NAME=my-paper bash <(curl -fsSL https://repo-setup.smkwlab.net) latex
 ```
 
-**Version pinning (reproducibility & safety)**: The commands above default to `main`
-(latest) for convenience. To pin a specific version, replace `main` in the URL with a
-release tag (e.g. `v1.2.0`); the script body and the content it clones internally are
-both pinned to that tag. The internal ref can also be overridden via `UNIVERSAL_REF`
-(precedence: `UNIVERSAL_REF` > `UNIVERSAL_BRANCH` > embedded default `main`).
-See [docs/RELEASE.md](docs/RELEASE.md) for the release workflow.
+**Version pinning (reproducibility & safety)**: The short URL serves the latest stable
+release (the `v1` moving tag), so the commands above never run unreleased changes. To
+pin an exact version instead, fetch the raw URL with a release tag; the script body and
+the content it clones internally are both pinned to that tag. The internal ref can also
+be overridden via `UNIVERSAL_REF` (precedence: `UNIVERSAL_REF` > `UNIVERSAL_BRANCH` >
+the ref embedded at release time). See [docs/RELEASE.md](docs/RELEASE.md) for the
+release workflow.
 
 ```bash
-# Pinned version
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh)" bash thesis
+# Pinned to an exact release
+bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh) thesis
 ```
 
 ### Branch Protection Setup
@@ -132,14 +133,14 @@ ISE_REPORT_NUM=1              # Report number (1 or 2)
 
 ```bash
 # Non-interactive organization-flow example (no prompts, no TTY needed)
-STUDENT_ID=k21rs001 ASSUME_YES=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh)" bash thesis
+STUDENT_ID=k21rs001 ASSUME_YES=1 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
 ## Student ID Patterns
 
 `setup.sh` does not auto-detect the document type from the student ID. The mapping
-below is the `DOC_TYPE` you should **specify** (positional `bash <type>` argument or
-the `DOC_TYPE` env var) for each case.
+below is the `DOC_TYPE` you should **specify** (positional `<type>` argument or the
+`DOC_TYPE` env var) for each case.
 
 ```bash
 # Undergraduate: k##rs### → DOC_TYPE=thesis
