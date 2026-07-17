@@ -1,0 +1,65 @@
+---
+# Publish create-repo/setup.sh at the short URL https://repo-setup.smkwlab.net
+# so students can run: bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
+# create-repo/setup.sh stays the single source; this workflow copies it to the
+# Pages artifact (root index.html + /setup.sh alias) on every main update.
+name: Deploy setup.sh to Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - create-repo/setup.sh
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build Pages artifact
+    permissions:
+      contents: read
+      # configure-pages reads the Pages site metadata (GET /repos/*/pages) and
+      # fails the job if that call is denied.
+      pages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Assemble site from setup.sh
+        run: |
+          mkdir -p _site
+          # Root (index.html) is what a path-less curl fetches; the .sh alias
+          # keeps a migration path. Content-Type is irrelevant to bash <(...).
+          cp create-repo/setup.sh _site/index.html
+          cp create-repo/setup.sh _site/setup.sh
+          # No CNAME file: Actions-based Pages deploys ignore it. The custom
+          # domain lives in Settings -> Pages (or the pages API) instead.
+          touch _site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy to GitHub Pages
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
