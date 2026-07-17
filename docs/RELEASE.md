@@ -174,6 +174,11 @@ bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-managem
 UNIVERSAL_REF=v1.0.0 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
+> この形で上書きされるのは**内部 clone の参照先だけ**で、スクリプト本体は短縮 URL
+> （＝ `v1`）から取得される。本体と内部を同一バージョンに揃えたい場合は、`UNIVERSAL_REF`
+> ではなく上記「固定版」のタグ付き raw URL を使う（タグ付き URL なら `EMBEDDED_REF` が
+> そのタグになるため、環境変数の指定は不要）。
+
 ## 安全性に関する注意
 
 - スクリプトの内容は公開リポジトリでいつでも確認できる。実行前に内容を確認したい場合は

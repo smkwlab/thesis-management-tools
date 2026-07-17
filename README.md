@@ -58,7 +58,7 @@ bash <(curl -fsSL https://repo-setup.smkwlab.net) latex
 # アカウント切り替え
 gh auth switch --user your-username
 
-# または個人アカウントに作成
+# または個人アカウントに作成（論文の例。wr / latex / ise / poster も同様）
 TARGET_ORG=your-username bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 ```
 
