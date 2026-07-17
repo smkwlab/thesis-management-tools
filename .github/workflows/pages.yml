@@ -13,11 +13,6 @@ on:
       - .github/workflows/pages.yml
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -26,6 +21,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build Pages artifact
+    permissions:
+      contents: read
+      # configure-pages reads the Pages site metadata (GET /repos/*/pages) and
+      # fails the job if that call is denied.
+      pages: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -37,7 +37,8 @@ jobs:
           # keeps a migration path. Content-Type is irrelevant to bash <(...).
           cp create-repo/setup.sh _site/index.html
           cp create-repo/setup.sh _site/setup.sh
-          echo repo-setup.smkwlab.net > _site/CNAME
+          # No CNAME file: Actions-based Pages deploys ignore it. The custom
+          # domain lives in Settings -> Pages (or the pages API) instead.
           touch _site/.nojekyll
 
       - name: Configure Pages
@@ -52,6 +53,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     name: Deploy to GitHub Pages
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
