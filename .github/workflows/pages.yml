@@ -1,16 +1,23 @@
 ---
-# Publish create-repo/setup.sh at the short URL https://repo-setup.smkwlab.net
-# so students can run: bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
-# create-repo/setup.sh stays the single source; this workflow copies it to the
-# Pages artifact (root index.html + /setup.sh alias) on every main update.
+# Publish the stable create-repo/setup.sh at the short URL
+# https://repo-setup.smkwlab.net so students can run:
+#   bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
+#
+# This serves the v1 moving tag, NOT main. Student-executed commands must not
+# track main, or unreleased changes reach students (see #122); the documented
+# one-liners point at v1 for the same reason. The v1 setup.sh also carries
+# EMBEDDED_REF="v1.x.y", so the template content it clones is pinned to that
+# same release -- serving main would silently unpin both halves.
+#
+# Deploys when a release tag is pushed. The run that matters is the v1 move in
+# step 7 of docs/RELEASE.md; a vX.Y.Z push earlier in that procedure also fires
+# but still publishes whatever v1 points at, so the final state is correct
+# either way. Use workflow_dispatch to redeploy without a release.
 name: Deploy setup.sh to Pages
 
 on:
   push:
-    branches: [main]
-    paths:
-      - create-repo/setup.sh
-      - .github/workflows/pages.yml
+    tags: ['v*']
   workflow_dispatch:
 
 concurrency:
@@ -27,8 +34,13 @@ jobs:
       # fails the job if that call is denied.
       pages: read
     steps:
-      - name: Checkout repository
+      - name: Checkout the stable release (v1 moving tag)
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          # Pin to v1 regardless of what triggered the run, so a dispatch from
+          # main never publishes main's setup.sh. Bump this when the stable
+          # series moves to v2, together with the one-liners in the docs.
+          ref: v1
 
       - name: Assemble site from setup.sh
         run: |
@@ -40,6 +52,18 @@ jobs:
           # No CNAME file: Actions-based Pages deploys ignore it. The custom
           # domain lives in Settings -> Pages (or the pages API) instead.
           touch _site/.nojekyll
+
+      - name: Verify the artifact is a release, not main
+        run: |
+          # A release setup.sh embeds its own tag; main embeds "main". Publishing
+          # the latter would point students at unreleased template content, which
+          # is exactly what serving v1 avoids -- fail loudly instead.
+          ref=$(sed -n 's/^EMBEDDED_REF="\(.*\)"$/\1/p' _site/index.html)
+          if [ -z "$ref" ] || [ "$ref" = "main" ]; then
+            echo "::error::Refusing to publish setup.sh with EMBEDDED_REF=\"${ref:-<unset>}\"; expected a release tag."
+            exit 1
+          fi
+          echo "Publishing setup.sh from ${ref}."
 
       - name: Configure Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5

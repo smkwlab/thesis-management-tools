@@ -76,11 +76,26 @@ gh release create v1.0.0 --title "v1.0.0" --notes "リリース内容..."
 #    （v1 がタグオブジェクトを指すと解決が不安定になるのを防ぐ）
 git tag -f v1 v1.0.0^{}
 git push origin v1 --force
+
+# 8. 短縮 URL の再デプロイを確認（v1 の push で自動実行される）
+#    配信内容が新しいリリースに入れ替わったことを確かめる
+curl -fsSL https://repo-setup.smkwlab.net | grep EMBEDDED_REF
 ```
 
 > **重要**: リリース用コミット（`EMBEDDED_REF="v1.0.0"`）を `main` にマージしないこと。
 > マージすると `main` の `setup.sh` が古いタグを指し続けてしまう。
 > `main` 上の `EMBEDDED_REF` は常に `"main"` を保つ。
+
+### 短縮 URL への反映
+
+短縮 URL `https://repo-setup.smkwlab.net` は `v1` の `setup.sh` を配信しており
+（[`.github/workflows/pages.yml`](../.github/workflows/pages.yml)）、手順 7 の
+`v1` push で自動的に再デプロイされる。`main` への push では**再デプロイされない**
+（学生が未リリースの変更を踏まないようにするため）。
+
+反映されない場合は Actions から `Deploy setup.sh to Pages` を `workflow_dispatch`
+で手動実行する。workflow は配信前に `EMBEDDED_REF` を検証し、`main` を配信しよう
+とした場合は失敗する。
 
 ## メジャー移動タグ（`v1` など）
 
