@@ -56,7 +56,8 @@ bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-managem
 > 各コマンド先頭の環境変数（`STUDENT_ID=...` など）はそのまま残してください。
 
 - スクリプトの内容は公開リポジトリでいつでも確認できます。実行前に内容を確認したい場合は、
-  <https://repo-setup.smkwlab.net> をブラウザで開いて確認してください。
+  [v1 の setup.sh](https://github.com/smkwlab/student-repo-management/blob/v1/create-repo/setup.sh)
+  を開いてください（短縮 URL が配信しているものと同じ内容です）。
 - 利用可能なバージョン（`v1.2.0` などの具体的なリリース）は [Releases](https://github.com/smkwlab/student-repo-management/releases) を参照してください。なお `v1` はそれらの最新を指す移動タグ（ポインタ）であり、Releases 一覧には個別の項目としては現れません。
 - リリース運用の詳細は [docs/RELEASE.md](../docs/RELEASE.md) を参照してください。
 

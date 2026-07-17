@@ -176,6 +176,7 @@ UNIVERSAL_REF=v1.0.0 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 ## 安全性に関する注意
 
-- スクリプトの内容は公開リポジトリでいつでも確認できる。
-  実行前に内容を確認したい場合は、<https://repo-setup.smkwlab.net> をブラウザ等で開いて確認できる。
+- スクリプトの内容は公開リポジトリでいつでも確認できる。実行前に内容を確認したい場合は
+  [v1 の setup.sh](https://github.com/smkwlab/student-repo-management/blob/v1/create-repo/setup.sh)
+  を開く（短縮 URL は `Content-Type: text/html` で配信されるため、ブラウザでの閲覧には向かない）。
 - 再現性・監査性が必要な運用（手順書への記載など）では、短縮 URL ではなく固定版（タグ）を推奨する。
