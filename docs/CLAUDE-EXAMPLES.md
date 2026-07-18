@@ -65,9 +65,6 @@ cd create-repo && DOC_TYPE=wr ./main.sh k21rs001
 
 ### Manual Repository Management (Emergency Use)
 ```bash
-# Update review branch manually (emergency only)
-./scripts/update-review-branch.sh {repo-name} {branch-name}
-
 # Validate repository structure
 gh repo view {org}/{repo-name} --json defaultBranch,visibility
 ```

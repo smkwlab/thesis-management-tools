@@ -62,7 +62,7 @@ docker run --rm --entrypoint gh -e GH_TOKEN="$(gh auth token)" thesis-creator au
 ### Repository Creation Debugging
 ```bash
 # Enable debug mode for detailed output
-DEBUG=1 STUDENT_ID=k21rs001 /bin/bash -c "$(curl -fsSL ...)"
+DEBUG=1 STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 
 # Verify student ID patterns
 echo "k21rs001" | grep -E "k[0-9]{2}rs[0-9]{3}" && echo "undergraduate" || echo "graduate"

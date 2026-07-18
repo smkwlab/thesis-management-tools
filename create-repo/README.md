@@ -45,11 +45,11 @@ STUDENT_ID=k21rs001 bash <(curl -fsSL https://repo-setup.smkwlab.net) wr
 
 ```bash
 # 特定パッチに完全固定（厳密な再現が必要な場合）
-bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh) thesis
+bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.3.0/create-repo/setup.sh) thesis
 ```
 
 > 短縮 URL は「最新の `v1` 系リリース」を配信します（`v1` は GitHub Actions の `@v4` と
-> 同様の移動タグです）。完全に同一の内容を再現したい場合のみ、`v1.2.0` のように具体的な
+> 同様の移動タグです）。完全に同一の内容を再現したい場合のみ、`v1.3.0` のように具体的な
 > バージョンを指定してください。
 
 > 変更するのは **URL の部分だけ**です。コマンド末尾の文書タイプ（上の例では `thesis`）や、
@@ -58,7 +58,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-managem
 - スクリプトの内容は公開リポジトリでいつでも確認できます。実行前に内容を確認したい場合は、
   [v1 の setup.sh](https://github.com/smkwlab/student-repo-management/blob/v1/create-repo/setup.sh)
   を開いてください（短縮 URL が配信しているものと同じ内容です）。
-- 利用可能なバージョン（`v1.2.0` などの具体的なリリース）は [Releases](https://github.com/smkwlab/student-repo-management/releases) を参照してください。なお `v1` はそれらの最新を指す移動タグ（ポインタ）であり、Releases 一覧には個別の項目としては現れません。
+- 利用可能なバージョン（`v1.3.0` などの具体的なリリース）は [Releases](https://github.com/smkwlab/student-repo-management/releases) を参照してください。なお `v1` はそれらの最新を指す移動タグ（ポインタ）であり、Releases 一覧には個別の項目としては現れません。
 - リリース運用の詳細は [docs/RELEASE.md](../docs/RELEASE.md) を参照してください。
 
 ## よくある質問

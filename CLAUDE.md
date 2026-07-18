@@ -38,7 +38,7 @@ release workflow.
 
 ```bash
 # Pinned to an exact release
-bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh) thesis
+bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.3.0/create-repo/setup.sh) thesis
 ```
 
 ### Branch Protection Setup
@@ -195,9 +195,6 @@ DEBUG=1 STUDENT_ID=k21rs001 ./create-repo/setup.sh
 
 ### Emergency Manual Operations
 ```bash
-# Manual review branch update
-./scripts/update-review-branch.sh repo-name branch-name
-
 # Validate repository structure
 gh repo view smkwlab/repo-name --json defaultBranch,visibility
 ```

@@ -28,10 +28,9 @@ Further improvements → Final PR → Faculty approval → final-* tag → Auto-
 
 ### Review Process
 1. **Monitor draft PRs** for incremental changes
-2. **Use review-branch PR** for holistic document review
-3. **Provide feedback** via GitHub comments and suggestions
-4. **Track progress** through branch sequence
-5. **Final approval** through GitHub workflow
+2. **Provide feedback** via GitHub comments and suggestions
+3. **Track progress** through branch sequence
+4. **Final approval** through GitHub workflow
 
 ### Management Tools
 - **Progress tracking**: Via GitHub repository insights
