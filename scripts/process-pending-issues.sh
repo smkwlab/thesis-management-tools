@@ -1014,7 +1014,7 @@ show_issue_details() {
             echo "  2. Issue クローズ"
             ;;
         ise|sotsuron|master)
-            echo "  1. ブランチ保護設定 (main, review-branch)"
+            echo "  1. ブランチ保護設定 (main)"
             echo "  2. thesis-student-registry への登録"
             echo "  3. Issue クローズ"
             ;;
@@ -1376,7 +1376,6 @@ process_thesis_with_feedback() {
 
 ## ブランチ保護設定
 - **main ブランチ**: 1つ以上の承認レビューが必要
-- **review-branch**: 存在する場合は同様に保護
 - **新しいコミット時**: 古いレビューを無効化
 - **フォースプッシュ**: 禁止
 - **ブランチ削除**: 禁止
@@ -1391,7 +1390,7 @@ process_thesis_with_feedback() {
     
     echo ""
     echo "📋 実行された操作:"
-    echo "  • ブランチ保護設定 (main, review-branch)"
+    echo "  • ブランチ保護設定 (main)"
     echo "  • thesis-student-registry への登録"
     echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
     echo ""
@@ -1628,7 +1627,6 @@ process_thesis_issue() {
 
 ## ブランチ保護設定
 - **main ブランチ**: 1つ以上の承認レビューが必要
-- **review-branch**: 存在する場合は同様に保護
 - **新しいコミット時**: 古いレビューを無効化
 - **フォースプッシュ**: 禁止
 - **ブランチ削除**: 禁止
@@ -1674,7 +1672,6 @@ process_ise_issue() {
 
 ## ブランチ保護設定
 - **main ブランチ**: 1つ以上の承認レビューが必要
-- **review-branch**: 1つ以上の承認レビューが必要
 - **新しいコミット時**: 古いレビューを無効化
 - **フォースプッシュ**: 禁止
 - **ブランチ削除**: 禁止

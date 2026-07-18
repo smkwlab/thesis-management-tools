@@ -312,11 +312,11 @@ git push -u origin {next-branch}
 ### 開発・テスト環境
 
 ```bash
-# テスト用リポジトリ作成
-./scripts/create-student-repos.sh test-student
+# テスト用リポジトリ作成（create-repo/main.sh を直接実行）
+cd create-repo && DOC_TYPE=thesis ./main.sh k21rs999
 
 # 動作確認
-cd test-student-sotsuron
+cd k21rs999-sotsuron
 # 通常の学生ワークフローをテスト
 ```
 

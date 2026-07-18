@@ -138,9 +138,9 @@ git push origin v1 --force
 
 ```bash
 # タグ付き URL の EMBEDDED_REF がタグ値になっているか
-curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh \
+curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.3.0/create-repo/setup.sh \
   | grep '^EMBEDDED_REF='
-# => EMBEDDED_REF="v1.2.0"
+# => EMBEDDED_REF="v1.3.0"
 
 # main 側は "main" のまま
 curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/main/create-repo/setup.sh \
@@ -164,7 +164,7 @@ URL をタグ付きの raw URL に変えるだけで、本体・内部 clone と
 
 ```bash
 # 特定パッチに完全固定（厳密な再現が必要な場合）
-bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.2.0/create-repo/setup.sh) thesis
+bash <(curl -fsSL https://raw.githubusercontent.com/smkwlab/student-repo-management/v1.3.0/create-repo/setup.sh) thesis
 ```
 
 ### 参照先を明示的に上書きしたい場合

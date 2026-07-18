@@ -95,11 +95,9 @@ Sophisticated GitHub Actions-based supervision:
 **Branch Strategy:**
 - `initial`: Base state for clean diff tracking
 - `0th-draft`, `1st-draft`, `2nd-draft`, etc.: Sequential development
-- `review-branch`: Persistent branch for holistic review (auto-updated)
 
 **Faculty Workflow:**
 - **Differential review**: Each draft PR shows changes from previous version
-- **Comprehensive review**: `review-branch` PR shows entire document content
 - **GitHub suggestions**: Direct edit capabilities for faculty
 - **Auto-management**: Students close PRs after addressing feedback
 
@@ -115,8 +113,7 @@ create-repo/
 └── README.md                   # Usage instructions
 
 scripts/
-├── update-review-branch.sh     # Emergency manual review branch update
-└── (other management scripts)
+└── (management scripts)
 
 docs/
 └── (developer documentation: CLAUDE-*.md, RELEASE.md, etc.)
