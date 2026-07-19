@@ -17,6 +17,7 @@ bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis   # Thesis repository
 bash <(curl -fsSL https://repo-setup.smkwlab.net) wr       # Weekly reports
 bash <(curl -fsSL https://repo-setup.smkwlab.net) latex    # General LaTeX
 bash <(curl -fsSL https://repo-setup.smkwlab.net) ise      # ISE reports
+bash <(curl -fsSL https://repo-setup.smkwlab.net) poster   # Conference posters
 
 # Environment variable style (Legacy, still supported)
 DOC_TYPE=thesis bash <(curl -fsSL https://repo-setup.smkwlab.net)
@@ -65,7 +66,7 @@ For manual branch protection setup or troubleshooting:
 gh repo view smkwlab/k21rs001-sotsuron --json branchProtectionRules
 ```
 
-**Note**: Weekly reports (wr-template), general LaTeX documents (latex-template), and ISE reports (ise-report-template) do not use branch protection as they have simpler workflows.
+**Note**: Weekly reports (wr-template) and general LaTeX documents (latex-template) do not use branch protection as they have simpler workflows. ISE reports (ise-report-template) and posters (poster-template) use the same PR-based branch protection as thesis repositories.
 
 ## Key Files & Structure
 
@@ -105,6 +106,7 @@ Universal Setup Script uses `DOC_TYPE` environment variable to specify document 
 - **wr**: Weekly reports (wr-template)
 - **latex**: General LaTeX documents (latex-template)
 - **ise**: Information Science Exercise reports (ise-report-template)
+- **poster**: Conference posters (poster-template)
 
 ### Environment Variable Options
 ```bash

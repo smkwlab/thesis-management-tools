@@ -531,12 +531,16 @@ extract_issue_info() {
     CURRENT_REPO_TYPE=""
     
     # パターン1: Issue本文から直接抽出（最も信頼性が高い）
-    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[[:space:]]*:[[:space:]]*([a-zA-Z0-9]+) ]]; then
+    # generate_issue_body の実出力は「**リポジトリタイプ**: <type>」で、ラベル直後に
+    # Markdown の ** が挟まるため [*[:space:]]* で許容する（従来の [[:space:]]* のみでは
+    # 一度もマッチせず、常に名前パターン以降のフォールバックへ落ちていた）
+    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[*[:space:]]*:[[:space:]]*([a-zA-Z0-9]+) ]]; then
         CURRENT_REPO_TYPE="${BASH_REMATCH[1]}"
         # 旧語彙・別表記を registry の正式語彙へ正規化（issue #471）
+        # poster は処理経路の分岐（ブランチ保護あり）に使うためここでは変換せず、
+        # registry への登録時に "other" へ変換する（registry の語彙に poster はない）
         case "$CURRENT_REPO_TYPE" in
             shuuron|thesis) CURRENT_REPO_TYPE="master" ;;
-            poster) CURRENT_REPO_TYPE="other" ;;
         esac
         log_debug "Issue #${CURRENT_ISSUE_NUMBER}: Issue本文から直接タイプを抽出: $CURRENT_REPO_TYPE"
     # パターン2: Issue本文のキーワードから判定
@@ -961,6 +965,9 @@ show_issue_summary() {
         master)
             echo "  種別: 論文リポジトリ（修士論文）"
             ;;
+        poster)
+            echo "  種別: 学会ポスターリポジトリ"
+            ;;
         *)
             echo "  種別: 不明 (${CURRENT_REPO_TYPE})"
             ;;
@@ -1013,7 +1020,7 @@ show_issue_details() {
             echo "  1. thesis-student-registry への登録"
             echo "  2. Issue クローズ"
             ;;
-        ise|sotsuron|master)
+        ise|sotsuron|master|poster)
             echo "  1. ブランチ保護設定 (main)"
             echo "  2. thesis-student-registry への登録"
             echo "  3. Issue クローズ"
@@ -1083,6 +1090,18 @@ execute_issue_processing() {
         sotsuron|master)
             echo "→ 論文リポジトリの処理を実行中..."
             if process_thesis_with_feedback; then
+                echo "✅ 処理が完了しました"
+            else
+                echo "❌ 処理に失敗しました"
+                echo
+                echo "続行するには Enter を押してください..."
+                read -r
+                return 1
+            fi
+            ;;
+        poster)
+            echo "→ 学会ポスターリポジトリの処理を実行中..."
+            if process_poster_with_feedback; then
                 echo "✅ 処理が完了しました"
             else
                 echo "❌ 処理に失敗しました"
@@ -1462,6 +1481,72 @@ process_ise_with_feedback() {
 }
 
 #
+# 学会ポスターリポジトリ処理（詳細フィードバック付き）
+#
+# draft PR サイクル（poster-template）を使うためブランチ保護を設定する。
+# registry の repository_type 語彙に poster はないため "other" で登録する。
+#
+process_poster_with_feedback() {
+    echo "  📊 学会ポスターリポジトリの処理を開始..."
+    echo ""
+
+    # 1. ブランチ保護設定（draft PR レビュー用）
+    echo "  ブランチ保護設定を適用中..."
+    if REPO_OWNER="$DEPLOY_ORG" REGISTRY_OWNER="${REGISTRY_REPO%%/*}" "$SCRIPT_DIR/setup-branch-protection.sh" "${DEPLOY_ORG}/${CURRENT_REPO_NAME}"; then
+        echo "  ✅ ブランチ保護設定完了"
+    else
+        echo "  ❌ ブランチ保護設定失敗"
+        return 1
+    fi
+
+    # 2. thesis-student-registry 更新
+    echo "  thesis-student-registry への登録中..."
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "other"; then
+        echo "  ✅ thesis-student-registry への登録完了"
+    else
+        echo "  ❌ thesis-student-registry への登録失敗"
+        return 1
+    fi
+
+    # 3. Issue クローズ
+    echo "  Issue クローズ中..."
+    if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 学会ポスターリポジトリの設定が完了しました
+
+## 設定内容
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
+- **学生ID**: $CURRENT_STUDENT_ID
+- **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+## ブランチ保護設定
+- **main ブランチ**: 1つ以上の承認レビューが必要
+- **新しいコミット時**: 古いレビューを無効化
+- **フォースプッシュ**: 禁止
+- **ブランチ削除**: 禁止
+
+## ポスター添削フローについて
+1. 0th-draft ブランチで a0poster.tex を編集
+2. Pull Request を作成して添削を依頼
+3. レビューフィードバックを確認・対応
+4. 次稿ブランチ（1st-draft など、自動作成）で改稿を継続
+
+リポジトリ設定: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/settings/branches"; then
+        echo "  ✅ Issue #${CURRENT_ISSUE_NUMBER} をクローズしました"
+    else
+        echo "  ❌ Issue クローズに失敗しました"
+        return 1
+    fi
+
+    echo ""
+    echo "📋 実行された操作:"
+    echo "  • ブランチ保護設定 (main)"
+    echo "  • thesis-student-registry への登録"
+    echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
+    echo ""
+
+    return 0
+}
+
+#
 # 汎用LaTeXリポジトリ処理（詳細フィードバック付き）
 #
 process_latex_with_feedback() {
@@ -1554,6 +1639,9 @@ process_single_issue() {
             ;;
         ise)
             process_ise_issue
+            ;;
+        poster)
+            process_poster_issue
             ;;
         latex|other)
             process_latex_issue
@@ -1685,6 +1773,53 @@ Pull Requestベースの学習を開始してください。"; then
     fi
     
     log_success "ISEリポジトリ処理完了: $CURRENT_REPO_NAME"
+    return 0
+}
+
+#
+# 学会ポスターリポジトリ処理
+#
+# draft PR サイクル（poster-template）を使うためブランチ保護を設定する。
+# registry の repository_type 語彙に poster はないため "other" で登録する。
+#
+process_poster_issue() {
+    log_info "学会ポスターリポジトリ処理: $CURRENT_REPO_NAME"
+
+    # 1. thesis-student-registry への登録
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "other"; then
+        log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
+        return 1
+    fi
+
+    # 2. ブランチ保護設定
+    if ! REPO_OWNER="$DEPLOY_ORG" REGISTRY_OWNER="${REGISTRY_REPO%%/*}" "$SCRIPT_DIR/setup-branch-protection.sh" "${DEPLOY_ORG}/${CURRENT_REPO_NAME}"; then
+        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME (学生ID: $CURRENT_STUDENT_ID)"
+        return 1
+    fi
+
+    # 3. Issue クローズ
+    if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 学会ポスターリポジトリの登録とブランチ保護設定が完了しました
+
+## 処理内容
+- **リポジトリ登録**: [${DEPLOY_ORG}/$CURRENT_REPO_NAME](https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME) ✓
+- **ブランチ保護設定**: 完了 ✓
+- **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+## ブランチ保護設定
+- **main ブランチ**: 1つ以上の承認レビューが必要
+- **新しいコミット時**: 古いレビューを無効化
+- **フォースプッシュ**: 禁止
+- **ブランチ削除**: 禁止
+
+## 確認
+リポジトリ設定: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/settings/branches
+
+0th-draft ブランチから Pull Request ベースの添削を開始してください。"; then
+        log_error "Issue クローズに失敗: #$CURRENT_ISSUE_NUMBER"
+        return 1
+    fi
+
+    log_success "学会ポスターリポジトリ処理完了: $CURRENT_REPO_NAME"
     return 0
 }
 
