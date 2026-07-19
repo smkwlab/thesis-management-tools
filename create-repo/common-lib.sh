@@ -618,7 +618,7 @@ setup_review_workflow() {
 }
 
 #
-# main ブランチ確定 + ドラフトレビューワークフロー開始
+# main ブランチ確定 + draft PR サイクル開始
 #
 # main-thesis.sh / main-ise.sh で完全に重複していた「main へのセットアップ
 # コミット → push → 0th-draft ブランチ作成 → 初期ドラフト commit/push」を

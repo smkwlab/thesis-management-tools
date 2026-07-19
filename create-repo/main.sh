@@ -36,7 +36,7 @@ DOC_TYPE="${DOC_TYPE:?DOC_TYPE を指定してください (thesis|wr|latex|ise|
 # STUDENT_ID_EXAMPLES: 学籍番号プロンプトの例示（空なら read_student_id の既定）
 # RUN_ALDC: aldc による LaTeX 環境セットアップを行うか（ise は HTML ベースのため行わない）
 # SETUP_AUTO_ASSIGN: 組織メンバー向け auto-assign 設定を追加するか（thesis / ise / poster、latex は REVIEW_FLOW 指定時）
-# USE_DRAFT_FLOW: main + 0th-draft のドラフトレビューワークフローを使うか（thesis / ise / poster、latex は REVIEW_FLOW 指定時）
+# USE_DRAFT_FLOW: main + 0th-draft の draft PR サイクルを使うか（thesis / ise / poster、latex は REVIEW_FLOW 指定時）
 case "$DOC_TYPE" in
     thesis)
         SCRIPT_TITLE="論文リポジトリセットアップツール"
