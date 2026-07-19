@@ -597,6 +597,15 @@ extract_issue_info() {
         return 2  # 情報抽出エラーとして区別
     fi
     
+    # レビューフロー有無の抽出（latex の作成時オプトイン REVIEW_FLOW。有効時のみ
+    # generate_issue_body が「**レビューフロー**: on」を記録する。他タイプはタイプ
+    # 自体で要否が決まるためこのフラグは latex 以外では常に false のまま）
+    CURRENT_REVIEW_FLOW=false
+    if [[ "$CURRENT_ISSUE_BODY" =~ レビューフロー[*[:space:]]*:[[:space:]]*on ]]; then
+        CURRENT_REVIEW_FLOW=true
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: レビューフロー有効を検出"
+    fi
+
     log_debug "Issue #${CURRENT_ISSUE_NUMBER}: $CURRENT_REPO_NAME ($CURRENT_REPO_TYPE) - $CURRENT_STUDENT_ID"
     return 0
 }
@@ -1016,9 +1025,19 @@ show_issue_details() {
     
     echo "実行される処理:"
     case "$CURRENT_REPO_TYPE" in
-        wr|latex)
+        wr)
             echo "  1. thesis-student-registry への登録"
             echo "  2. Issue クローズ"
+            ;;
+        latex)
+            if [ "$CURRENT_REVIEW_FLOW" = true ]; then
+                echo "  1. ブランチ保護設定 (main)（レビューフロー有効）"
+                echo "  2. thesis-student-registry への登録"
+                echo "  3. Issue クローズ"
+            else
+                echo "  1. thesis-student-registry への登録"
+                echo "  2. Issue クローズ"
+            fi
             ;;
         ise|sotsuron|master|poster)
             echo "  1. ブランチ保護設定 (main)"
@@ -1077,7 +1096,7 @@ execute_issue_processing() {
             ;;
         latex)
             echo "→ 汎用LaTeXリポジトリの登録処理を実行中..."
-            if process_latex_with_feedback; then
+            if run_latex_with_feedback; then
                 echo "✅ 処理が完了しました"
             else
                 echo "❌ 処理に失敗しました"
@@ -1547,6 +1566,86 @@ process_poster_with_feedback() {
 }
 
 #
+# 汎用LaTeXリポジトリ処理の振り分け（詳細フィードバック付き）
+#
+# latex はレビューフロー有効時（作成時オプトイン REVIEW_FLOW、Issue 本文の
+# 「レビューフロー: on」で判定）のみブランチ保護付きの処理に分岐する
+#
+run_latex_with_feedback() {
+    if [ "$CURRENT_REVIEW_FLOW" = true ]; then
+        process_latex_review_with_feedback
+    else
+        process_latex_with_feedback
+    fi
+}
+
+#
+# 汎用LaTeXリポジトリ処理・レビューフロー有効（詳細フィードバック付き）
+#
+# draft PR サイクルを使うためブランチ保護を設定する。registry へはタイプどおり
+# latex で登録する（保護の要否は registry ではなく Issue 本文のフラグで決まる）
+#
+process_latex_review_with_feedback() {
+    echo "  📄 汎用LaTeXリポジトリ（レビューフロー有効）の処理を開始..."
+    echo ""
+
+    # 1. ブランチ保護設定（draft PR レビュー用）
+    echo "  ブランチ保護設定を適用中..."
+    if REPO_OWNER="$DEPLOY_ORG" REGISTRY_OWNER="${REGISTRY_REPO%%/*}" "$SCRIPT_DIR/setup-branch-protection.sh" "${DEPLOY_ORG}/${CURRENT_REPO_NAME}"; then
+        echo "  ✅ ブランチ保護設定完了"
+    else
+        echo "  ❌ ブランチ保護設定失敗"
+        return 1
+    fi
+
+    # 2. thesis-student-registry 更新
+    echo "  thesis-student-registry への登録中..."
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
+        echo "  ✅ thesis-student-registry への登録完了"
+    else
+        echo "  ❌ thesis-student-registry への登録失敗"
+        return 1
+    fi
+
+    # 3. Issue クローズ
+    echo "  Issue クローズ中..."
+    if close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 汎用LaTeXリポジトリ（レビューフロー有効）の設定が完了しました
+
+## 設定内容
+- **リポジトリ**: ${DEPLOY_ORG}/$CURRENT_REPO_NAME
+- **学生ID**: $CURRENT_STUDENT_ID
+- **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+## ブランチ保護設定
+- **main ブランチ**: 1つ以上の承認レビューが必要
+- **新しいコミット時**: 古いレビューを無効化
+- **フォースプッシュ**: 禁止
+- **ブランチ削除**: 禁止
+
+## 添削フローについて
+1. 0th-draft ブランチで main.tex を編集
+2. Pull Request を作成して添削を依頼
+3. レビューフィードバックを確認・対応
+4. 次稿ブランチ（1st-draft など、自動作成）で改稿を継続
+
+リポジトリ設定: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/settings/branches"; then
+        echo "  ✅ Issue #${CURRENT_ISSUE_NUMBER} をクローズしました"
+    else
+        echo "  ❌ Issue クローズに失敗しました"
+        return 1
+    fi
+
+    echo ""
+    echo "📋 実行された操作:"
+    echo "  • ブランチ保護設定 (main)"
+    echo "  • thesis-student-registry への登録"
+    echo "  • Issue #$CURRENT_ISSUE_NUMBER のクローズ"
+    echo ""
+
+    return 0
+}
+
+#
 # 汎用LaTeXリポジトリ処理（詳細フィードバック付き）
 #
 process_latex_with_feedback() {
@@ -1644,7 +1743,12 @@ process_single_issue() {
             process_poster_issue
             ;;
         latex|other)
-            process_latex_issue
+            # latex はレビューフロー有効時のみブランチ保護付きの処理に分岐する
+            if [ "$CURRENT_REPO_TYPE" = "latex" ] && [ "$CURRENT_REVIEW_FLOW" = true ]; then
+                process_latex_review_issue
+            else
+                process_latex_issue
+            fi
             ;;
         *)
             log_error "不明なリポジトリタイプ: $CURRENT_REPO_TYPE"
@@ -1824,6 +1928,52 @@ process_poster_issue() {
 }
 
 #
+# LaTeXリポジトリ処理・レビューフロー有効
+#
+# 作成時オプトイン REVIEW_FLOW 付きで作られた latex リポジトリ（Issue 本文の
+# 「レビューフロー: on」で判定）。draft PR サイクルを使うためブランチ保護を設定する
+process_latex_review_issue() {
+    log_info "LaTeXリポジトリ（レビューフロー有効）処理: $CURRENT_REPO_NAME"
+
+    # 1. thesis-student-registry への登録（タイプどおり latex で登録。保護の要否は
+    #    registry ではなく Issue 本文のフラグで決まる）
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
+        log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
+        return 1
+    fi
+
+    # 2. ブランチ保護設定
+    if ! REPO_OWNER="$DEPLOY_ORG" REGISTRY_OWNER="${REGISTRY_REPO%%/*}" "$SCRIPT_DIR/setup-branch-protection.sh" "${DEPLOY_ORG}/${CURRENT_REPO_NAME}"; then
+        log_error "ブランチ保護設定に失敗: $CURRENT_REPO_NAME (学生ID: $CURRENT_STUDENT_ID)"
+        return 1
+    fi
+
+    # 3. Issue クローズ
+    if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ 汎用LaTeXリポジトリ（レビューフロー有効）の登録とブランチ保護設定が完了しました
+
+## 処理内容
+- **リポジトリ登録**: [${DEPLOY_ORG}/$CURRENT_REPO_NAME](https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME) ✓
+- **ブランチ保護設定**: 完了 ✓
+- **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
+
+## ブランチ保護設定
+- **main ブランチ**: 1つ以上の承認レビューが必要
+- **新しいコミット時**: 古いレビューを無効化
+- **フォースプッシュ**: 禁止
+- **ブランチ削除**: 禁止
+
+## 確認
+リポジトリ設定: https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME/settings/branches
+
+0th-draft ブランチから Pull Request ベースの添削を開始してください。"; then
+        log_error "Issue クローズに失敗: #$CURRENT_ISSUE_NUMBER"
+        return 1
+    fi
+
+    log_success "LaTeXリポジトリ（レビューフロー有効）処理完了: $CURRENT_REPO_NAME"
+    return 0
+}
+
 # LaTeXリポジトリ処理
 #
 # latex と other の両タイプを処理する（どちらもブランチ保護なし・registry 登録

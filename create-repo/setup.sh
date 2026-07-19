@@ -540,6 +540,21 @@ if [ -n "${SETUP_GIT_EMAIL_DOMAIN:-}" ]; then
     DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e SETUP_GIT_EMAIL_DOMAIN=$SETUP_GIT_EMAIL_DOMAIN"
 fi
 
+# REVIEW_FLOW: latex タイプで draft PR レビューフロー（main + 0th-draft 初期化・
+# auto-assign・ブランチ保護）を有効化するオプトイン。truthy のときだけ正規化して
+# 転送する（thesis / ise / poster は常時有効、wr は非対応のため latex 以外では無視）。
+if [ -n "${REVIEW_FLOW:-}" ]; then
+    if [[ "$REVIEW_FLOW" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+        if [ "$DETECTED_DOC_TYPE" = "latex" ]; then
+            DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e REVIEW_FLOW=true"
+        else
+            echo "⚠️ REVIEW_FLOW は latex タイプ専用のため無視します（$DETECTED_DOC_TYPE は指定不要: thesis/ise/poster は常時有効、wr は非対応）"
+        fi
+    else
+        echo "⚠️ REVIEW_FLOW の値が truthy ではないため無視します: $REVIEW_FLOW（有効化するには true/1/yes）"
+    fi
+fi
+
 # DOCUMENT_NAME / POSTER_NAME はコンテナ側 main.sh で ^[a-zA-Z0-9_-]+$ を要求する。
 # ここでも無引用展開（docker run $DOCKER_ENV_VARS）に載るため、同じ文字種のみ許可して
 # 単語分割・glob を防ぐ（他の転送変数と同じ流儀）。

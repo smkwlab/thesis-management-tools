@@ -35,8 +35,8 @@ DOC_TYPE="${DOC_TYPE:?DOC_TYPE を指定してください (thesis|wr|latex|ise|
 # SCRIPT_TITLE / SCRIPT_EMOJI: init_script_common の引数
 # STUDENT_ID_EXAMPLES: 学籍番号プロンプトの例示（空なら read_student_id の既定）
 # RUN_ALDC: aldc による LaTeX 環境セットアップを行うか（ise は HTML ベースのため行わない）
-# SETUP_AUTO_ASSIGN: 組織メンバー向け auto-assign 設定を追加するか（thesis / ise / poster）
-# USE_DRAFT_FLOW: main + 0th-draft のドラフトレビューワークフローを使うか（thesis / ise / poster）
+# SETUP_AUTO_ASSIGN: 組織メンバー向け auto-assign 設定を追加するか（thesis / ise / poster、latex は REVIEW_FLOW 指定時）
+# USE_DRAFT_FLOW: main + 0th-draft のドラフトレビューワークフローを使うか（thesis / ise / poster、latex は REVIEW_FLOW 指定時）
 case "$DOC_TYPE" in
     thesis)
         SCRIPT_TITLE="論文リポジトリセットアップツール"
@@ -82,6 +82,14 @@ case "$DOC_TYPE" in
         die "サポートされていない文書タイプ: $DOC_TYPE (thesis|wr|latex|ise|poster)"
         ;;
 esac
+
+# REVIEW_FLOW: latex 専用のオプトイン。draft PR レビューフロー（main + 0th-draft
+# 初期化・auto-assign）を有効化する。setup.sh が truthy を true に正規化して
+# 転送するが、コンテナを直接実行する経路にも効かせるため本体側でも truthy 判定する
+if [ "$DOC_TYPE" = "latex" ] && [[ "${REVIEW_FLOW:-}" =~ ^(true|TRUE|1|yes|YES)$ ]]; then
+    SETUP_AUTO_ASSIGN=true
+    USE_DRAFT_FLOW=true
+fi
 
 # 共通初期化
 init_script_common "$SCRIPT_TITLE" "$SCRIPT_EMOJI"
@@ -429,10 +437,20 @@ print_next_steps() {
 3. 毎週新しい週報ファイルを追加"
             ;;
         latex)
-            print_completion_message "次のステップ:
+            if [ "$USE_DRAFT_FLOW" = true ]; then
+                print_completion_message "次のステップ:
+1. 0th-draft ブランチで main.tex を編集して文書を作成
+2. git add, commit, pushで変更を保存
+3. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
+4. GitHub Actionsで自動的にPDFが生成されます
+
+📖 詳細な手順: リポジトリの README.md の「添削を受ける場合」をご確認ください"
+            else
+                print_completion_message "次のステップ:
 1. main.texを編集して文書を作成
 2. git add, commit, pushで変更を保存
 3. GitHub Actionsで自動的にPDFが生成されます"
+            fi
             ;;
         poster)
             print_completion_message "次のステップ:

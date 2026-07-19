@@ -66,7 +66,7 @@ For manual branch protection setup or troubleshooting:
 gh repo view smkwlab/k21rs001-sotsuron --json branchProtectionRules
 ```
 
-**Note**: Weekly reports (wr-template) and general LaTeX documents (latex-template) do not use branch protection as they have simpler workflows. ISE reports (ise-report-template) and posters (poster-template) use the same PR-based branch protection as thesis repositories.
+**Note**: Weekly reports (wr-template) do not use branch protection as they have simpler workflows. General LaTeX documents (latex-template) do not use it by default either, but opt in via `REVIEW_FLOW=true` at creation time. ISE reports (ise-report-template) and posters (poster-template) always use the same PR-based branch protection as thesis repositories.
 
 ## Key Files & Structure
 
@@ -112,6 +112,9 @@ Universal Setup Script uses `DOC_TYPE` environment variable to specify document 
 ```bash
 # LaTeX document configuration
 DOCUMENT_NAME=research-note    # Custom document name
+
+# Draft PR review flow opt-in (DOC_TYPE=latex only; thesis/ise/poster are always on, wr unsupported)
+REVIEW_FLOW=true               # Initialize main + 0th-draft, enable auto-assign, apply branch protection
 
 # Individual mode behavior (DOC_TYPE=latex only)
 INDIVIDUAL_MODE=true           # Skip student ID input, create in personal account

@@ -543,14 +543,24 @@ generate_issue_body() {
     local repo_name="$2"
     local student_id="$3"
     local repo_type="${4:-latex}"  # デフォルトは最も汎用的な latex タイプ
-    
+
+    # latex は作成時オプトイン（REVIEW_FLOW）でレビューフローの有無が分かれるため、
+    # 有効時のみ Issue に記録し、process-pending-issues がブランチ保護の要否を
+    # 判定できるようにする（他タイプはタイプ自体で要否が決まるため記載しない）。
+    # USE_DRAFT_FLOW は main.sh のグローバル。未定義の呼び出し元では従来どおり空
+    local review_flow_line=""
+    if [ "$repo_type" = "latex" ] && [ "${USE_DRAFT_FLOW:-false}" = true ]; then
+        review_flow_line="- **レビューフロー**: on"
+    fi
+
     cat << EOF
 ## リポジトリ登録依頼
 
 ### リポジトリ情報
 - **リポジトリ**: [${organization}/${repo_name}](https://github.com/${organization}/${repo_name})
 - **学生ID**: ${student_id}
-- **リポジトリタイプ**: ${repo_type}
+- **リポジトリタイプ**: ${repo_type}${review_flow_line:+
+$review_flow_line}
 - **作成日時**: $(date '+%Y-%m-%d %H:%M') JST
 
 ### 処理内容
