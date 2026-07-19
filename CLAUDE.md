@@ -185,8 +185,8 @@ docker build -f create-repo/Dockerfile -t test-creator .
 # Mark branch protection complete
 ./registry-manager/registry-manager protect k21rs001-sotsuron
 
-# Update repository status
-./registry-manager/registry-manager update k21rs001-sotsuron status completed
+# Update a repository field (e.g. GitHub username)
+./registry-manager/registry-manager update k21rs001-sotsuron github_username student001
 ```
 
 ### Debug Authentication Issues
