@@ -35,8 +35,8 @@ DOC_TYPE="${DOC_TYPE:?DOC_TYPE を指定してください (thesis|wr|latex|ise|
 # SCRIPT_TITLE / SCRIPT_EMOJI: init_script_common の引数
 # STUDENT_ID_EXAMPLES: 学籍番号プロンプトの例示（空なら read_student_id の既定）
 # RUN_ALDC: aldc による LaTeX 環境セットアップを行うか（ise は HTML ベースのため行わない）
-# SETUP_AUTO_ASSIGN: 組織メンバー向け auto-assign 設定を追加するか（thesis / ise）
-# USE_DRAFT_FLOW: main + 0th-draft のドラフトレビューワークフローを使うか（thesis / ise）
+# SETUP_AUTO_ASSIGN: 組織メンバー向け auto-assign 設定を追加するか（thesis / ise / poster）
+# USE_DRAFT_FLOW: main + 0th-draft のドラフトレビューワークフローを使うか（thesis / ise / poster）
 case "$DOC_TYPE" in
     thesis)
         SCRIPT_TITLE="論文リポジトリセットアップツール"
@@ -75,8 +75,8 @@ case "$DOC_TYPE" in
         SCRIPT_EMOJI="📊"
         STUDENT_ID_EXAMPLES=""
         RUN_ALDC=true
-        SETUP_AUTO_ASSIGN=false
-        USE_DRAFT_FLOW=false
+        SETUP_AUTO_ASSIGN=true
+        USE_DRAFT_FLOW=true
         ;;
     *)
         die "サポートされていない文書タイプ: $DOC_TYPE (thesis|wr|latex|ise|poster)"
@@ -436,15 +436,18 @@ print_next_steps() {
             ;;
         poster)
             print_completion_message "次のステップ:
-1. a0poster.texを編集してポスターを作成
+1. 0th-draft ブランチで a0poster.tex を編集してポスターを作成
 2. git add, commit, pushで変更を保存
-3. GitHub Actionsで自動的にPDFが生成されます
+3. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
+4. GitHub Actionsで自動的にPDFが生成されます
 
 ポスターテンプレートの特徴:
 - A0サイズ学会ポスター用
 - tikzposterによる柔軟なレイアウト
 - LuaLaTeXで日本語完全対応
-- 複数のテーマとスタイルから選択可能"
+- Pull Request ベースの添削フロー（draft サイクル）
+
+📖 詳細な手順: リポジトリの README.md をご確認ください"
             ;;
         thesis)
             print_completion_message "論文執筆の開始方法:
