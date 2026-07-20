@@ -1094,6 +1094,8 @@ execute_issue_processing() {
             fi
             ;;
         latex|other)
+            # other は「ブランチ保護なしで登録のみ」という処理内容が latex
+            # （レビューフロー無効時）と同一のため、latex 経路を共用する
             echo "→ 汎用LaTeX/その他リポジトリの登録処理を実行中..."
             if run_latex_with_feedback; then
                 echo "✅ 処理が完了しました"
@@ -2075,11 +2077,15 @@ update_thesis_student_registry() {
 
     # review_flow: draft PR サイクルで運用するリポジトリか（registry の必須フィールド）。
     # sotsuron / master / ise / poster は常時 true、latex は作成時オプトイン
-    # （CURRENT_REVIEW_FLOW）、wr / other は false
+    # （CURRENT_REVIEW_FLOW）、wr / other は false。
+    # ise-report はこの script の判定では生成されないが registry 語彙の別表記
+    # （validation が受理する）ため、語彙との整合のため含める。
+    # heredoc に JSON boolean として展開するため、リテラルの true 以外はすべて
+    # false に正規化する（値の混入で JSON が壊れるのを防ぐ）。
     local review_flow
     case "$repo_type" in
         sotsuron|master|ise|ise-report|poster) review_flow=true ;;
-        latex) review_flow="${CURRENT_REVIEW_FLOW:-false}" ;;
+        latex) if [ "$CURRENT_REVIEW_FLOW" = true ]; then review_flow=true; else review_flow=false; fi ;;
         *) review_flow=false ;;
     esac
     
