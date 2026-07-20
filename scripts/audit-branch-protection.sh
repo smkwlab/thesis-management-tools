@@ -22,7 +22,7 @@
 #                  smkwlab/student-repo-management）
 #
 # 監査対象:
-#   - repository_type が sotsuron / master / ise のエントリ（保護必須種別）
+#   - review_flow が true のエントリ（draft PR サイクル運用 = ブランチ保護必須）
 #   - archived リポジトリは対象外（過年度分の恒常的なノイズを防ぐ）
 #
 # 分類:
@@ -60,13 +60,13 @@ log "レジストリを取得中: ${REGISTRY_REPO}"
 registry=$(gh api "repos/${REGISTRY_REPO}/contents/data/registry.json" \
     --jq '.content | @base64d')
 
-# 保護必須種別（sotsuron / master / ise）のみ監査対象
+# review_flow が true（draft PR サイクル運用 = 保護必須）のみ監査対象
 mapfile -t repos < <(echo "$registry" | jq -r '
     to_entries[]
-    | select(.value.repository_type as $t | ["sotsuron", "master", "ise"] | index($t))
+    | select(.value.review_flow == true)
     | .key')
 
-log "監査対象: ${#repos[@]} リポジトリ（保護必須種別のみ）"
+log "監査対象: ${#repos[@]} リポジトリ（review_flow 有効のみ）"
 
 checked=0
 skipped_archived=0

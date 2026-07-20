@@ -536,9 +536,8 @@ extract_issue_info() {
     # 一度もマッチせず、常に名前パターン以降のフォールバックへ落ちていた）
     if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[*[:space:]]*:[[:space:]]*([a-zA-Z0-9]+) ]]; then
         CURRENT_REPO_TYPE="${BASH_REMATCH[1]}"
-        # 旧語彙・別表記を registry の正式語彙へ正規化（issue #471）
-        # poster は処理経路の分岐（ブランチ保護あり）に使うためここでは変換せず、
-        # registry への登録時に "other" へ変換する（registry の語彙に poster はない）
+        # 旧語彙・別表記を registry の正式語彙へ正規化（issue #471）。
+        # poster は registry の正式語彙のためそのまま登録する
         case "$CURRENT_REPO_TYPE" in
             shuuron|thesis) CURRENT_REPO_TYPE="master" ;;
         esac
@@ -582,12 +581,12 @@ extract_issue_info() {
     # 旧パターン4（学生 ID からの推測 rs→sotsuron / gjk→thesis）は誤分類の
     # 主因だったため廃止（issue #471）。卒論・修論は命名規約 *-sotsuron /
     # *-master（防御的別名 *-thesis）で必ずパターン3までに判定される
-    # パターン5: その他のパターンは latex と推測
-    # latex タイプは様々な命名規則のリポジトリに対応するため、
-    # 明示的なタイプ情報がない場合は LaTeX リポジトリとして扱う
+    # パターン5: 明示的なタイプ情報がない未知パターンは other として登録する
+    # （registry-manager の推論 fallback と同一。latex / poster は Issue 本文の
+    # 明示指定でのみ判定し、名前からの推測はしない）
     elif [[ "$CURRENT_REPO_NAME" =~ -[a-zA-Z0-9_-]+$ && ! "$CURRENT_REPO_NAME" == *"-latex" ]]; then
-        CURRENT_REPO_TYPE="latex"
-        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 未知パターンをlatexタイプとして推測: $CURRENT_REPO_NAME"
+        CURRENT_REPO_TYPE="other"
+        log_debug "Issue #${CURRENT_ISSUE_NUMBER}: 未知パターンを other として登録: $CURRENT_REPO_NAME"
     else
         CURRENT_REPO_TYPE="unknown"
         log_error "Issue #${CURRENT_ISSUE_NUMBER}: リポジトリタイプを判定できませんでした"
@@ -1094,8 +1093,10 @@ execute_issue_processing() {
                 return 1
             fi
             ;;
-        latex)
-            echo "→ 汎用LaTeXリポジトリの登録処理を実行中..."
+        latex|other)
+            # other は「ブランチ保護なしで登録のみ」という処理内容が latex
+            # （レビューフロー無効時）と同一のため、latex 経路を共用する
+            echo "→ 汎用LaTeX/その他リポジトリの登録処理を実行中..."
             if run_latex_with_feedback; then
                 echo "✅ 処理が完了しました"
             else
@@ -1503,7 +1504,6 @@ process_ise_with_feedback() {
 # 学会ポスターリポジトリ処理（詳細フィードバック付き）
 #
 # draft PR サイクル（poster-template）を使うためブランチ保護を設定する。
-# registry の repository_type 語彙に poster はないため "other" で登録する。
 #
 process_poster_with_feedback() {
     echo "  📊 学会ポスターリポジトリの処理を開始..."
@@ -1520,7 +1520,7 @@ process_poster_with_feedback() {
 
     # 2. thesis-student-registry 更新
     echo "  thesis-student-registry への登録中..."
-    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "other"; then
+    if update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         echo "  ✅ thesis-student-registry への登録完了"
     else
         echo "  ❌ thesis-student-registry への登録失敗"
@@ -1884,13 +1884,12 @@ Pull Requestベースの学習を開始してください。"; then
 # 学会ポスターリポジトリ処理
 #
 # draft PR サイクル（poster-template）を使うためブランチ保護を設定する。
-# registry の repository_type 語彙に poster はないため "other" で登録する。
 #
 process_poster_issue() {
     log_info "学会ポスターリポジトリ処理: $CURRENT_REPO_NAME"
 
     # 1. thesis-student-registry への登録
-    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "other"; then
+    if ! update_thesis_student_registry "$CURRENT_REPO_NAME" "$CURRENT_STUDENT_ID" "$CURRENT_REPO_TYPE"; then
         log_error "thesis-student-registry への登録に失敗: $CURRENT_REPO_NAME"
         return 1
     fi
@@ -2075,6 +2074,20 @@ update_thesis_student_registry() {
     
     # Issue作成者のGitHub usernameを取得
     local github_username="${CURRENT_ISSUE_AUTHOR:-unknown}"
+
+    # review_flow: draft PR サイクルで運用するリポジトリか（registry の必須フィールド）。
+    # sotsuron / master / ise / poster は常時 true、latex は作成時オプトイン
+    # （CURRENT_REVIEW_FLOW）、wr / other は false。
+    # ise-report はこの script の判定では生成されないが registry 語彙の別表記
+    # （validation が受理する）ため、語彙との整合のため含める。
+    # heredoc に JSON boolean として展開するため、リテラルの true 以外はすべて
+    # false に正規化する（値の混入で JSON が壊れるのを防ぐ）。
+    local review_flow
+    case "$repo_type" in
+        sotsuron|master|ise|ise-report|poster) review_flow=true ;;
+        latex) if [ "$CURRENT_REVIEW_FLOW" = true ]; then review_flow=true; else review_flow=false; fi ;;
+        *) review_flow=false ;;
+    esac
     
     # GET-mutate-PUT を SHA競合(409)に備えてリトライする（Bug #496: 並行 PUT で
     # 登録が失われる）。競合時は最新の content+sha を取り直し mutation を再適用して再 PUT。
@@ -2136,6 +2149,7 @@ update_thesis_student_registry() {
   "repository_type": "$repo_type",
   "created_at": "$created_at",
   "registry_updated_at": "$registry_updated_at",
+  "review_flow": $review_flow,
   "github_username": $github_username_array
 }
 EOF
