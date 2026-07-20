@@ -2105,16 +2105,28 @@ update_thesis_student_registry() {
 
         # 新しいエントリを作成（github_usernameを含む）。既存の created_at は取り直した
         # 最新 content から拾い、並行更新による created_at の巻き戻しを防ぐ。
+        # 時刻は registry スキーマの ISO8601 UTC（registry-manager
+        # docs/data-structure-specification.md）。github_username は配列。
         # コマンド置換を含む local は宣言と代入を分離（set -e で終了コードを握り潰さない）。
-        local updated_at
-        updated_at=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        local registry_updated_at
+        registry_updated_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
         local created_at
         local existing_created_at
         existing_created_at=$(echo "$current_json" | jq -r --arg repo_name "$repo_name" '.[$repo_name].created_at // empty')
         if [ -n "$existing_created_at" ] && [ "$existing_created_at" != "null" ]; then
             created_at="$existing_created_at"
         else
-            created_at="$updated_at"
+            created_at="$registry_updated_at"
+        fi
+
+        # 既存の github_username 配列に Issue 作成者を追加して重複排除する
+        # （複数オーナー登録の保全。レガシーの string 値は配列に正規化してから統合）。
+        # 失敗時に空文字列のまま heredoc へ展開すると不正 JSON になるため即失敗させる。
+        local github_username_array
+        if ! github_username_array=$(echo "$current_json" | jq -c --arg repo_name "$repo_name" --arg u "$github_username" \
+            '(.[$repo_name].github_username // []) | if type == "string" then [.] else . end | . + [$u] | unique'); then
+            log_error "github_username 配列の生成に失敗: $repo_name"
+            return 1
         fi
 
         local new_entry
@@ -2123,8 +2135,8 @@ update_thesis_student_registry() {
   "student_id": "$student_id",
   "repository_type": "$repo_type",
   "created_at": "$created_at",
-  "updated_at": "$updated_at",
-  "github_username": "$github_username"
+  "registry_updated_at": "$registry_updated_at",
+  "github_username": $github_username_array
 }
 EOF
 )
@@ -2144,7 +2156,7 @@ Repository: $repo_name
 Student ID: $masked_student_id
 Type: $repo_type
 GitHub Username: $github_username
-Updated: $updated_at
+Updated: $registry_updated_at
 
 Processed via automated issue processor with GitHub username."
 
