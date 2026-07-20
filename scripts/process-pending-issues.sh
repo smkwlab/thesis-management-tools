@@ -2119,6 +2119,12 @@ update_thesis_student_registry() {
             created_at="$registry_updated_at"
         fi
 
+        # 既存の github_username 配列に Issue 作成者を追加して重複排除する
+        # （複数オーナー登録の保全。レガシーの string 値は配列に正規化してから統合）。
+        local github_username_array
+        github_username_array=$(echo "$current_json" | jq -c --arg repo_name "$repo_name" --arg u "$github_username" \
+            '(.[$repo_name].github_username // []) | if type == "string" then [.] else . end | . + [$u] | unique')
+
         local new_entry
         new_entry=$(cat <<EOF
 {
@@ -2126,7 +2132,7 @@ update_thesis_student_registry() {
   "repository_type": "$repo_type",
   "created_at": "$created_at",
   "registry_updated_at": "$registry_updated_at",
-  "github_username": ["$github_username"]
+  "github_username": $github_username_array
 }
 EOF
 )
