@@ -196,8 +196,8 @@ parse_options() {
                 ;;
             --type)
                 FILTER_TYPE="$2"
-                if [[ ! "$FILTER_TYPE" =~ ^(wr|sotsuron|thesis|ise|latex)$ ]]; then
-                    log_error "無効なタイプ: $FILTER_TYPE (有効: wr, sotsuron, thesis, ise, latex)"
+                if [[ ! "$FILTER_TYPE" =~ ^(wr|sotsuron|thesis|ise|latex|sotsuron-report)$ ]]; then
+                    log_error "無効なタイプ: $FILTER_TYPE (有効: wr, sotsuron, thesis, ise, latex, sotsuron-report)"
                     exit 1
                 fi
                 shift 2
@@ -443,10 +443,14 @@ fetch_pending_issues() {
                 issues_json=$(echo "$issues_json" | jq '[.[] | select(.title | contains("-latex"))]')
                 ;;
             sotsuron)
-                issues_json=$(echo "$issues_json" | jq '[.[] | select(.title | contains("-sotsuron"))]')
+                # -sotsuron-report を巻き込まないよう除外する（#559）
+                issues_json=$(echo "$issues_json" | jq '[.[] | select((.title | contains("-sotsuron")) and (.title | contains("-sotsuron-report") | not))]')
                 ;;
             thesis)
                 issues_json=$(echo "$issues_json" | jq '[.[] | select(.title | contains("-thesis"))]')
+                ;;
+            sotsuron-report)
+                issues_json=$(echo "$issues_json" | jq '[.[] | select(.title | contains("-sotsuron-report"))]')
                 ;;
         esac
     fi
@@ -534,7 +538,9 @@ extract_issue_info() {
     # generate_issue_body の実出力は「**リポジトリタイプ**: <type>」で、ラベル直後に
     # Markdown の ** が挟まるため [*[:space:]]* で許容する（従来の [[:space:]]* のみでは
     # 一度もマッチせず、常に名前パターン以降のフォールバックへ落ちていた）
-    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[*[:space:]]*:[[:space:]]*([a-zA-Z0-9]+) ]]; then
+    # 文字クラスの - は必須: sotsuron-report のようなハイフン入りタイプを
+    # 途中で切ると（例: sotsuron）、誤った保護適用・review_flow に波及する（#559）
+    if [[ "$CURRENT_ISSUE_BODY" =~ リポジトリタイプ[*[:space:]]*:[[:space:]]*([a-zA-Z0-9-]+) ]]; then
         CURRENT_REPO_TYPE="${BASH_REMATCH[1]}"
         # 旧語彙・別表記を registry の正式語彙へ正規化（issue #471）。
         # poster は registry の正式語彙のためそのまま登録する
@@ -975,6 +981,9 @@ show_issue_summary() {
             ;;
         poster)
             echo "  種別: 学会ポスターリポジトリ"
+            ;;
+        sotsuron-report)
+            echo "  種別: 卒業論文調査報告リポジトリ"
             ;;
         *)
             echo "  種別: 不明 (${CURRENT_REPO_TYPE})"
@@ -1742,8 +1751,9 @@ process_single_issue() {
         poster)
             process_poster_issue
             ;;
-        latex|other)
-            # latex はレビューフロー有効時のみブランチ保護付きの処理に分岐する
+        latex|other|sotsuron-report)
+            # latex はレビューフロー有効時のみブランチ保護付きの処理に分岐する。
+            # other / sotsuron-report は常に登録のみ（保護なし・review_flow=false）
             if [ "$CURRENT_REPO_TYPE" = "latex" ] && [ "$CURRENT_REVIEW_FLOW" = true ]; then
                 process_latex_review_issue
             else
@@ -1973,10 +1983,11 @@ process_latex_review_issue() {
     return 0
 }
 
-# LaTeXリポジトリ処理
+# 登録のみリポジトリ処理
 #
-# latex と other の両タイプを処理する（どちらもブランチ保護なし・registry 登録
-# + Issue クローズのみ。登録タイプは解決済みの CURRENT_REPO_TYPE を使用）
+# latex / other / sotsuron-report を処理する（いずれもブランチ保護なし・
+# registry 登録 + Issue クローズのみ。登録タイプは解決済みの
+# CURRENT_REPO_TYPE を使用）
 process_latex_issue() {
     log_info "LaTeXリポジトリ処理: $CURRENT_REPO_NAME"
     
@@ -1987,13 +1998,13 @@ process_latex_issue() {
     fi
     
     # 2. Issue クローズ
-    if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ LaTeXリポジトリの登録が完了しました
+    if ! close_issue_with_comment "$CURRENT_ISSUE_NUMBER" "✅ リポジトリの登録が完了しました
 
 ## 処理内容
 - **リポジトリ登録**: [${DEPLOY_ORG}/$CURRENT_REPO_NAME](https://github.com/${DEPLOY_ORG}/$CURRENT_REPO_NAME) ✓
 - **設定日時**: $(date '+%Y-%m-%d %H:%M:%S JST')
 
-## 汎用LaTeXリポジトリについて
+## このリポジトリについて
 - mainブランチで直接作業が可能です
 - Pull Requestベースのレビューは任意です
 - 自動PDF生成機能が利用可能です
@@ -2077,7 +2088,7 @@ update_thesis_student_registry() {
 
     # review_flow: draft PR サイクルで運用するリポジトリか（registry の必須フィールド）。
     # sotsuron / master / ise / poster は常時 true、latex は作成時オプトイン
-    # （CURRENT_REVIEW_FLOW）、wr / other は false。
+    # （CURRENT_REVIEW_FLOW）、wr / other / sotsuron-report は false。
     # ise-report はこの script の判定では生成されないが registry 語彙の別表記
     # （validation が受理する）ため、語彙との整合のため含める。
     # heredoc に JSON boolean として展開するため、リテラルの true 以外はすべて
