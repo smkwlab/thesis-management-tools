@@ -78,7 +78,11 @@ git tag -f v1 v1.0.0^{}
 git push origin v1 --force
 
 # 8. 短縮 URL へ配信する（手動実行。自動では走らない）
+#    デプロイ完了まで数十秒〜数分かかる。完了を待たずに手順 9 を実行すると
+#    古い配信内容を見て「反映されていない」と誤判断するため、必ず待つこと
 gh workflow run "Deploy setup.sh to Pages" --ref main
+sleep 10  # run が Actions に登録されるまでの待ち
+gh run watch "$(gh run list -w 'Deploy setup.sh to Pages' -L 1 --json databaseId --jq '.[0].databaseId')"
 
 # 9. 配信内容が新しいリリースに入れ替わったことを確かめる（必須）
 #    ここまでやって初めて学生の実行経路に反映される。手順 8 を忘れても
