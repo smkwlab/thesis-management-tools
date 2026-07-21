@@ -696,6 +696,8 @@ setup_latex_environment() {
 # - CLAUDE.md      : テンプレート／latex-environment 由来の開発者向け説明（学生リポジトリには不要）
 # - docs/          : テンプレート／latex-environment 由来のドキュメント
 # - *-aldc         : aldc が統合時に生成する衝突ファイルのバックアップ
+# - .github/README.md : テンプレートの使い方説明（学生リポジトリでは root の
+#                       著者情報 README をトップに出すために削除する）
 #
 # 重要: この関数は aldc 実行（setup_latex_environment）の **後** に呼ぶ必要があります。
 # aldc は latex-environment 由来の CLAUDE.md / docs/ を持ち込み、既存ファイルと衝突した
@@ -713,6 +715,12 @@ cleanup_template_files() {
     # で管理）。誤マージ防止 CI（prevent-draft-merge）や review 必須保護と dependabot PR
     # が干渉して溜まるため、生成時に削除する（#514）。
     rm -f .github/dependabot.yml 2>/dev/null || true
+    # GitHub は README を .github/ → root → docs/ の順に探して最初の 1 つを表示する。
+    # テンプレート側はこの性質を使い、テンプレートの使い方を .github/README.md に、
+    # 学生が記入する著者情報を root の README.md に置いている。ここで前者を削除する
+    # ことで、学生リポジトリのトップに著者情報 README が表示される
+    # （smkwlab/latex-ecosystem#140）。
+    rm -f .github/README.md 2>/dev/null || true
     return 0
 }
 

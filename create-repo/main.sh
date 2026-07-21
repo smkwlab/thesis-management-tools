@@ -432,32 +432,43 @@ print_next_steps() {
     case "$DOC_TYPE" in
         wr)
             print_completion_message "次のステップ:
-1. テンプレートファイル (20yy-mm-dd.tex) をコピーして、日付に基づいたファイル名 (例: 2024-04-01.tex) に変更後、編集
-2. git add, commit, pushで変更を保存
-3. 毎週新しい週報ファイルを追加"
+1. README.md に著者情報（氏名・学籍番号・研究テーマ）を記入
+2. テンプレートファイル (20yy-mm-dd.tex) をコピーして、日付に基づいたファイル名 (例: 2024-04-01.tex) に変更後、編集
+3. git add, commit, pushで変更を保存
+4. 毎週新しい週報ファイルを追加
+
+📖 詳細な手順（テンプレートの README）:
+  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         latex)
             if [ "$USE_DRAFT_FLOW" = true ]; then
                 print_completion_message "次のステップ:
-1. 0th-draft ブランチで main.tex を編集して文書を作成
-2. git add, commit, pushで変更を保存
-3. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
-4. GitHub Actionsで自動的にPDFが生成されます
+1. 0th-draft ブランチで README.md に著者情報（氏名・学籍番号・文書のタイトル）を記入
+2. main.tex を編集して文書を作成
+3. git add, commit, pushで変更を保存
+4. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
+5. GitHub Actionsで自動的にPDFが生成されます
 
-📖 詳細な手順: リポジトリの README.md の「添削を受ける場合」をご確認ください"
+📖 詳細な手順（テンプレートの README「添削を受ける場合」）:
+  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             else
                 print_completion_message "次のステップ:
-1. main.texを編集して文書を作成
-2. git add, commit, pushで変更を保存
-3. GitHub Actionsで自動的にPDFが生成されます"
+1. README.md に著者情報（氏名・学籍番号・文書のタイトル）を記入
+2. main.texを編集して文書を作成
+3. git add, commit, pushで変更を保存
+4. GitHub Actionsで自動的にPDFが生成されます
+
+📖 詳細な手順（テンプレートの README）:
+  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             fi
             ;;
         poster)
             print_completion_message "次のステップ:
-1. 0th-draft ブランチで a0poster.tex を編集してポスターを作成
-2. git add, commit, pushで変更を保存
-3. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
-4. GitHub Actionsで自動的にPDFが生成されます
+1. 0th-draft ブランチで README.md に著者情報（氏名・学籍番号・ポスターのタイトル・発表先）を記入
+2. a0poster.tex を編集してポスターを作成
+3. git add, commit, pushで変更を保存
+4. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
+5. GitHub Actionsで自動的にPDFが生成されます
 
 ポスターテンプレートの特徴:
 - A0サイズ学会ポスター用
@@ -465,22 +476,30 @@ print_next_steps() {
 - LuaLaTeXで日本語完全対応
 - Pull Request ベースの添削フロー（draft サイクル）
 
-📖 詳細な手順: リポジトリの README.md をご確認ください"
+📖 詳細な手順（テンプレートの README）:
+  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         thesis)
-            print_completion_message "論文執筆の開始方法:
-  https://github.com/$REPO_PATH/blob/main/WRITING-GUIDE.md"
+            print_completion_message "まず 0th-draft ブランチで README.md に著者情報（氏名・学籍番号・論文タイトル）を記入してください。
+
+論文執筆の開始方法:
+  https://github.com/$REPO_PATH/blob/main/WRITING-GUIDE.md
+
+📖 詳細な手順（テンプレートの README）:
+  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         ise)
             print_completion_message "Pull Request学習を開始してください：
   1. GitHub Desktop または VS Code でリポジトリを開く
-  2. 作業用ブランチ（1st-draft など）を作成
-  3. index.html を編集してレポート作成
-  4. 変更をコミット・プッシュ
-  5. Pull Request を作成して提出
-  6. レビューフィードバックを確認・対応
+  2. README.md に著者情報（氏名・学籍番号・レポートの題目）を記入
+  3. 作業用ブランチ（1st-draft など）を作成
+  4. index.html を編集してレポート作成
+  5. 変更をコミット・プッシュ
+  6. Pull Request を作成して提出
+  7. レビューフィードバックを確認・対応
 
-📖 詳細な手順: リポジトリの README.md をご確認ください"
+📖 詳細な手順（テンプレートの README）:
+  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         *)
             die "内部エラー: print_next_steps が未知の DOC_TYPE を受け取りました: $DOC_TYPE"
