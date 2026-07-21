@@ -163,7 +163,7 @@ configure_document_type() {
             ;;
         *)
             echo "❌ サポートされていない文書タイプ: $doc_type"
-            echo "対応タイプ: thesis, wr, latex, ise, poster"
+            echo "対応タイプ: thesis, wr, latex, ise, poster, sotsuron-report"
             exit 1
             ;;
     esac

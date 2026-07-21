@@ -31,9 +31,13 @@ for conf in "${TYPES_DIR}"/*.conf; do
         before_vars=$(compgen -v | sort)
         source "$conf"
         after_vars=$(compgen -v | sort)
+        # comm -13 は「source で新規定義された名前」だけを検出する（既存名の
+        # unset は対象外。clean シェルのため保護すべき既存名は元々ほぼ無い）
         new_vars=$(comm -13 <(printf "%s\n" "$before_vars") <(printf "%s\n" "$after_vars") \
                    | grep -v -x -e before_vars -e after_vars || true)
         new_funcs=$(declare -F | awk "{print \$3}" | sort)
+        # $(echo $var) のクォート無しは意図的: 改行区切りをスペース区切り 1 行に
+        # 正規化して ALLOWED_* と比較する（順序は直前の sort が保証）
         echo "VARS:$(echo $new_vars)"
         echo "FUNCS:$(echo $new_funcs)"
         echo "POLICY:${TEMPLATE_ORG_POLICY:-<unset>}"
