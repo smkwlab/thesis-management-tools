@@ -105,7 +105,7 @@ DEBUG=1 bash <(curl -fsSL https://repo-setup.smkwlab.net) thesis
 5. Pull Request を作成・提出
 6. レビューフィードバックを確認・対応
 
-詳細な手順: [ise-report-template のREADME](https://github.com/smkwlab/ise-report-template/blob/main/README.md) を参照
+詳細な手順: [ise-report-template のREADME](https://github.com/smkwlab/ise-report-template/blob/main/.github/README.md) を参照
 
 ## 各リポジトリの特徴
 
