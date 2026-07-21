@@ -36,3 +36,6 @@ data/
 # Script execution logs (development and runtime logs)
 logs/
 backups/
+
+# Claude Code local settings (per-machine, not shared)
+.claude/settings.local.json
