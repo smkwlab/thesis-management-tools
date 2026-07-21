@@ -83,11 +83,14 @@ gh workflow run "Deploy setup.sh to Pages" --ref main
 # 9. 配信内容が新しいリリースに入れ替わったことを確かめる（必須）
 #    ここまでやって初めて学生の実行経路に反映される。手順 8 を忘れても
 #    リリース自体は成功して見えるため、この確認が唯一の検出手段になる。
-#    デプロイ完了まで数十秒〜数分かかるので、タグ名が出るまで待つ
-until curl -fsSL https://repo-setup.smkwlab.net | grep -q '^EMBEDDED_REF="v1.0.0"'; do
+#    デプロイ完了まで数十秒〜数分かかるので、タグ名が出るまで待つ（最大 5 分）
+for _ in $(seq 30); do
+    curl -fsSL https://repo-setup.smkwlab.net | grep -q '^EMBEDDED_REF="v1.0.0"' && break
     sleep 10
 done
-# 待っても変わらない場合は Actions で "Deploy setup.sh to Pages" の失敗を確認する
+curl -fsSL https://repo-setup.smkwlab.net | grep '^EMBEDDED_REF='
+
+# 表示されたタグが今回のリリースでなければ、デプロイが失敗している
 gh run list -w "Deploy setup.sh to Pages" -L 3
 ```
 
