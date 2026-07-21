@@ -9,15 +9,15 @@
 # EMBEDDED_REF="v1.x.y", so the template content it clones is pinned to that
 # same release -- serving main would silently unpin both halves.
 #
-# Deploys when a release tag is pushed. The run that matters is the v1 move in
-# step 7 of docs/RELEASE.md; a vX.Y.Z push earlier in that procedure also fires
-# but still publishes whatever v1 points at, so the final state is correct
-# either way. Use workflow_dispatch to redeploy without a release.
+# Runs on manual dispatch only, as the last step of docs/RELEASE.md. Tag pushes
+# used to trigger it, but the github-pages environment allows deployments from
+# the main branch only, so every tag-triggered run failed at the deploy job
+# (#552) -- two failures per release, which trains everyone to ignore them.
+# Dispatching from main is safe: the checkout below pins v1 regardless of what
+# ref the run started on.
 name: Deploy setup.sh to Pages
 
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
 
 concurrency:

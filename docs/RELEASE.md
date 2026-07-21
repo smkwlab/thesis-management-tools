@@ -77,9 +77,13 @@ gh release create v1.0.0 --title "v1.0.0" --notes "リリース内容..."
 git tag -f v1 v1.0.0^{}
 git push origin v1 --force
 
-# 8. 短縮 URL の再デプロイを確認（v1 の push で自動実行される）
-#    配信内容が新しいリリースに入れ替わったことを確かめる
-curl -fsSL https://repo-setup.smkwlab.net | grep EMBEDDED_REF
+# 8. 短縮 URL へ配信する（手動実行。自動では走らない）
+gh workflow run "Deploy setup.sh to Pages" --ref main
+
+# 9. 配信内容が新しいリリースに入れ替わったことを確かめる（必須）
+#    ここまでやって初めて学生の実行経路に反映される。手順 8 を忘れても
+#    リリース自体は成功して見えるため、この確認が唯一の検出手段になる
+curl -fsSL https://repo-setup.smkwlab.net | grep '^EMBEDDED_REF='
 ```
 
 > **重要**: リリース用コミット（`EMBEDDED_REF="v1.0.0"`）を `main` にマージしないこと。
@@ -88,14 +92,21 @@ curl -fsSL https://repo-setup.smkwlab.net | grep EMBEDDED_REF
 
 ### 短縮 URL への反映
 
-短縮 URL `https://repo-setup.smkwlab.net` は `v1` の `setup.sh` を配信しており
-（[`.github/workflows/pages.yml`](../.github/workflows/pages.yml)）、手順 7 の
-`v1` push で自動的に再デプロイされる。`main` への push では**再デプロイされない**
-（学生が未リリースの変更を踏まないようにするため）。
+短縮 URL `https://repo-setup.smkwlab.net` は `v1` の `setup.sh` を配信する
+（[`.github/workflows/pages.yml`](../.github/workflows/pages.yml)）。
 
-反映されない場合は Actions から `Deploy setup.sh to Pages` を `workflow_dispatch`
-で手動実行する。workflow は配信前に `EMBEDDED_REF` を検証し、`main` を配信しよう
-とした場合は失敗する。
+**配信は自動では走らない。** タグや `main` への push では再デプロイされず、
+`workflow_dispatch` による手動実行だけがトリガとなる（手順 8）。Actions の画面から
+`Deploy setup.sh to Pages` を実行してもよい。
+
+手動のみである理由は、`github-pages` environment の deployment branch policy が
+`main` ブランチのみを許可しているため。`v1` は `--force` で動かすタグであり、
+学生が `curl | bash` で実行するスクリプトの配信元をタグ操作で差し替えられないよう、
+この保護は維持する（#552）。
+
+`main` から実行しても `main` の `setup.sh` が配信されることはない。workflow は
+`ref: v1` を固定でチェックアウトし、さらに配信前に `EMBEDDED_REF` を検証して
+`main` であれば失敗する。
 
 ## メジャー移動タグ（`v1` など）
 
