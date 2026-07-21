@@ -437,7 +437,7 @@ print_next_steps() {
 3. git add, commit, pushで変更を保存
 4. 毎週新しい週報ファイルを追加
 
-📖 詳細な手順: テンプレートの README をご確認ください
+📖 詳細な手順（テンプレートの README）:
   https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         latex)
@@ -449,7 +449,7 @@ print_next_steps() {
 4. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
 5. GitHub Actionsで自動的にPDFが生成されます
 
-📖 詳細な手順: テンプレートの README の「添削を受ける場合」をご確認ください
+📖 詳細な手順（テンプレートの README「添削を受ける場合」）:
   https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             else
                 print_completion_message "次のステップ:
@@ -458,7 +458,7 @@ print_next_steps() {
 3. git add, commit, pushで変更を保存
 4. GitHub Actionsで自動的にPDFが生成されます
 
-📖 詳細な手順: テンプレートの README をご確認ください
+📖 詳細な手順（テンプレートの README）:
   https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             fi
             ;;
@@ -476,7 +476,7 @@ print_next_steps() {
 - LuaLaTeXで日本語完全対応
 - Pull Request ベースの添削フロー（draft サイクル）
 
-📖 詳細な手順: テンプレートの README をご確認ください
+📖 詳細な手順（テンプレートの README）:
   https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         thesis)
@@ -485,7 +485,7 @@ print_next_steps() {
 論文執筆の開始方法:
   https://github.com/$REPO_PATH/blob/main/WRITING-GUIDE.md
 
-📖 詳細な手順: テンプレートの README をご確認ください
+📖 詳細な手順（テンプレートの README）:
   https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         ise)
@@ -498,7 +498,7 @@ print_next_steps() {
   6. Pull Request を作成して提出
   7. レビューフィードバックを確認・対応
 
-📖 詳細な手順: テンプレートの README をご確認ください
+📖 詳細な手順（テンプレートの README）:
   https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         *)
