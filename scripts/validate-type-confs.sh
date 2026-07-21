@@ -24,12 +24,15 @@ for conf in "${TYPES_DIR}"/*.conf; do
     name=$(basename "$conf")
     # clean な bash で source し、宣言差分と TEMPLATE_ORG_POLICY を出力させる。
     # env -i で親環境を遮断する（共通変数の「新規定義」を確実に差分に出すため）
-    out=$(env -i bash --noprofile --norc -c '
+    # 内側シェルの死（構文エラー・set -u の未定義参照など）は per-conf の NG に
+    # 変換し、後続 conf の検査を続ける（|| で受けないと外側の set -e が全体を止め、
+    # 診断が出ないまま残りが未検査になる）
+    if ! out=$(env -i bash --noprofile --norc -c '
         set -u
         conf="$1"
         # スナップショット用の自前変数は差分から除外する
         before_vars=$(compgen -v | sort)
-        source "$conf"
+        source "$conf" || exit 3
         after_vars=$(compgen -v | sort)
         # comm -13 は「source で新規定義された名前」だけを検出する（既存名の
         # unset は対象外。clean シェルのため保護すべき既存名は元々ほぼ無い）
@@ -41,7 +44,11 @@ for conf in "${TYPES_DIR}"/*.conf; do
         echo "VARS:$(echo $new_vars)"
         echo "FUNCS:$(echo $new_funcs)"
         echo "POLICY:${TEMPLATE_ORG_POLICY:-<unset>}"
-    ' _ "$conf")
+    ' _ "$conf"); then
+        echo "NG  $name: source に失敗しました（構文エラーまたは実行時エラー）"
+        fail=1
+        continue
+    fi
     vars=$(sed -n 's/^VARS://p' <<<"$out")
     funcs=$(sed -n 's/^FUNCS://p' <<<"$out")
     policy=$(sed -n 's/^POLICY://p' <<<"$out")
