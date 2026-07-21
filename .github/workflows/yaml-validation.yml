@@ -42,6 +42,11 @@ jobs:
           # Run actionlint with warnings allowed for initial setup
           actionlint -ignore 'SC2129:.*' -ignore '.*potentially untrusted.*' || true
 
+      - name: Validate type confs
+        run: |
+          echo "Validating create-repo/types/*.conf against the contract..."
+          ./scripts/validate-type-confs.sh
+
       - name: Validation summary
         run: |
           echo "✅ All YAML files passed validation!"

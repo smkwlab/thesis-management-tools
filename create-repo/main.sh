@@ -1,7 +1,8 @@
 #!/bin/bash
 # 学生リポジトリセットアップスクリプト（統合版）
 #
-# 5 種類の文書タイプ（thesis / wr / latex / ise / poster）のリポジトリ作成を
+# 6 種類の文書タイプ（thesis / wr / latex / ise / poster / sotsuron-report）の
+# リポジトリ作成を
 # 1 本で担う。タイプは環境変数 DOC_TYPE で選択する（setup.sh が
 # docker run -e DOC_TYPE=... で注入。位置引数 $1 は従来どおり学籍番号）。
 #
@@ -30,7 +31,7 @@ source ./common-lib.sh
 # setup.sh 側の case でも whitelist 済みだが、コンテナを setup.sh 経由せず
 # 直接実行するデバッグ経路でも安全にするため二重に検証する
 # （AUTO_ASSIGN_REVIEWER の二重検証と同じ既存流儀）。
-DOC_TYPE="${DOC_TYPE:?DOC_TYPE を指定してください (thesis|wr|latex|ise|poster)}"
+DOC_TYPE="${DOC_TYPE:?DOC_TYPE を指定してください (thesis|wr|latex|ise|poster|sotsuron-report)}"
 
 # ================================
 # タイプ定義の読み込み
@@ -44,8 +45,9 @@ case "$DOC_TYPE" in
     latex)  source ./types/latex.conf ;;
     ise)    source ./types/ise.conf ;;
     poster) source ./types/poster.conf ;;
+    sotsuron-report) source ./types/sotsuron-report.conf ;;
     *)
-        die "サポートされていない文書タイプ: $DOC_TYPE (thesis|wr|latex|ise|poster)"
+        die "サポートされていない文書タイプ: $DOC_TYPE (thesis|wr|latex|ise|poster|sotsuron-report)"
         ;;
 esac
 
