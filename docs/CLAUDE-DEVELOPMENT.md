@@ -55,7 +55,7 @@ variables (defaults preserve smkwlab behavior):
 | `TOOLS_REPO_OWNER` | `$DEFAULT_ORG` | Owner of the `student-repo-management` repo cloned internally. Distinct from `TARGET_ORG` (which may be a personal account). |
 | `TOOLS_REPO_NAME` | `student-repo-management` | Repo name cloned internally and forwarded to the container for registry integration. |
 | `TOOLS_CLONE_URL` | `https://github.com/<owner>/<repo>.git` | Full override of the clone URL (e.g. GitHub Enterprise / mirror). Must start with `https://` or `git@`. When set alone, also set `TOOLS_REPO_OWNER`/`TOOLS_REPO_NAME` so the usage/releases URLs in help text match the actual clone source. |
-| `TEMPLATE_REPO` | per doc type | Source template repo. `thesis`/`ise`/`wr` default to `<org>/…`; `latex`/`poster` default to `smkwlab/…` (shared templates used by individual accounts too). Set to `<org>/<template>` to use your own. |
+| `TEMPLATE_REPO` | per doc type | Source template repo. `thesis`/`ise`/`wr`/`sotsuron-report` default to `<org>/…`; `latex`/`poster` default to `smkwlab/…` (shared templates used by individual accounts too). Set to `<org>/<template>` to use your own. |
 | `AUTO_ASSIGN_REVIEWER` | `toshi0806` | GitHub login inserted as the reviewer/assignee in the auto-assign config injected into organization-member repos. Set to a member of your org, or auto-assign will not work. |
 | `ALDC_URL` | `https://raw.githubusercontent.com/smkwlab/aldc/main/aldc` | Source of the aldc LaTeX-devcontainer installer fetched during setup. Must start with `https://`. |
 | `SETUP_GIT_EMAIL_DOMAIN` | `smkwlab.github.io` | Domain for the `setup-*@…` commit-author email used by the container. |
@@ -107,7 +107,7 @@ Sophisticated GitHub Actions-based supervision:
 ```
 create-repo/
 ├── setup.sh                    # Universal entry point (all document types)
-├── main.sh                     # Unified creation script (DOC_TYPE: thesis/wr/latex/ise/poster)
+├── main.sh                     # Unified creation script (DOC_TYPE: thesis/wr/latex/ise/poster/sotsuron-report)
 ├── common-lib.sh               # Shared functions and utilities
 ├── types/                      # Per-type definitions (static config + repo-name/commit/completion functions); see types/README.md
 ├── Dockerfile                  # Docker image shared by all document types

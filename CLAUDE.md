@@ -18,6 +18,7 @@ bash <(curl -fsSL https://repo-setup.smkwlab.net) wr       # Weekly reports
 bash <(curl -fsSL https://repo-setup.smkwlab.net) latex    # General LaTeX
 bash <(curl -fsSL https://repo-setup.smkwlab.net) ise      # ISE reports
 bash <(curl -fsSL https://repo-setup.smkwlab.net) poster   # Conference posters
+bash <(curl -fsSL https://repo-setup.smkwlab.net) sotsuron-report  # Thesis survey reports
 
 # Environment variable style (Legacy, still supported)
 DOC_TYPE=thesis bash <(curl -fsSL https://repo-setup.smkwlab.net)
@@ -66,14 +67,14 @@ For manual branch protection setup or troubleshooting:
 gh repo view smkwlab/k21rs001-sotsuron --json branchProtectionRules
 ```
 
-**Note**: Weekly reports (wr-template) do not use branch protection as they have simpler workflows. General LaTeX documents (latex-template) do not use it by default either, but opt in via `REVIEW_FLOW=true` at creation time. ISE reports (ise-report-template) and posters (poster-template) always use the same PR-based branch protection as thesis repositories.
+**Note**: Weekly reports (wr-template) and thesis survey reports (sotsuron-report-template) do not use branch protection as they have simpler workflows. General LaTeX documents (latex-template) do not use it by default either, but opt in via `REVIEW_FLOW=true` at creation time. ISE reports (ise-report-template) and posters (poster-template) always use the same PR-based branch protection as thesis repositories.
 
 ## Key Files & Structure
 
 ```
 create-repo/
 ├── setup.sh              # Universal Setup Script - All document types
-├── main.sh               # Unified creation script (DOC_TYPE: thesis/wr/latex/ise/poster)
+├── main.sh               # Unified creation script (DOC_TYPE: thesis/wr/latex/ise/poster/sotsuron-report)
 ├── common-lib.sh         # Shared functions and utilities
 ├── types/                # Per-type definitions (static config + repo-name/commit/completion functions); see types/README.md
 └── Dockerfile            # Docker image shared by all document types
@@ -108,13 +109,14 @@ Universal Setup Script uses `DOC_TYPE` environment variable to specify document 
 - **latex**: General LaTeX documents (latex-template)
 - **ise**: Information Science Exercise reports (ise-report-template)
 - **poster**: Conference posters (poster-template)
+- **sotsuron-report**: Thesis survey reports (sotsuron-report-template)
 
 ### Environment Variable Options
 ```bash
 # LaTeX document configuration
 DOCUMENT_NAME=research-note    # Custom document name
 
-# Draft PR review flow opt-in (DOC_TYPE=latex only; thesis/ise/poster are always on, wr unsupported)
+# Draft PR review flow opt-in (DOC_TYPE=latex only; thesis/ise/poster are always on, wr and sotsuron-report unsupported)
 REVIEW_FLOW=true               # Initialize main + 0th-draft, enable auto-assign, apply branch protection
 
 # Individual mode behavior (DOC_TYPE=latex only)

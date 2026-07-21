@@ -113,6 +113,7 @@ if [ -z "$DOC_TYPE" ]; then
     echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash latex"
     echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash ise"
     echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash poster"
+    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash sotsuron-report"
     echo ""
     echo "学籍番号を指定する場合（環境変数）："
     echo "  STUDENT_ID=k21rs001 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/${TOOLS_REPO_OWNER}/${TOOLS_REPO}/main/create-repo/setup.sh)\" bash thesis"
@@ -128,7 +129,7 @@ DETECTED_DOC_TYPE="$DOC_TYPE"
 
 # 設定マッピング
 # この case は DOC_TYPE の whitelist 検証を兼ねる（後段で -e DOC_TYPE として
-# 無引用のまま docker run へ渡すため、ここを通過した 5 値以外は流れない）。
+# 無引用のまま docker run へ渡すため、ここを通過した 6 値以外は流れない）。
 # Dockerfile / 実行スクリプトはタイプ共通（create-repo/Dockerfile + main.sh、
 # タイプは DOC_TYPE 環境変数で選択。Issue #516）。旧構成の ref を指定した
 # 場合のフォールバックは clone 後に判定する。
@@ -155,6 +156,10 @@ configure_document_type() {
         poster)
             DOC_DESCRIPTION="📊 学会ポスターリポジトリ"
             DOCKER_IMAGE_NAME="poster-setup-alpine"
+            ;;
+        sotsuron-report)
+            DOC_DESCRIPTION="📝 卒業論文調査報告リポジトリ"
+            DOCKER_IMAGE_NAME="sotsuron-report-setup-alpine"
             ;;
         *)
             echo "❌ サポートされていない文書タイプ: $doc_type"
