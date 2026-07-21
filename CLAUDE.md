@@ -75,6 +75,7 @@ create-repo/
 ├── setup.sh              # Universal Setup Script - All document types
 ├── main.sh               # Unified creation script (DOC_TYPE: thesis/wr/latex/ise/poster)
 ├── common-lib.sh         # Shared functions and utilities
+├── types/                # Per-type definitions (static config + repo-name/commit/completion functions); see types/README.md
 └── Dockerfile            # Docker image shared by all document types
 
 scripts/

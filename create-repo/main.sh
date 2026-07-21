@@ -5,16 +5,19 @@
 # 1 本で担う。タイプは環境変数 DOC_TYPE で選択する（setup.sh が
 # docker run -e DOC_TYPE=... で注入。位置引数 $1 は従来どおり学籍番号）。
 #
-# 設計基準（Issue #516）:
-# - タイプ固有処理は「タイプ設定 case」「テンプレート決定 case」と、タイプ名で
-#   明示的に分岐する case / if のみで表現する。eval や "func_$DOC_TYPE" 式の
-#   動的関数名解決は使わない。
-# - grep -n 'DOC_TYPE' main.sh でタイプ固有処理を全列挙できる。
-# - 各ブロックは旧 main-<type>.sh からの逐語移設であり、対話プロンプト・
-#   コミットメッセージ・完了メッセージ・ログ文言を変えないこと。
-# - タイプ固有関数は REPO_NAME / COMMIT_MESSAGE 等の決められた変数の設定のみを
-#   行い、共通フローの順序に依存する副作用を持たない。タイプ固有処理の追加は
-#   case か DOC_TYPE ガードで行うこと（線形フローへの無秩序な if 増殖を避ける）。
+# 設計基準（Issue #516、#554 で conf 外出しに改訂）:
+# - タイプ定義（静的設定と decide_repo_name / build_commit_message /
+#   print_next_steps の 3 関数）は types/<type>.conf に置き、下の明示 whitelist
+#   case で source する。conf の契約は types/README.md を参照。
+# - eval や "func_$DOC_TYPE" 式の動的関数名解決は使わない。conf の選択も
+#   タイプ名を列挙した case で行う（whitelist 検証を兼ねる）。
+# - タイプ一覧は types/*.conf で列挙できる。main.sh 内の残りのタイプ固有処理
+#   （ヘルパー関数・フロー中のガード）は grep -n 'DOC_TYPE' で列挙できる。
+# - 対話プロンプト・コミットメッセージ・完了メッセージ・ログ文言は学生
+#   リポジトリの履歴・実行ログに残るため逐語保存（詳細は types/README.md）。
+# - conf の関数は REPO_NAME / COMMIT_MESSAGE 等の決められた変数の設定のみを
+#   行い、共通フローの順序に依存する副作用を持たない。タイプ固有の判定・
+#   プロンプトのヘルパーは本ファイルに置き、conf から明示名で呼ぶ。
 
 set -e
 
@@ -30,54 +33,17 @@ source ./common-lib.sh
 DOC_TYPE="${DOC_TYPE:?DOC_TYPE を指定してください (thesis|wr|latex|ise|poster)}"
 
 # ================================
-# タイプ設定（静的コンフィグ）
+# タイプ定義の読み込み
 # ================================
-# SCRIPT_TITLE / SCRIPT_EMOJI: init_script_common の引数
-# STUDENT_ID_EXAMPLES: 学籍番号プロンプトの例示（空なら read_student_id の既定）
-# RUN_ALDC: aldc による LaTeX 環境セットアップを行うか（ise は HTML ベースのため行わない）
-# SETUP_AUTO_ASSIGN: 組織メンバー向け auto-assign 設定を追加するか（thesis / ise / poster、latex は REVIEW_FLOW 指定時）
-# USE_DRAFT_FLOW: main + 0th-draft の draft PR サイクルを使うか（thesis / ise / poster、latex は REVIEW_FLOW 指定時）
+# 各タイプの静的設定と 3 関数（decide_repo_name / build_commit_message /
+# print_next_steps）は types/<type>.conf が定義する（契約は types/README.md）。
+# この case はタイプ名の whitelist 検証を兼ねる（動的なパス組み立てをしない）。
 case "$DOC_TYPE" in
-    thesis)
-        SCRIPT_TITLE="論文リポジトリセットアップツール"
-        SCRIPT_EMOJI="🎓"
-        STUDENT_ID_EXAMPLES="卒業論文の例: k21rs001, 修士論文の例: k21gjk01"
-        RUN_ALDC=true
-        SETUP_AUTO_ASSIGN=true
-        USE_DRAFT_FLOW=true
-        ;;
-    wr)
-        SCRIPT_TITLE="週報リポジトリセットアップツール"
-        SCRIPT_EMOJI="📝"
-        STUDENT_ID_EXAMPLES=""
-        RUN_ALDC=true
-        SETUP_AUTO_ASSIGN=false
-        USE_DRAFT_FLOW=false
-        ;;
-    latex)
-        SCRIPT_TITLE="汎用LaTeXリポジトリセットアップツール"
-        SCRIPT_EMOJI="📝"
-        STUDENT_ID_EXAMPLES=""
-        RUN_ALDC=true
-        SETUP_AUTO_ASSIGN=false
-        USE_DRAFT_FLOW=false
-        ;;
-    ise)
-        SCRIPT_TITLE="情報科学演習レポートリポジトリセットアップツール"
-        SCRIPT_EMOJI="📝"
-        STUDENT_ID_EXAMPLES=""
-        RUN_ALDC=false
-        SETUP_AUTO_ASSIGN=true
-        USE_DRAFT_FLOW=true
-        ;;
-    poster)
-        SCRIPT_TITLE="学会ポスターリポジトリセットアップツール"
-        SCRIPT_EMOJI="📊"
-        STUDENT_ID_EXAMPLES=""
-        RUN_ALDC=true
-        SETUP_AUTO_ASSIGN=true
-        USE_DRAFT_FLOW=true
-        ;;
+    thesis) source ./types/thesis.conf ;;
+    wr)     source ./types/wr.conf ;;
+    latex)  source ./types/latex.conf ;;
+    ise)    source ./types/ise.conf ;;
+    poster) source ./types/poster.conf ;;
     *)
         die "サポートされていない文書タイプ: $DOC_TYPE (thesis|wr|latex|ise|poster)"
         ;;
@@ -100,22 +66,17 @@ init_script_common "$SCRIPT_TITLE" "$SCRIPT_EMOJI"
 ORGANIZATION=$(determine_organization)
 
 # テンプレートリポジトリの決定。全タイプで TEMPLATE_REPO による上書きに対応する
-# （setup.sh はタイプ非依存で TEMPLATE_REPO をコンテナへ転送する）。既定値のみ
-# タイプごとにポリシーが異なり、「既定値の由来」で 2 グループに分かれる（この分類は
-# 下の case の並び順とは独立。case はファイル全体で統一している標準順
-# thesis→wr→latex→ise→poster を維持しているため、latex はグループ間に挟まって見える）:
-# - org 追従（${ORGANIZATION}/<template>） … thesis / wr / ise
-# - smkwlab 固定 … latex / poster（個人ユーザー = ORGANIZATION が個人アカウントでも
-#   利用する共有テンプレのため、org 追従にせず既定を smkwlab に固定する）
-# いずれのグループも、他 org で独自テンプレを使う場合は TEMPLATE_REPO で上書きする。
-# 注意: TEMPLATE_REPO 未設定時の既定は従来と同一（挙動不変）。以前は wr / ise のみ
-# TEMPLATE_REPO を無視していた（silent ignore）が、Issue #517 で全タイプ上書き可に統一。
-case "$DOC_TYPE" in
-    thesis) TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-${ORGANIZATION}/sotsuron-template}" ;;
-    wr)     TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-${ORGANIZATION}/wr-template}" ;;
-    latex)  TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-smkwlab/latex-template}" ;;
-    ise)    TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-${ORGANIZATION}/ise-report-template}" ;;
-    poster) TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-smkwlab/poster-template}" ;;
+# （setup.sh はタイプ非依存で TEMPLATE_REPO をコンテナへ転送する。Issue #517 で
+# 全タイプ上書き可に統一）。既定値は conf の TEMPLATE_BASENAME と
+# TEMPLATE_ORG_POLICY から組み立てる:
+# - follow  … 実行 org に追従（${ORGANIZATION}/<basename>）
+# - smkwlab … smkwlab 固定（個人ユーザー = ORGANIZATION が個人アカウントでも
+#   利用する共有テンプレのため。他 org で独自テンプレを使う場合は TEMPLATE_REPO
+#   で上書きする）
+case "$TEMPLATE_ORG_POLICY" in
+    follow)  TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-${ORGANIZATION}/${TEMPLATE_BASENAME}}" ;;
+    smkwlab) TEMPLATE_REPOSITORY="${TEMPLATE_REPO:-smkwlab/${TEMPLATE_BASENAME}}" ;;
+    *) die "内部エラー: 未知の TEMPLATE_ORG_POLICY: ${TEMPLATE_ORG_POLICY:-<unset>} (types/${DOC_TYPE}.conf を確認してください)" ;;
 esac
 VISIBILITY="private"
 
@@ -297,82 +258,6 @@ determine_ise_report_number() {
     echo "$report_num"
 }
 
-# --- リポジトリ名の決定（全タイプ。旧 main-<type>.sh の該当ブロックを逐語移設） ---
-# 設定される変数: REPO_NAME、および thesis: THESIS_TYPE / ise: ISE_REPORT_NUM /
-# latex: DOCUMENT_NAME / poster: POSTER_NAME
-# 注意: bare call で呼ぶこと（`decide_repo_name || ...` にしない）。ise 分岐の
-# `ISE_REPORT_NUM=$(determine_ise_report_number ...)` は、determine_ise_report_number
-# が異常時に呼ぶ `exit 1` がコマンド置換のサブシェルのみを終了させるため、失敗した
-# 代入を set -e が拾って親スクリプトを中断することに依存している（旧 main-ise.sh
-# L123 のトップレベル代入と同じ挙動）。`|| ...` 文脈で呼ぶと関数内の set -e が
-# 無効化され、ISE_REPORT_NUM 空のまま続行してしまう。
-decide_repo_name() {
-    case "$DOC_TYPE" in
-        wr)
-            if is_individual_mode; then
-                REPO_NAME="weekly-report"
-            else
-                REPO_NAME="${STUDENT_ID}-wr"
-            fi
-            ;;
-        latex)
-            read_document_name
-            if is_individual_mode; then
-                REPO_NAME="${DOCUMENT_NAME}"
-            else
-                REPO_NAME="${STUDENT_ID}-${DOCUMENT_NAME}"
-            fi
-            ;;
-        poster)
-            read_poster_name
-            if is_individual_mode; then
-                REPO_NAME="${POSTER_NAME}"
-            else
-                REPO_NAME="${STUDENT_ID}-${POSTER_NAME}"
-            fi
-            ;;
-        thesis)
-            if is_individual_mode; then
-                THESIS_TYPE="sotsuron"
-                REPO_NAME="thesis"
-                log_info "個人モード: 卒業論文リポジトリとして設定します"
-            else
-                THESIS_TYPE=$(determine_thesis_type "$STUDENT_ID")
-                if [ "$THESIS_TYPE" = "shuuron" ]; then
-                    REPO_NAME="${STUDENT_ID}-master"
-                    log_info "修士論文リポジトリとして設定します"
-                else
-                    REPO_NAME="${STUDENT_ID}-sotsuron"
-                    log_info "卒業論文リポジトリとして設定します"
-                fi
-            fi
-            ;;
-        ise)
-            if is_individual_mode; then
-                ISE_REPORT_NUM="1"
-                REPO_NAME="ise-report"
-                log_info "個人モード: ISEレポートリポジトリとして設定します"
-            else
-                echo "📋 既存ISEレポートリポジトリの確認中..."
-                ISE_REPORT_NUM=$(determine_ise_report_number "$STUDENT_ID")
-                REPO_NAME="${STUDENT_ID}-ise-report${ISE_REPORT_NUM}"
-
-                if [ "$ISE_REPORT_NUM" = "1" ]; then
-                    log_info "作成対象: ${REPO_NAME} (初回のISEレポート)"
-                else
-                    log_info "${STUDENT_ID}-ise-report1 が存在"
-                    log_info "作成対象: ${REPO_NAME} (2回目のISEレポート)"
-                fi
-            fi
-            ;;
-        *)
-            # 冒頭の case で不正値は die 済みだが、単体テストや将来のタイプ追加時に
-            # REPO_NAME 未設定のまま後続へ進むのを防ぐ（内部整合の防御）
-            die "内部エラー: decide_repo_name が未知の DOC_TYPE を受け取りました: $DOC_TYPE"
-            ;;
-    esac
-}
-
 # --- thesis: 論文タイプに応じて不要なファイルを削除（旧 main-thesis.sh） ---
 remove_unused_thesis_files() {
     if [ "$THESIS_TYPE" = "shuuron" ]; then
@@ -382,129 +267,6 @@ remove_unused_thesis_files() {
         rm -f thesis.tex abstract.tex 2>/dev/null || true
         log_debug "卒業論文用: thesis.tex, abstract.tex を削除しました"
     fi
-}
-
-# --- コミットメッセージの決定（全タイプ。旧 main-<type>.sh から逐語移設） ---
-# 学生リポジトリの初期履歴に残る文字列のため、文言・空行・改行を 1 文字も
-# 変えないこと。設定される変数: COMMIT_MESSAGE
-build_commit_message() {
-    case "$DOC_TYPE" in
-        wr)
-            if is_individual_mode; then
-                COMMIT_MESSAGE="Initialize weekly report repository
-
-- Setup LaTeX environment for weekly reports
-"
-            else
-                COMMIT_MESSAGE="Initialize weekly report repository for ${STUDENT_ID}
-
-- Setup LaTeX environment for weekly reports
-"
-            fi
-            ;;
-        latex)
-            COMMIT_MESSAGE="Initial customization for ${DOCUMENT_NAME}
-
-- Setup LaTeX environment
-"
-            ;;
-        poster)
-            COMMIT_MESSAGE="Initial setup for ${POSTER_NAME}
-
-- Configure LaTeX environment
-- Remove template documentation files
-- Prepare for poster development"
-            ;;
-        thesis)
-            COMMIT_MESSAGE="Initial setup for ${THESIS_TYPE}"
-            ;;
-        ise)
-            COMMIT_MESSAGE="Initial setup for ISE Report #${ISE_REPORT_NUM}"
-            ;;
-        *)
-            die "内部エラー: build_commit_message が未知の DOC_TYPE を受け取りました: $DOC_TYPE"
-            ;;
-    esac
-}
-
-# --- 完了メッセージ（全タイプ。旧 main-<type>.sh から逐語移設） ---
-print_next_steps() {
-    case "$DOC_TYPE" in
-        wr)
-            print_completion_message "次のステップ:
-1. README.md に著者情報（氏名・学籍番号・研究テーマ）を記入
-2. テンプレートファイル (20yy-mm-dd.tex) をコピーして、日付に基づいたファイル名 (例: 2024-04-01.tex) に変更後、編集
-3. git add, commit, pushで変更を保存
-4. 毎週新しい週報ファイルを追加
-
-📖 詳細な手順（テンプレートの README）:
-  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
-            ;;
-        latex)
-            if [ "$USE_DRAFT_FLOW" = true ]; then
-                print_completion_message "次のステップ:
-1. 0th-draft ブランチで README.md に著者情報（氏名・学籍番号・文書のタイトル）を記入
-2. main.tex を編集して文書を作成
-3. git add, commit, pushで変更を保存
-4. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
-5. GitHub Actionsで自動的にPDFが生成されます
-
-📖 詳細な手順（テンプレートの README「添削を受ける場合」）:
-  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
-            else
-                print_completion_message "次のステップ:
-1. README.md に著者情報（氏名・学籍番号・文書のタイトル）を記入
-2. main.texを編集して文書を作成
-3. git add, commit, pushで変更を保存
-4. GitHub Actionsで自動的にPDFが生成されます
-
-📖 詳細な手順（テンプレートの README）:
-  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
-            fi
-            ;;
-        poster)
-            print_completion_message "次のステップ:
-1. 0th-draft ブランチで README.md に著者情報（氏名・学籍番号・ポスターのタイトル・発表先）を記入
-2. a0poster.tex を編集してポスターを作成
-3. git add, commit, pushで変更を保存
-4. Pull Request を作成して添削を依頼（次稿ブランチは自動作成されます）
-5. GitHub Actionsで自動的にPDFが生成されます
-
-ポスターテンプレートの特徴:
-- A0サイズ学会ポスター用
-- tikzposterによる柔軟なレイアウト
-- LuaLaTeXで日本語完全対応
-- Pull Request ベースの添削フロー（draft サイクル）
-
-📖 詳細な手順（テンプレートの README）:
-  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
-            ;;
-        thesis)
-            print_completion_message "まず 0th-draft ブランチで README.md に著者情報（氏名・学籍番号・論文タイトル）を記入してください。
-
-論文執筆の開始方法:
-  https://github.com/$REPO_PATH/blob/main/WRITING-GUIDE.md
-
-📖 詳細な手順（テンプレートの README）:
-  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
-            ;;
-        ise)
-            print_completion_message "Pull Request学習を開始してください：
-  1. GitHub Desktop または VS Code でリポジトリを開く
-  2. README.md に著者情報（氏名・学籍番号・レポートの題目）を記入
-  3. 作業用ブランチ（1st-draft など）を作成
-  4. index.html を編集してレポート作成
-  5. 変更をコミット・プッシュ
-  6. Pull Request を作成して提出
-  7. レビューフィードバックを確認・対応
-
-📖 詳細な手順（テンプレートの README）:
-  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
-            ;;
-        *)
-            die "内部エラー: print_next_steps が未知の DOC_TYPE を受け取りました: $DOC_TYPE"
-            ;;
-    esac
 }
 
 # ================================

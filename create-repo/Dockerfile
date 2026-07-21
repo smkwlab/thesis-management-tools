@@ -30,6 +30,7 @@ WORKDIR /workspace
 COPY main.sh ./
 COPY common-lib.sh ./
 COPY templates/ ./templates/
+COPY types/ ./types/
 RUN chmod +x main.sh common-lib.sh
 
 # Docker環境では手動ブラウザアクセスを前提
