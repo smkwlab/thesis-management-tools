@@ -483,7 +483,10 @@ print_next_steps() {
             print_completion_message "まず 0th-draft ブランチで README.md に著者情報（氏名・学籍番号・論文タイトル）を記入してください。
 
 論文執筆の開始方法:
-  https://github.com/$REPO_PATH/blob/main/WRITING-GUIDE.md"
+  https://github.com/$REPO_PATH/blob/main/WRITING-GUIDE.md
+
+📖 詳細な手順: テンプレートの README をご確認ください
+  https://github.com/$TEMPLATE_REPOSITORY/blob/main/.github/README.md"
             ;;
         ise)
             print_completion_message "Pull Request学習を開始してください：
